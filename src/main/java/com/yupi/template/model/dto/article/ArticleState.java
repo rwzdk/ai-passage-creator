@@ -44,6 +44,11 @@ public class ArticleState implements Serializable {
     private List<ImageRequirement> imageRequirements;
 
     /**
+     * 封面图 URL（单独存储，同时 images 列表中的 position=1 也是封面图）
+     */
+    private String coverImage;
+
+    /**
      * 配图结果列表（智能体5输出）
      */
     private List<ImageResult> images;
@@ -82,6 +87,7 @@ public class ArticleState implements Serializable {
     public static class ImageRequirement implements Serializable {
         private Integer position;
         private String type;
+        private String sectionTitle;
         private String keywords;
     }
 
@@ -94,8 +100,14 @@ public class ArticleState implements Serializable {
         private String url;
         private String method;
         private String keywords;
+        private String sectionTitle;
         private String description;
     }
+
+    /**
+     * 完整图文内容（合成后）
+     */
+    private String fullContent;
 
     private static final long serialVersionUID = 1L;
 }

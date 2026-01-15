@@ -1,8 +1,8 @@
 package com.yupi.template.model.vo;
 
-import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.yupi.template.model.entity.Article;
+import com.yupi.template.utils.GsonUtils;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
 
@@ -17,8 +17,6 @@ import java.util.List;
  */
 @Data
 public class ArticleVO implements Serializable {
-
-    private static final Gson GSON = new Gson();
 
     /**
      * id
@@ -59,6 +57,16 @@ public class ArticleVO implements Serializable {
      * 正文
      */
     private String content;
+
+    /**
+     * 完整图文（含配图）
+     */
+    private String fullContent;
+
+    /**
+     * 封面图 URL
+     */
+    private String coverImage;
 
     /**
      * 配图列表
@@ -104,6 +112,7 @@ public class ArticleVO implements Serializable {
         private String url;
         private String method;
         private String keywords;
+        private String sectionTitle;
         private String description;
     }
 
@@ -122,12 +131,12 @@ public class ArticleVO implements Serializable {
         
         // 转换 JSON 字段
         if (article.getOutline() != null) {
-            articleVO.setOutline(GSON.fromJson(article.getOutline(), 
-                new TypeToken<List<OutlineItem>>(){}.getType()));
+            articleVO.setOutline(GsonUtils.fromJson(article.getOutline(), 
+                new TypeToken<List<OutlineItem>>(){}));
         }
         if (article.getImages() != null) {
-            articleVO.setImages(GSON.fromJson(article.getImages(), 
-                new TypeToken<List<ImageItem>>(){}.getType()));
+            articleVO.setImages(GsonUtils.fromJson(article.getImages(), 
+                new TypeToken<List<ImageItem>>(){}));
         }
         
         return articleVO;

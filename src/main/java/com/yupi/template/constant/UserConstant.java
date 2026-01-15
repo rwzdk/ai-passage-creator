@@ -25,4 +25,13 @@ public interface UserConstant {
     String ADMIN_ROLE = "admin";
     
     // endregion
+
+    //  region 配额
+
+    /**
+     * 普通用户默认配额
+     */
+    int DEFAULT_QUOTA = 5;
+
+    // endregion
 }

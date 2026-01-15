@@ -17,6 +17,7 @@ create table if not exists user
     userAvatar   varchar(1024)                          null comment '用户头像',
     userProfile  varchar(512)                           null comment '用户简介',
     userRole     varchar(256) default 'user'            not null comment '用户角色：user/admin',
+    quota        int          default 5                 not null comment '剩余配额',
     editTime     datetime     default CURRENT_TIMESTAMP not null comment '编辑时间',
     createTime   datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime   datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
@@ -27,10 +28,10 @@ create table if not exists user
 
 -- 初始化数据
 -- 密码是 12345678（MD5 加密 + 盐值 yupi）
-INSERT INTO user (id, userAccount, userPassword, userName, userAvatar, userProfile, userRole) VALUES
-(1, 'admin', 'b0ae9cc0c38011f4e6e0ed7db21bbf8a', '管理员', 'https://www.codefather.cn/logo.png', '系统管理员', 'admin'),
-(2, 'user', 'b0ae9cc0c38011f4e6e0ed7db21bbf8a', '普通用户', 'https://www.codefather.cn/logo.png', '我是一个普通用户', 'user'),
-(3, 'test', 'b0ae9cc0c38011f4e6e0ed7db21bbf8a', '测试账号', 'https://www.codefather.cn/logo.png', '这是一个测试账号', 'user');
+INSERT INTO user (id, userAccount, userPassword, userName, userAvatar, userProfile, userRole, quota) VALUES
+(1, 'admin', 'b0ae9cc0c38011f4e6e0ed7db21bbf8a', '管理员', 'https://www.codefather.cn/logo.png', '系统管理员', 'admin', 5),
+(2, 'user', 'b0ae9cc0c38011f4e6e0ed7db21bbf8a', '普通用户', 'https://www.codefather.cn/logo.png', '我是一个普通用户', 'user', 5),
+(3, 'test', 'b0ae9cc0c38011f4e6e0ed7db21bbf8a', '测试账号', 'https://www.codefather.cn/logo.png', '这是一个测试账号', 'user', 5);
 
 -- 文章表
 create table if not exists article
@@ -43,7 +44,9 @@ create table if not exists article
     subTitle        varchar(300)                       null comment '副标题',
     outline         json                               null comment '大纲（JSON格式）',
     content         text                               null comment '正文（Markdown格式）',
-    images          json                               null comment '配图列表（JSON数组）',
+    fullContent     text                               null comment '完整图文（Markdown格式，含配图）',
+    coverImage      varchar(512)                       null comment '封面图 URL',
+    images          json                               null comment '配图列表（JSON数组，包含封面图 position=1）',
     status          varchar(20) default 'PENDING'      not null comment '状态：PENDING/PROCESSING/COMPLETED/FAILED',
     errorMessage    text                               null comment '错误信息',
     createTime      datetime    default CURRENT_TIMESTAMP not null comment '创建时间',

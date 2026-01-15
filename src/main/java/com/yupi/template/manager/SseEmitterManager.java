@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.yupi.template.constant.ArticleConstant.SSE_RECONNECT_TIME_MS;
+import static com.yupi.template.constant.ArticleConstant.SSE_TIMEOUT_MS;
+
 /**
  * SSE Emitter 管理器
  *
@@ -23,18 +26,13 @@ public class SseEmitterManager {
     private final Map<String, SseEmitter> emitterMap = new ConcurrentHashMap<>();
 
     /**
-     * 超时时间：30分钟
-     */
-    private static final long TIMEOUT = 30 * 60 * 1000;
-
-    /**
      * 创建 SseEmitter
      *
      * @param taskId 任务ID
      * @return SseEmitter
      */
     public SseEmitter createEmitter(String taskId) {
-        SseEmitter emitter = new SseEmitter(TIMEOUT);
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
         
         // 设置超时回调
         emitter.onTimeout(() -> {
@@ -76,7 +74,7 @@ public class SseEmitterManager {
         try {
             emitter.send(SseEmitter.event()
                     .data(message)
-                    .reconnectTime(3000));
+                    .reconnectTime(SSE_RECONNECT_TIME_MS));
             log.debug("SSE 消息发送成功, taskId={}, message={}", taskId, message);
         } catch (IOException e) {
             log.error("SSE 消息发送失败, taskId={}", taskId, e);

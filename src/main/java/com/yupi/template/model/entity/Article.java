@@ -1,14 +1,17 @@
 package com.yupi.template.model.entity;
 
+import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
-import com.mybatisflex.core.handler.JacksonTypeHandler;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 文章实体类
@@ -16,8 +19,14 @@ import java.util.List;
  * @author <a href="https://codefather.cn">编程导航学习圈</a>
  */
 @Data
-@Table(value = "article")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(value = "article", camelToUnderline = false)
 public class Article implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * id
@@ -56,12 +65,22 @@ public class Article implements Serializable {
     private String outline;
 
     /**
-     * 正文（Markdown格式）
+     * 正文（Markdown格式，不含图片）
      */
     private String content;
 
     /**
-     * 配图列表（JSON数组）
+     * 完整图文（Markdown格式，含图片）
+     */
+    private String fullContent;
+
+    /**
+     * 封面图 URL
+     */
+    private String coverImage;
+
+    /**
+     * 配图列表（JSON数组，包含封面图 position=1）
      */
     private String images;
 
@@ -93,7 +112,7 @@ public class Article implements Serializable {
     /**
      * 是否删除
      */
+    @Column(isLogicDelete = true)
     private Integer isDelete;
 
-    private static final long serialVersionUID = 1L;
 }

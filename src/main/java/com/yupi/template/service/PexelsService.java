@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.yupi.template.config.PexelsConfig;
+import com.yupi.template.model.enums.ImageMethodEnum;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
 import java.io.IOException;
 
+import static com.yupi.template.constant.ArticleConstant.*;
+
 /**
  * Pexels 图片检索服务
  *
@@ -20,24 +23,17 @@ import java.io.IOException;
  */
 @Service
 @Slf4j
-public class PexelsService {
+public class PexelsService implements ImageSearchService {
 
     @Resource
     private PexelsConfig pexelsConfig;
 
     private final OkHttpClient httpClient = new OkHttpClient();
 
-    private static final String PEXELS_API_URL = "https://api.pexels.com/v1/search";
-
-    /**
-     * 根据关键词检索图片
-     *
-     * @param keywords 搜索关键词
-     * @return 图片 URL
-     */
+    @Override
     public String searchImage(String keywords) {
         try {
-            String url = PEXELS_API_URL + "?query=" + keywords + "&per_page=1&orientation=landscape";
+            String url = buildSearchUrl(keywords);
             
             Request request = new Request.Builder()
                     .url(url)
@@ -51,17 +47,7 @@ public class PexelsService {
                 }
 
                 String responseBody = response.body().string();
-                JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
-                JsonArray photos = jsonObject.getAsJsonArray("photos");
-                
-                if (photos.size() == 0) {
-                    log.warn("Pexels 未检索到图片: {}", keywords);
-                    return null;
-                }
-
-                JsonObject photo = photos.get(0).getAsJsonObject();
-                JsonObject src = photo.getAsJsonObject("src");
-                return src.get("large").getAsString();
+                return extractImageUrl(responseBody, keywords);
             }
         } catch (IOException e) {
             log.error("Pexels API 调用异常", e);
@@ -69,13 +55,48 @@ public class PexelsService {
         }
     }
 
-    /**
-     * 降级方案：使用 picsum 随机图片
-     *
-     * @param position 位置序号
-     * @return 图片 URL
-     */
+    @Override
+    public ImageMethodEnum getMethod() {
+        return ImageMethodEnum.PEXELS;
+    }
+
+    @Override
     public String getFallbackImage(int position) {
-        return "https://picsum.photos/800/600?random=" + position;
+        return String.format(PICSUM_URL_TEMPLATE, position);
+    }
+
+    /**
+     * 构建搜索 URL
+     *
+     * @param keywords 搜索关键词
+     * @return 完整的搜索 URL
+     */
+    private String buildSearchUrl(String keywords) {
+        return String.format("%s?query=%s&per_page=%d&orientation=%s",
+                PEXELS_API_URL,
+                keywords,
+                PEXELS_PER_PAGE,
+                PEXELS_ORIENTATION_LANDSCAPE);
+    }
+
+    /**
+     * 从响应中提取图片 URL
+     *
+     * @param responseBody 响应体
+     * @param keywords     搜索关键词（用于日志）
+     * @return 图片 URL，未找到返回 null
+     */
+    private String extractImageUrl(String responseBody, String keywords) {
+        JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
+        JsonArray photos = jsonObject.getAsJsonArray("photos");
+        
+        if (photos.isEmpty()) {
+            log.warn("Pexels 未检索到图片: {}", keywords);
+            return null;
+        }
+
+        JsonObject photo = photos.get(0).getAsJsonObject();
+        JsonObject src = photo.getAsJsonObject("src");
+        return src.get("large").getAsString();
     }
 }

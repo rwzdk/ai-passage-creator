@@ -1,4 +1,41 @@
 declare namespace API {
+  type ArticleCreateRequest = {
+    topic?: string
+  }
+
+  type ArticleQueryRequest = {
+    pageNum?: number
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    userId?: number
+    status?: string
+  }
+
+  type ArticleVO = {
+    id?: number
+    taskId?: string
+    userId?: number
+    topic?: string
+    mainTitle?: string
+    subTitle?: string
+    outline?: OutlineItem[]
+    content?: string
+    fullContent?: string
+    coverImage?: string
+    images?: ImageItem[]
+    status?: string
+    errorMessage?: string
+    createTime?: string
+    completedTime?: string
+  }
+
+  type BaseResponseArticleVO = {
+    code?: number
+    data?: ArticleVO
+    message?: string
+  }
+
   type BaseResponseBoolean = {
     code?: number
     data?: boolean
@@ -17,9 +54,21 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponsePageArticleVO = {
+    code?: number
+    data?: PageArticleVO
+    message?: string
+  }
+
   type BaseResponsePageUserVO = {
     code?: number
     data?: PageUserVO
+    message?: string
+  }
+
+  type BaseResponseString = {
+    code?: number
+    data?: string
     message?: string
   }
 
@@ -35,14 +84,16 @@ declare namespace API {
     message?: string
   }
 
-  type BaseResponseString = {
-    code?: number
-    data?: string
-    message?: string
-  }
-
   type DeleteRequest = {
     id?: number
+  }
+
+  type getArticleParams = {
+    taskId: string
+  }
+
+  type getProgressParams = {
+    taskId: string
   }
 
   type getUserByIdParams = {
@@ -53,6 +104,15 @@ declare namespace API {
     id: number
   }
 
+  type ImageItem = {
+    position?: number
+    url?: string
+    method?: string
+    keywords?: string
+    sectionTitle?: string
+    description?: string
+  }
+
   type LoginUserVO = {
     id?: number
     userAccount?: string
@@ -60,8 +120,24 @@ declare namespace API {
     userAvatar?: string
     userProfile?: string
     userRole?: string
+    quota?: number
     createTime?: string
     updateTime?: string
+  }
+
+  type OutlineItem = {
+    section?: number
+    title?: string
+    points?: string[]
+  }
+
+  type PageArticleVO = {
+    records?: ArticleVO[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
   }
 
   type PageUserVO = {
@@ -73,6 +149,10 @@ declare namespace API {
     optimizeCountQuery?: boolean
   }
 
+  type SseEmitter = {
+    timeout?: number
+  }
+
   type User = {
     id?: number
     userAccount?: string
@@ -81,6 +161,7 @@ declare namespace API {
     userAvatar?: string
     userProfile?: string
     userRole?: string
+    quota?: number
     editTime?: string
     createTime?: string
     updateTime?: string

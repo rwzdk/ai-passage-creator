@@ -1,0 +1,22 @@
+# 本地开发环境配置示例
+# 使用说明：将此文件复制为 application-local.yml，并填写实际的 API Key
+# @author <a href="https://codefather.cn">编程导航学习圈</a>
+
+spring:
+  # Spring AI Alibaba 配置
+  ai:
+    alibaba:
+      dashscope:
+        api-key: your-dashscope-api-key  # 请在 https://bailian.console.aliyun.com/?apiKey=1&tab=api#/api 获取
+
+# Pexels API 配置
+pexels:
+  api-key: your-pexels-api-key  # 请在 https://www.pexels.com/api/ 注册获取
+
+# 腾讯云 COS 配置（可选，MVP 阶段可以不配置）
+tencent:
+  cos:
+    secret-id: your-secret-id
+    secret-key: your-secret-key
+    region: ap-guangzhou
+    bucket: your-bucket

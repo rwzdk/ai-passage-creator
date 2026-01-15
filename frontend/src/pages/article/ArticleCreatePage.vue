@@ -1,33 +1,66 @@
 <template>
   <div class="article-create-page">
-    <div class="container">
-      <!-- 标题区域 -->
-      <div class="header">
-        <h1 class="title">AI 爆款文章创作器</h1>
-        <p class="subtitle">让 AI 帮你创作10万+爆款文章</p>
-      </div>
+    <!-- 三栏布局容器 -->
+    <div class="create-layout">
+      <!-- 左侧：智能体流程可视化 -->
+      <aside class="sidebar-left">
+        <div class="sidebar-header">
+          <h3 class="sidebar-title">创作流程</h3>
+          <p class="sidebar-subtitle">智能体协作可视化</p>
+        </div>
 
-      <!-- 输入区域 -->
-      <div v-if="!isCreating && !isCompleted" class="input-section">
-        <a-card :bordered="false" class="input-card">
-          <a-form layout="vertical">
-            <a-form-item label="请输入您想创作的文章选题">
+        <div class="flow-timeline">
+          <div
+            v-for="(step, index) in agentSteps"
+            :key="index"
+            :class="['flow-item', {
+              'active': currentStep === index,
+              'completed': currentStep > index,
+              'pending': currentStep < index
+            }]"
+          >
+            <div class="flow-indicator">
+              <LoadingOutlined v-if="currentStep === index && isCreating" class="spin-icon" />
+              <CheckCircleOutlined v-else-if="currentStep > index" />
+              <span v-else class="step-number">{{ index + 1 }}</span>
+            </div>
+            <div class="flow-content">
+              <div class="flow-title">{{ step.title }}</div>
+              <div class="flow-desc">{{ step.description }}</div>
+              <div v-if="currentStep === index && isCreating" class="flow-status">
+                <span class="status-dot"></span>
+                执行中...
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- 中间：主内容区 -->
+      <main ref="mainContentRef" class="main-content">
+        <!-- 输入状态 -->
+        <div v-if="!isCreating && !isCompleted" class="input-state">
+          <div class="input-card">
+            <div class="input-header">
+              <h1 class="input-title">创作新文章</h1>
+              <p class="input-subtitle">输入选题，AI 帮你生成爆款文章</p>
+            </div>
+
+            <div class="input-area">
               <a-textarea
                 v-model:value="topic"
-                placeholder="例如：2026年AI如何改变职场"
-                :rows="4"
+                placeholder="请输入您想创作的文章选题，例如：2026年AI如何改变职场"
+                :rows="6"
                 :maxlength="500"
                 show-count
-                class="topic-input"
+                class="topic-textarea"
               />
-            </a-form-item>
-            <a-form-item>
               <a-button
                 type="primary"
                 size="large"
-                block
                 :loading="isCreating"
-                :disabled="!topic.trim()"
+                :disabled="!topic.trim() || !hasQuota"
                 @click="startCreate"
                 class="create-btn"
               >
@@ -36,133 +69,383 @@
                 </template>
                 开始创作
               </a-button>
-            </a-form-item>
-          </a-form>
-        </a-card>
-      </div>
+              <div v-if="!hasQuota" class="quota-warning">
+                <WarningOutlined />
+                <span>配额已用完，无法创建文章</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <!-- 创作进度区域 -->
-      <div v-if="isCreating" class="progress-section">
-        <a-card :bordered="false" class="progress-card">
-          <!-- 进度步骤 -->
-          <a-steps :current="currentStep" class="steps">
-            <a-step title="生成标题" />
-            <a-step title="生成大纲" />
-            <a-step title="生成正文" />
-            <a-step title="分析配图" />
-            <a-step title="生成配图" />
-          </a-steps>
+        <!-- 创作进行中 -->
+        <div v-if="isCreating && !isCompleted" class="creating-state">
+          <!-- 标题预览 -->
+          <div v-if="article.mainTitle" class="preview-header">
+            <h1 class="article-title">{{ article.mainTitle }}</h1>
+            <p class="article-subtitle">{{ article.subTitle }}</p>
+          </div>
 
-          <!-- 实时内容展示 -->
+          <!-- 大纲预览（流式解析展示） -->
+          <div v-if="outlineRaw" class="outline-preview">
+            <div class="section-label">
+              <BulbOutlined />
+              <span>文章大纲</span>
+              <span v-if="isOutlineStreaming" class="typing-cursor">|</span>
+            </div>
+            <div class="outline-list">
+              <div
+                v-for="item in parsedOutline"
+                :key="item.section"
+                class="outline-item"
+              >
+                <div class="outline-title">{{ item.section }}. {{ item.title }}</div>
+                <ul class="outline-points">
+                  <li v-for="(point, idx) in item.points" :key="idx">{{ point }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- 正文预览（流式输出） -->
+          <div v-if="article.content" class="content-preview">
+            <div v-html="markdownToHtml(article.content)" class="markdown-body"></div>
+            <span v-if="isStreaming" class="typing-cursor">|</span>
+          </div>
+
+          <!-- 配图进度 -->
+          <div v-if="currentStep === 4 && imageProgress > 0" class="image-progress-box">
+            <div class="progress-header">
+              <PictureOutlined />
+              <span>正在生成配图</span>
+            </div>
+            <a-progress :percent="imageProgress" status="active" :stroke-color="{ from: '#22C55E', to: '#16A34A' }" />
+            <p class="progress-hint">{{ imageCount }}/{{ totalImages }} 张图片已完成</p>
+          </div>
+
+          <!-- 加载占位 -->
+          <div v-if="currentStep === 0 && !article.mainTitle" class="loading-placeholder">
+            <a-spin size="large" />
+            <p>AI 正在构思标题...</p>
+          </div>
+        </div>
+
+        <!-- 创作完成 -->
+        <div v-if="isCompleted" class="completed-state">
+          <div class="success-header">
+            <CheckCircleFilled class="success-icon" />
+            <span>文章创作完成！</span>
+          </div>
+
+          <div class="preview-header">
+            <h1 class="article-title">{{ article.mainTitle }}</h1>
+            <p class="article-subtitle">{{ article.subTitle }}</p>
+          </div>
           <div class="content-preview">
-            <!-- 标题 -->
-            <div v-if="article.mainTitle" class="section">
-              <h2 class="section-title">📝 文章标题</h2>
-              <div class="title-box">
-                <h3>{{ article.mainTitle }}</h3>
-                <p class="subtitle-text">{{ article.subTitle }}</p>
+            <div v-html="markdownToHtml(article.fullContent || article.content)" class="markdown-body"></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- 右侧：辅助面板 -->
+      <aside class="sidebar-right">
+        <!-- 配额信息 -->
+        <div v-if="!isCreating && !isCompleted" class="panel-section quota-section">
+          <h4 class="panel-title">
+            <CrownOutlined />
+            创作配额
+          </h4>
+          <div v-if="isAdmin" class="quota-admin">
+            <span class="quota-badge admin">管理员</span>
+            <span class="quota-text">无限次</span>
+          </div>
+          <div v-else class="quota-info">
+            <div class="quota-display">
+              <span class="quota-number" :class="{ 'low': quota <= 1, 'empty': quota === 0 }">{{ quota }}</span>
+              <span class="quota-unit">次</span>
+            </div>
+            <div class="quota-label">剩余可用</div>
+            <a-progress 
+              :percent="(quota / 5) * 100" 
+              :show-info="false" 
+              :stroke-color="quota <= 1 ? '#ff4d4f' : '#22C55E'"
+              size="small"
+              class="quota-progress"
+            />
+          </div>
+        </div>
+
+        <!-- 热门选题 -->
+        <div v-if="!isCreating && !isCompleted" class="panel-section">
+          <h4 class="panel-title">
+            <BulbOutlined />
+            热门选题
+          </h4>
+          <div class="hot-tags">
+            <span
+              v-for="example in exampleTopics"
+              :key="example"
+              class="hot-tag"
+              @click="topic = example"
+            >
+              {{ example }}
+            </span>
+          </div>
+        </div>
+
+        <!-- 创作技巧 -->
+        <div v-if="!isCreating && !isCompleted" class="panel-section">
+          <h4 class="panel-title">
+            <StarOutlined />
+            爆款技巧
+          </h4>
+          <div class="tips-list">
+            <div class="tip-item">
+              <div class="tip-icon">1</div>
+              <div class="tip-content">
+                <div class="tip-title">抓住痛点</div>
+                <div class="tip-desc">直击用户最关心的问题</div>
               </div>
             </div>
-
-            <!-- 大纲 -->
-            <div v-if="article.outline && article.outline.length > 0" class="section">
-              <h2 class="section-title">📋 文章大纲</h2>
-              <div class="outline-box">
-                <div v-for="item in article.outline" :key="item.section" class="outline-item">
-                  <div class="outline-title">{{ item.section }}. {{ item.title }}</div>
-                  <ul class="outline-points">
-                    <li v-for="(point, idx) in item.points" :key="idx">{{ point }}</li>
-                  </ul>
-                </div>
+            <div class="tip-item">
+              <div class="tip-icon">2</div>
+              <div class="tip-content">
+                <div class="tip-title">制造悬念</div>
+                <div class="tip-desc">让读者产生好奇心</div>
               </div>
             </div>
-
-            <!-- 正文 -->
-            <div v-if="article.content" class="section">
-              <h2 class="section-title">✍️ 文章正文</h2>
-              <div class="content-box">
-                <div v-html="markdownToHtml(article.content)" class="markdown-content"></div>
-                <div v-if="isStreaming" class="cursor-blink">|</div>
-              </div>
-            </div>
-
-            <!-- 配图 -->
-            <div v-if="article.images && article.images.length > 0" class="section">
-              <h2 class="section-title">🖼️ 文章配图</h2>
-              <div class="images-grid">
-                <div v-for="image in article.images" :key="image.position" class="image-item">
-                  <img :src="image.url" :alt="image.description" />
-                  <div class="image-info">
-                    <span class="badge">{{ image.method }}</span>
-                    <span class="keywords">{{ image.keywords }}</span>
-                  </div>
-                </div>
+            <div class="tip-item">
+              <div class="tip-icon">3</div>
+              <div class="tip-content">
+                <div class="tip-title">数字吸引</div>
+                <div class="tip-desc">使用具体数据增加说服力</div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- 加载动画 -->
-          <div v-if="!isCompleted" class="loading-indicator">
-            <a-spin tip="AI 正在创作中..." />
+        <!-- 创作进行中的提示 -->
+        <div v-if="isCreating && !isCompleted" class="panel-section">
+          <h4 class="panel-title">
+            <ClockCircleOutlined />
+            创作进度
+          </h4>
+          <div class="progress-info">
+            <div class="progress-step">
+              <span class="step-label">当前步骤</span>
+              <span class="step-value">{{ agentSteps[currentStep]?.title }}</span>
+            </div>
+            <div class="progress-step">
+              <span class="step-label">已完成</span>
+              <span class="step-value">{{ currentStep }}/{{ agentSteps.length }}</span>
+            </div>
           </div>
-        </a-card>
-      </div>
+          <div class="progress-tip">
+            <InfoCircleOutlined />
+            <span>AI 正在努力创作中，请耐心等待...</span>
+          </div>
+        </div>
 
-      <!-- 完成区域 -->
-      <div v-if="isCompleted" class="complete-section">
-        <a-result
-          status="success"
-          title="文章创作完成!"
-          sub-title="您的爆款文章已经生成,快去查看吧~"
-        >
-          <template #extra>
-            <a-space>
-              <a-button type="primary" @click="viewArticle">查看文章</a-button>
-              <a-button @click="resetCreate">再创作一篇</a-button>
-            </a-space>
-          </template>
-        </a-result>
-      </div>
+        <!-- 操作按钮 -->
+        <div v-if="isCompleted" class="panel-section">
+          <h4 class="panel-title">
+            <ThunderboltOutlined />
+            快捷操作
+          </h4>
+          <div class="action-list">
+            <a-button block @click="copyContent" class="action-btn">
+              <CopyOutlined />
+              复制全文
+            </a-button>
+            <a-button block @click="viewArticle" class="action-btn">
+              <EyeOutlined />
+              查看详情
+            </a-button>
+            <a-button block type="primary" @click="resetCreate" class="action-btn primary">
+              <RedoOutlined />
+              再创作一篇
+            </a-button>
+          </div>
+        </div>
 
-      <!-- 错误提示 -->
-      <a-modal
-        v-model:open="errorVisible"
-        title="创作失败"
-        @ok="errorVisible = false"
-      >
-        <p>{{ errorMessage }}</p>
-      </a-modal>
+        <!-- 完成后的统计 -->
+        <div v-if="isCompleted" class="panel-section stats-section">
+          <h4 class="panel-title">
+            <BarChartOutlined />
+            文章统计
+          </h4>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-value">{{ (article.fullContent || article.content || '').length }}</div>
+              <div class="stat-label">字数</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">{{ article.images?.length || 0 }}</div>
+              <div class="stat-label">配图</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部帮助链接 -->
+        <div class="panel-footer">
+          <a class="help-link">
+            <QuestionCircleOutlined />
+            使用帮助
+          </a>
+          <a class="help-link">
+            <MessageOutlined />
+            反馈建议
+          </a>
+        </div>
+      </aside>
     </div>
+
+    <!-- 错误提示 -->
+    <a-modal
+      v-model:open="errorVisible"
+      title="创作失败"
+      @ok="errorVisible = false"
+    >
+      <p>{{ errorMessage }}</p>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onBeforeUnmount, onMounted, nextTick, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { RocketOutlined } from '@ant-design/icons-vue'
-import { createArticle, type ArticleVO, type OutlineItem, type ImageItem } from '@/api/articleController'
+import { useLoginUserStore } from '@/stores/loginUser'
+import { USER_ROLE_ADMIN } from '@/constants/user'
+import {
+  RocketOutlined,
+  LoadingOutlined,
+  CheckCircleOutlined,
+  CheckCircleFilled,
+  CopyOutlined,
+  EyeOutlined,
+  RedoOutlined,
+  ThunderboltOutlined,
+  BulbOutlined,
+  StarOutlined,
+  ClockCircleOutlined,
+  InfoCircleOutlined,
+  BarChartOutlined,
+  QuestionCircleOutlined,
+  MessageOutlined,
+  PictureOutlined,
+  WarningOutlined,
+  CrownOutlined
+} from '@ant-design/icons-vue'
+import { createArticle } from '@/api/articleController'
 import { connectSSE, closeSSE, type SSEMessage } from '@/utils/sse'
 import { marked } from 'marked'
 
 const router = useRouter()
+const route = useRoute()
+const loginUserStore = useLoginUserStore()
+
+// 配额相关计算属性
+const isAdmin = computed(() => loginUserStore.loginUser.userRole === USER_ROLE_ADMIN)
+const quota = computed(() => loginUserStore.loginUser.quota ?? 0)
+const hasQuota = computed(() => isAdmin.value || quota.value > 0)
+
+// 智能体步骤（对应后端 6 个步骤）
+const agentSteps = [
+  { title: '生成标题', description: 'AI 分析选题，生成吸睛标题' },
+  { title: '规划大纲', description: '构建文章结构，理清脉络' },
+  { title: '撰写正文', description: '流式生成高质量文章内容' },
+  { title: '分析配图', description: '智能分析配图需求和位置' },
+  { title: '生成配图', description: '自动匹配高清无版权图片' },
+  { title: '图文合成', description: '将配图插入正文，完美呈现' },
+]
+
+// 示例选题
+const exampleTopics = [
+  '2026年AI如何改变职场',
+  '程序员如何提升竞争力',
+  '远程办公的利与弊',
+  '如何培养深度思考',
+  '新能源汽车趋势',
+  '健康饮食指南',
+]
 
 // 状态
 const topic = ref('')
 const isCreating = ref(false)
 const isCompleted = ref(false)
 const isStreaming = ref(false)
+const isOutlineStreaming = ref(false)
 const currentStep = ref(0)
 const taskId = ref('')
 const errorVisible = ref(false)
 const errorMessage = ref('')
 
+// 大纲数据（流式）
+const outlineRaw = ref('')
+
+// 大纲项类型
+interface OutlineItem {
+  title: string
+  points: string[]
+  section: number
+}
+
+// 解析大纲 JSON（格式为 { "sections": [...] }）
+const parsedOutline = computed<OutlineItem[]>(() => {
+  if (!outlineRaw.value) return []
+
+  const str = outlineRaw.value.trim()
+
+  // 尝试解析完整的 JSON
+  try {
+    const parsed = JSON.parse(str)
+    if (parsed && Array.isArray(parsed.sections)) {
+      return parsed.sections
+    }
+    return []
+  } catch {
+    // JSON 不完整时，尝试解析已完成的部分
+    try {
+      // 找到最后一个完整的 section 对象 }
+      // 格式: { "sections": [ {...}, {...} ] }
+      const sectionsMatch = str.match(/"sections"\s*:\s*\[/)
+      if (!sectionsMatch) return []
+
+      const sectionsStart = str.indexOf('[', sectionsMatch.index)
+      if (sectionsStart === -1) return []
+
+      // 从 sections 数组开始，找到最后一个完整的 }
+      const afterStart = str.substring(sectionsStart)
+      const lastBrace = afterStart.lastIndexOf('}')
+
+      if (lastBrace > 0) {
+        const partialArray = afterStart.substring(0, lastBrace + 1) + ']'
+        const parsed = JSON.parse(partialArray)
+        if (Array.isArray(parsed)) {
+          return parsed
+        }
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+})
+
+// 内容区域引用（用于自动滚动）
+const mainContentRef = ref<HTMLElement | null>(null)
+
+// 配图进度
+const imageCount = ref(0)
+const totalImages = ref(5)
+const imageProgress = ref(0)
+
 // 文章数据
-const article = ref<Partial<ArticleVO>>({
+const article = ref<Partial<API.ArticleVO>>({
   mainTitle: '',
   subTitle: '',
-  outline: [],
   content: '',
+  fullContent: '',
   images: [],
 })
 
@@ -173,10 +456,24 @@ const markdownToHtml = (markdown: string) => {
   return marked(markdown)
 }
 
+// 自动滚动到底部
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (mainContentRef.value) {
+      mainContentRef.value.scrollTop = mainContentRef.value.scrollHeight
+    }
+  })
+}
+
 // 开始创作
 const startCreate = async () => {
   if (!topic.value.trim()) {
     message.warning('请输入选题')
+    return
+  }
+
+  if (!hasQuota.value) {
+    message.error('配额不足，无法创建文章')
     return
   }
 
@@ -186,7 +483,10 @@ const startCreate = async () => {
   try {
     // 创建任务
     const res = await createArticle({ topic: topic.value })
-    taskId.value = res.data
+    taskId.value = res.data.data
+
+    // 刷新用户信息（更新配额）
+    await loginUserStore.fetchLoginUser()
 
     // 建立 SSE 连接
     eventSource = connectSSE(taskId.value, {
@@ -206,42 +506,65 @@ const handleSSEMessage = (msg: SSEMessage) => {
 
   switch (msg.type) {
     case 'AGENT1_COMPLETE':
+      // 标题生成完成，进入大纲步骤
       currentStep.value = 1
-      article.value.mainTitle = msg.data?.mainTitle || msg.title?.mainTitle
-      article.value.subTitle = msg.data?.subTitle || msg.title?.subTitle
+      article.value.mainTitle = msg.title?.mainTitle
+      article.value.subTitle = msg.title?.subTitle
+      break
+
+    case 'AGENT2_STREAMING':
+      // 大纲流式输出
+      isOutlineStreaming.value = true
+      outlineRaw.value += msg.content || ''
+      scrollToBottom()
       break
 
     case 'AGENT2_COMPLETE':
+      // 大纲完成，进入正文步骤
+      isOutlineStreaming.value = false
       currentStep.value = 2
-      article.value.outline = msg.data || msg.outline
       break
 
     case 'AGENT3_STREAMING':
+      // 正文流式输出
       isStreaming.value = true
-      article.value.content += msg.data?.content || msg.content || ''
+      article.value.content += msg.content || ''
+      scrollToBottom()
       break
 
     case 'AGENT3_COMPLETE':
-      currentStep.value = 3
+      // 正文完成，进入配图分析步骤
       isStreaming.value = false
+      currentStep.value = 3
       break
 
     case 'AGENT4_COMPLETE':
+      // 配图分析完成，进入配图生成步骤
       currentStep.value = 4
+      totalImages.value = msg.imageRequirements?.length || 5
       break
 
     case 'IMAGE_COMPLETE':
-      if (!article.value.images) {
-        article.value.images = []
-      }
-      article.value.images.push(msg.data || msg.image)
+      // 单张配图完成
+      imageCount.value++
+      imageProgress.value = Math.round((imageCount.value / totalImages.value) * 100)
       break
 
     case 'AGENT5_COMPLETE':
+      // 所有配图完成，进入图文合成步骤
       currentStep.value = 5
+      article.value.images = msg.images
+      break
+
+    case 'MERGE_COMPLETE':
+      // 图文合成完成
+      article.value.fullContent = msg.fullContent
+      scrollToBottom()
       break
 
     case 'ALL_COMPLETE':
+      // 全部完成
+      currentStep.value = 6
       isCompleted.value = true
       message.success('文章创作完成!')
       break
@@ -266,7 +589,18 @@ const handleSSEComplete = () => {
   console.log('SSE连接关闭')
 }
 
-// 查看文章
+// 复制全文
+const copyContent = async () => {
+  const content = article.value.fullContent || article.value.content || ''
+  try {
+    await navigator.clipboard.writeText(content)
+    message.success('已复制到剪贴板')
+  } catch {
+    message.error('复制失败')
+  }
+}
+
+// 查看文章详情
 const viewArticle = () => {
   router.push(`/article/${taskId.value}`)
 }
@@ -276,15 +610,27 @@ const resetCreate = () => {
   topic.value = ''
   isCreating.value = false
   isCompleted.value = false
+  isStreaming.value = false
+  isOutlineStreaming.value = false
   currentStep.value = 0
+  imageCount.value = 0
+  imageProgress.value = 0
+  outlineRaw.value = ''
   article.value = {
     mainTitle: '',
     subTitle: '',
-    outline: [],
     content: '',
+    fullContent: '',
     images: [],
   }
 }
+
+// 组件挂载时检查路由参数
+onMounted(() => {
+  if (route.query.topic) {
+    topic.value = route.query.topic as string
+  }
+})
 
 // 组件卸载前关闭 SSE
 onBeforeUnmount(() => {
@@ -294,220 +640,790 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .article-create-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px 20px;
+  height: calc(100vh - 64px);
+  background: var(--color-background-secondary);
+  overflow: hidden;
+}
 
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
+.create-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr 300px;
+  height: 100%;
+}
+
+/* 左侧边栏 */
+.sidebar-left {
+  background: white;
+  border-right: 1px solid var(--color-border);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.sidebar-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--color-text);
+}
+
+.sidebar-subtitle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.flow-timeline {
+  flex: 1;
+}
+
+.flow-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  position: relative;
+
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 44px;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-border);
   }
 
-  .header {
-    text-align: center;
-    margin-bottom: 40px;
+  &.completed::before {
+    background: var(--color-primary);
+  }
+
+  &.active::before {
+    background: linear-gradient(180deg, var(--color-primary) 50%, var(--color-border) 50%);
+  }
+}
+
+.flow-indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+  transition: all var(--transition-normal);
+
+  .pending & {
+    background: var(--color-background-tertiary);
+    color: var(--color-text-muted);
+    border: 2px solid var(--color-border);
+  }
+
+  .active & {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--color-primary);
+    border: 2px solid var(--color-primary);
+  }
+
+  .completed & {
+    background: var(--color-primary);
     color: white;
-
-    .title {
-      font-size: 48px;
-      font-weight: 700;
-      margin: 0 0 16px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .subtitle {
-      font-size: 20px;
-      opacity: 0.9;
-      margin: 0;
-    }
   }
 
-  .input-card,
-  .progress-card {
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-
-    :deep(.ant-card-body) {
-      padding: 40px;
-    }
-  }
-
-  .topic-input {
-    font-size: 16px;
-    border-radius: 8px;
-  }
-
-  .create-btn {
-    height: 56px;
-    font-size: 18px;
+  .step-number {
     font-weight: 600;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
-    }
   }
 
-  .steps {
-    margin-bottom: 40px;
+  .spin-icon {
+    animation: spin 1s linear infinite;
+  }
+}
+
+.flow-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.flow-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 2px;
+
+  .pending & {
+    color: var(--color-text-muted);
   }
 
-  .content-preview {
-    .section {
-      margin-bottom: 32px;
+  .active & {
+    color: var(--color-primary-dark);
+  }
+}
 
-      .section-title {
-        font-size: 20px;
-        font-weight: 600;
-        margin-bottom: 16px;
-        color: #1890ff;
-      }
-    }
+.flow-desc {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
 
-    .title-box {
-      padding: 24px;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      border-radius: 12px;
+.flow-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 500;
+}
 
-      h3 {
-        font-size: 28px;
-        font-weight: 700;
-        margin: 0 0 12px;
-        color: #1a1a1a;
-      }
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: pulse 1.5s infinite;
+}
 
-      .subtitle-text {
-        font-size: 16px;
-        color: #666;
-        margin: 0;
-      }
-    }
 
-    .outline-box {
-      .outline-item {
-        margin-bottom: 16px;
-        padding: 16px;
-        background: #f5f5f5;
-        border-radius: 8px;
+/* 主内容区 */
+.main-content {
+  padding: 32px 40px;
+  overflow-y: auto;
+  background: white;
+}
 
-        .outline-title {
-          font-size: 16px;
-          font-weight: 600;
-          margin-bottom: 8px;
-        }
+/* 输入状态 */
+.input-state {
+  max-width: 700px;
+  margin: 0 auto;
+  padding-top: 60px;
+}
 
-        .outline-points {
-          margin: 0;
-          padding-left: 20px;
+.input-card {
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+}
 
-          li {
-            margin-bottom: 4px;
-            color: #666;
-          }
-        }
-      }
-    }
+.input-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
 
-    .content-box {
-      padding: 24px;
-      background: #fff;
-      border: 1px solid #e8e8e8;
-      border-radius: 8px;
-      position: relative;
+.input-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--color-text);
+}
 
-      .markdown-content {
-        line-height: 1.8;
-        font-size: 16px;
+.input-subtitle {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
 
-        :deep(h2) {
-          font-size: 24px;
-          font-weight: 600;
-          margin: 24px 0 16px;
-          padding-bottom: 8px;
-          border-bottom: 2px solid #eee;
-        }
+.input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-        :deep(p) {
-          margin-bottom: 16px;
-          text-indent: 2em;
-        }
-      }
+.topic-textarea {
+  font-size: 15px;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  background: white;
 
-      .cursor-blink {
-        display: inline-block;
-        animation: blink 1s infinite;
-      }
-    }
+  &:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  }
+}
 
-    .images-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
+.create-btn.ant-btn {
+  height: 52px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: var(--radius-lg);
+  background: var(--gradient-primary) !important;
+  border: none !important;
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
 
-      .image-item {
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s;
-
-        &:hover {
-          transform: translateY(-4px);
-        }
-
-        img {
-          width: 100%;
-          height: 200px;
-          object-fit: cover;
-        }
-
-        .image-info {
-          padding: 12px;
-          background: #fff;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-
-          .badge {
-            padding: 4px 12px;
-            background: #1890ff;
-            color: white;
-            border-radius: 12px;
-            font-size: 12px;
-          }
-
-          .keywords {
-            font-size: 12px;
-            color: #999;
-          }
-        }
-      }
-    }
+  &:hover,
+  &:focus,
+  &:active {
+    background: var(--gradient-primary) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+    opacity: 0.92;
   }
 
-  .loading-indicator {
-    text-align: center;
-    padding: 40px 0;
+  &:disabled,
+  &.ant-btn-disabled {
+    background: var(--color-border) !important;
+    box-shadow: none !important;
+    opacity: 0.6;
+    color: var(--color-text-muted) !important;
   }
+}
 
-  .complete-section {
-    :deep(.ant-result) {
-      background: white;
-      border-radius: 16px;
-      padding: 60px 40px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+.quota-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: rgba(255, 77, 79, 0.08);
+  border: 1px solid rgba(255, 77, 79, 0.2);
+  border-radius: var(--radius-md);
+  color: #ff4d4f;
+  font-size: 13px;
+}
+
+/* 创作进行中 */
+.creating-state,
+.completed-state {
+  max-width: 100%;
+}
+
+/* 标题区域 */
+.preview-header {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.article-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.article-subtitle {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* 大纲预览 */
+.outline-preview {
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-lg);
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 16px;
+}
+
+.outline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.outline-item {
+  padding: 12px 16px;
+  background: white;
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-primary);
+}
+
+.outline-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+.outline-points {
+  margin: 0;
+  padding-left: 18px;
+
+  li {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin-bottom: 4px;
+
+    &:last-child {
+      margin-bottom: 0;
     }
   }
 }
 
-@keyframes blink {
-  0%, 50% {
-    opacity: 1;
+/* 正文预览 */
+.content-preview {
+  line-height: 1.8;
+}
+
+.markdown-body {
+  line-height: 1.8;
+  font-size: 15px;
+  color: var(--color-text);
+
+  :deep(h2) {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 24px 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
   }
-  51%, 100% {
-    opacity: 0;
+
+  :deep(p) {
+    margin-bottom: 14px;
+    text-indent: 2em;
+  }
+
+  :deep(img) {
+    display: block;
+    max-width: 100%;
+    margin: 20px auto;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.typing-cursor {
+  display: inline-block;
+  animation: blink 1s infinite;
+  color: var(--color-primary);
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.image-progress-box {
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-top: 24px;
+  text-align: center;
+
+  .progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .progress-hint {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--color-text-muted);
+  }
+}
+
+.loading-placeholder {
+  text-align: center;
+  padding: 100px 0;
+
+  p {
+    margin: 16px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 15px;
+  }
+}
+
+/* 完成状态 */
+.success-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-full);
+  margin-bottom: 24px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+
+  .success-icon {
+    font-size: 16px;
+  }
+}
+
+/* 右侧辅助面板 */
+.sidebar-right {
+  background: white;
+  border-left: 1px solid var(--color-border);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.panel-section {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border-light);
+
+  &:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 16px;
+}
+
+/* 配额信息样式 */
+.quota-section {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(34, 197, 94, 0.02) 100%);
+  border-radius: var(--radius-lg);
+  padding: 16px !important;
+  margin: -8px -8px 12px -8px;
+}
+
+.quota-admin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quota-badge {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+
+  &.admin {
+    background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%);
+    color: #7c5c00;
+  }
+}
+
+.quota-text {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.quota-info {
+  text-align: center;
+}
+
+.quota-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+}
+
+.quota-number {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+
+  &.low {
+    color: #faad14;
+  }
+
+  &.empty {
+    color: #ff4d4f;
+  }
+}
+
+.quota-unit {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.quota-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 4px 0 12px;
+}
+
+.quota-progress {
+  max-width: 120px;
+  margin: 0 auto;
+}
+
+/* 热门选题 */
+.hot-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hot-tag {
+  display: inline-block;
+  padding: 8px 12px;
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(34, 197, 94, 0.05);
+    transform: translateY(-1px);
+  }
+}
+
+/* 创作技巧 */
+.tips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: rgba(34, 197, 94, 0.05);
+  }
+}
+
+.tip-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.tip-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tip-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.tip-desc {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* 创作进度信息 */
+.progress-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.progress-step {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+}
+
+.step-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.step-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.progress-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(34, 197, 94, 0.08);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--color-primary-dark);
+  line-height: 1.5;
+
+  .anticon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+/* 文章统计 */
+.stats-section {
+  margin-top: auto;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 16px 12px;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* 底部帮助链接 */
+.panel-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.help-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.action-btn {
+  height: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &.primary {
+    background: var(--gradient-primary);
+    border: none;
+    color: white;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+}
+
+/* 动画 */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* 响应式 */
+@media (max-width: 1400px) {
+  .create-layout {
+    grid-template-columns: 280px 1fr 260px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .create-layout {
+    grid-template-columns: 240px 1fr 220px;
+  }
+}
+
+@media (max-width: 992px) {
+  .article-create-page {
+    height: auto;
+    min-height: calc(100vh - 64px);
+    overflow: visible;
+  }
+
+  .create-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .sidebar-left,
+  .sidebar-right {
+    display: none;
+  }
+
+  .main-content {
+    padding: 20px;
   }
 }
 </style>

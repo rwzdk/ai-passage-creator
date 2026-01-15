@@ -21,17 +21,30 @@
 
 <style scoped>
 .footer {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  background: var(--color-background);
   text-align: center;
-  padding: 20px;
-  margin-top: 40px;
-  border-top: 1px solid rgba(102, 126, 234, 0.1);
+  padding: 24px 20px;
+  margin-top: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .copyright {
   margin: 0;
-  color: #666;
-  font-size: 14px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.author-link {
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast);
+}
+
+.author-link:hover {
+  color: var(--color-text);
 }
 </style>

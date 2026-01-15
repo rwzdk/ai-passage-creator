@@ -1,11 +1,13 @@
 package com.yupi.template.service;
 
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.yupi.template.constant.PromptConstant;
 import com.yupi.template.model.dto.article.ArticleState;
+import com.yupi.template.model.enums.ImageMethodEnum;
+import com.yupi.template.model.enums.SseMessageTypeEnum;
+import com.yupi.template.utils.GsonUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -31,12 +33,10 @@ public class ArticleAgentService {
     private DashScopeChatModel chatModel;
 
     @Resource
-    private PexelsService pexelsService;
+    private ImageSearchService imageSearchService;
 
     @Resource
     private CosService cosService;
-
-    private static final Gson GSON = new Gson();
 
     /**
      * 执行完整的文章生成流程
@@ -49,27 +49,32 @@ public class ArticleAgentService {
             // 智能体1：生成标题
             log.info("智能体1：开始生成标题, taskId={}", state.getTaskId());
             agent1GenerateTitle(state);
-            streamHandler.accept("AGENT1_COMPLETE");
+            streamHandler.accept(SseMessageTypeEnum.AGENT1_COMPLETE.getValue());
 
-            // 智能体2：生成大纲
+            // 智能体2：生成大纲（流式输出）
             log.info("智能体2：开始生成大纲, taskId={}", state.getTaskId());
-            agent2GenerateOutline(state);
-            streamHandler.accept("AGENT2_COMPLETE");
+            agent2GenerateOutline(state, streamHandler);
+            streamHandler.accept(SseMessageTypeEnum.AGENT2_COMPLETE.getValue());
 
             // 智能体3：生成正文（流式输出）
             log.info("智能体3：开始生成正文, taskId={}", state.getTaskId());
             agent3GenerateContent(state, streamHandler);
-            streamHandler.accept("AGENT3_COMPLETE");
+            streamHandler.accept(SseMessageTypeEnum.AGENT3_COMPLETE.getValue());
 
             // 智能体4：分析配图需求
             log.info("智能体4：开始分析配图需求, taskId={}", state.getTaskId());
             agent4AnalyzeImageRequirements(state);
-            streamHandler.accept("AGENT4_COMPLETE");
+            streamHandler.accept(SseMessageTypeEnum.AGENT4_COMPLETE.getValue());
 
             // 智能体5：生成配图
             log.info("智能体5：开始生成配图, taskId={}", state.getTaskId());
             agent5GenerateImages(state, streamHandler);
-            streamHandler.accept("AGENT5_COMPLETE");
+            streamHandler.accept(SseMessageTypeEnum.AGENT5_COMPLETE.getValue());
+
+            // 图文合成：将配图插入正文
+            log.info("开始图文合成, taskId={}", state.getTaskId());
+            mergeImagesIntoContent(state);
+            streamHandler.accept(SseMessageTypeEnum.MERGE_COMPLETE.getValue());
 
             log.info("文章生成完成, taskId={}", state.getTaskId());
         } catch (Exception e) {
@@ -85,72 +90,39 @@ public class ArticleAgentService {
         String prompt = PromptConstant.AGENT1_TITLE_PROMPT
                 .replace("{topic}", state.getTopic());
 
-        ChatResponse response = chatModel.call(new Prompt(new UserMessage(prompt)));
-        String content = response.getResult().getOutput().getText();
-        
-        try {
-            ArticleState.TitleResult titleResult = GSON.fromJson(content, ArticleState.TitleResult.class);
-            state.setTitle(titleResult);
-            log.info("智能体1：标题生成成功, mainTitle={}", titleResult.getMainTitle());
-        } catch (JsonSyntaxException e) {
-            log.error("智能体1：标题解析失败, content={}", content, e);
-            throw new RuntimeException("标题解析失败");
-        }
+        String content = callLlm(prompt);
+        ArticleState.TitleResult titleResult = parseJsonResponse(content, ArticleState.TitleResult.class, "标题");
+        state.setTitle(titleResult);
+        log.info("智能体1：标题生成成功, mainTitle={}", titleResult.getMainTitle());
     }
 
     /**
-     * 智能体2：生成大纲
+     * 智能体2：生成大纲（流式输出）
      */
-    private void agent2GenerateOutline(ArticleState state) {
+    private void agent2GenerateOutline(ArticleState state, Consumer<String> streamHandler) {
         String prompt = PromptConstant.AGENT2_OUTLINE_PROMPT
                 .replace("{mainTitle}", state.getTitle().getMainTitle())
                 .replace("{subTitle}", state.getTitle().getSubTitle());
 
-        ChatResponse response = chatModel.call(new Prompt(new UserMessage(prompt)));
-        String content = response.getResult().getOutput().getText();
-        
-        try {
-            ArticleState.OutlineResult outlineResult = GSON.fromJson(content, ArticleState.OutlineResult.class);
-            state.setOutline(outlineResult);
-            log.info("智能体2：大纲生成成功, sections={}", outlineResult.getSections().size());
-        } catch (JsonSyntaxException e) {
-            log.error("智能体2：大纲解析失败, content={}", content, e);
-            throw new RuntimeException("大纲解析失败");
-        }
+        String content = callLlmWithStreaming(prompt, streamHandler, SseMessageTypeEnum.AGENT2_STREAMING);
+        ArticleState.OutlineResult outlineResult = parseJsonResponse(content, ArticleState.OutlineResult.class, "大纲");
+        state.setOutline(outlineResult);
+        log.info("智能体2：大纲生成成功, sections={}", outlineResult.getSections().size());
     }
 
     /**
      * 智能体3：生成正文（流式输出）
      */
     private void agent3GenerateContent(ArticleState state, Consumer<String> streamHandler) {
-        String outlineText = GSON.toJson(state.getOutline().getSections());
+        String outlineText = GsonUtils.toJson(state.getOutline().getSections());
         String prompt = PromptConstant.AGENT3_CONTENT_PROMPT
                 .replace("{mainTitle}", state.getTitle().getMainTitle())
                 .replace("{subTitle}", state.getTitle().getSubTitle())
                 .replace("{outline}", outlineText);
 
-        StringBuilder contentBuilder = new StringBuilder();
-        
-        Flux<ChatResponse> streamResponse = chatModel.stream(new Prompt(new UserMessage(prompt)));
-        streamResponse.subscribe(
-                response -> {
-                    String chunk = response.getResult().getOutput().getText();
-                    contentBuilder.append(chunk);
-                    // 推送流式内容
-                    streamHandler.accept("AGENT3_STREAMING:" + chunk);
-                },
-                error -> {
-                    log.error("智能体3：正文生成失败", error);
-                    throw new RuntimeException("正文生成失败: " + error.getMessage());
-                },
-                () -> {
-                    state.setContent(contentBuilder.toString());
-                    log.info("智能体3：正文生成成功, length={}", contentBuilder.length());
-                }
-        );
-        
-        // 等待流式输出完成
-        streamResponse.blockLast();
+        String content = callLlmWithStreaming(prompt, streamHandler, SseMessageTypeEnum.AGENT3_STREAMING);
+        state.setContent(content);
+        log.info("智能体3：正文生成成功, length={}", content.length());
     }
 
     /**
@@ -161,20 +133,14 @@ public class ArticleAgentService {
                 .replace("{mainTitle}", state.getTitle().getMainTitle())
                 .replace("{content}", state.getContent());
 
-        ChatResponse response = chatModel.call(new Prompt(new UserMessage(prompt)));
-        String content = response.getResult().getOutput().getText();
-        
-        try {
-            List<ArticleState.ImageRequirement> imageRequirements = GSON.fromJson(
-                    content, 
-                    new TypeToken<List<ArticleState.ImageRequirement>>(){}.getType()
-            );
-            state.setImageRequirements(imageRequirements);
-            log.info("智能体4：配图需求分析成功, count={}", imageRequirements.size());
-        } catch (JsonSyntaxException e) {
-            log.error("智能体4：配图需求解析失败, content={}", content, e);
-            throw new RuntimeException("配图需求解析失败");
-        }
+        String content = callLlm(prompt);
+        List<ArticleState.ImageRequirement> imageRequirements = parseJsonListResponse(
+                content, 
+                new TypeToken<List<ArticleState.ImageRequirement>>(){}, 
+                "配图需求"
+        );
+        state.setImageRequirements(imageRequirements);
+        log.info("智能体4：配图需求分析成功, count={}", imageRequirements.size());
     }
 
     /**
@@ -187,38 +153,154 @@ public class ArticleAgentService {
             log.info("智能体5：开始检索配图, position={}, keywords={}", 
                     requirement.getPosition(), requirement.getKeywords());
             
-            // 调用 Pexels API 检索图片
-            String imageUrl = pexelsService.searchImage(requirement.getKeywords());
+            // 调用图片检索服务
+            String imageUrl = imageSearchService.searchImage(requirement.getKeywords());
             
             // 降级策略
-            String method = "PEXELS";
+            ImageMethodEnum method = imageSearchService.getMethod();
             if (imageUrl == null) {
-                imageUrl = pexelsService.getFallbackImage(requirement.getPosition());
-                method = "PICSUM";
-                log.warn("智能体5：Pexels 检索失败,使用降级方案, position={}", requirement.getPosition());
+                imageUrl = imageSearchService.getFallbackImage(requirement.getPosition());
+                method = ImageMethodEnum.PICSUM;
+                log.warn("智能体5：图片检索失败, 使用降级方案, position={}", requirement.getPosition());
             }
             
             // 使用图片直接 URL（MVP 阶段不上传到 COS，简化流程）
             String finalImageUrl = cosService.useDirectUrl(imageUrl);
             
             // 创建配图结果
-            ArticleState.ImageResult imageResult = new ArticleState.ImageResult();
-            imageResult.setPosition(requirement.getPosition());
-            imageResult.setUrl(finalImageUrl);
-            imageResult.setMethod(method);
-            imageResult.setKeywords(requirement.getKeywords());
-            imageResult.setDescription(requirement.getType());
-            
+            ArticleState.ImageResult imageResult = buildImageResult(requirement, finalImageUrl, method);
             imageResults.add(imageResult);
             
             // 推送单张配图完成
-            streamHandler.accept("IMAGE_COMPLETE:" + GSON.toJson(imageResult));
+            String imageCompleteMessage = SseMessageTypeEnum.IMAGE_COMPLETE.getStreamingPrefix() + GsonUtils.toJson(imageResult);
+            streamHandler.accept(imageCompleteMessage);
             
             log.info("智能体5：配图检索成功, position={}, method={}", 
-                    requirement.getPosition(), method);
+                    requirement.getPosition(), method.getValue());
         }
         
         state.setImages(imageResults);
         log.info("智能体5：所有配图生成完成, count={}", imageResults.size());
     }
+
+    /**
+     * 图文合成：将配图插入正文对应位置
+     */
+    private void mergeImagesIntoContent(ArticleState state) {
+        String content = state.getContent();
+        List<ArticleState.ImageResult> images = state.getImages();
+        
+        if (images == null || images.isEmpty()) {
+            state.setFullContent(content);
+            return;
+        }
+
+        StringBuilder fullContent = new StringBuilder();
+        
+        // 按行处理正文，在章节标题后插入对应图片
+        String[] lines = content.split("\n");
+        for (String line : lines) {
+            fullContent.append(line).append("\n");
+            
+            // 检查是否是章节标题（以 ## 开头）
+            if (line.startsWith("## ")) {
+                String sectionTitle = line.substring(3).trim();
+                insertImageAfterSection(fullContent, images, sectionTitle);
+            }
+        }
+        
+        state.setFullContent(fullContent.toString());
+        log.info("图文合成完成, fullContentLength={}", fullContent.length());
+    }
+
+    // region 辅助方法
+
+    /**
+     * 调用 LLM（非流式）
+     */
+    private String callLlm(String prompt) {
+        ChatResponse response = chatModel.call(new Prompt(new UserMessage(prompt)));
+        return response.getResult().getOutput().getText();
+    }
+
+    /**
+     * 调用 LLM（流式输出）
+     */
+    private String callLlmWithStreaming(String prompt, Consumer<String> streamHandler, SseMessageTypeEnum messageType) {
+        StringBuilder contentBuilder = new StringBuilder();
+        
+        Flux<ChatResponse> streamResponse = chatModel.stream(new Prompt(new UserMessage(prompt)));
+        
+        streamResponse
+                .doOnNext(response -> {
+                    String chunk = response.getResult().getOutput().getText();
+                    if (chunk != null && !chunk.isEmpty()) {
+                        contentBuilder.append(chunk);
+                        streamHandler.accept(messageType.getStreamingPrefix() + chunk);
+                    }
+                })
+                .doOnError(error -> log.error("LLM 流式调用失败, messageType={}", messageType, error))
+                .blockLast();
+        
+        return contentBuilder.toString();
+    }
+
+    /**
+     * 解析 JSON 响应
+     */
+    private <T> T parseJsonResponse(String content, Class<T> clazz, String name) {
+        try {
+            return GsonUtils.fromJson(content, clazz);
+        } catch (JsonSyntaxException e) {
+            log.error("{}解析失败, content={}", name, content, e);
+            throw new RuntimeException(name + "解析失败");
+        }
+    }
+
+    /**
+     * 解析 JSON 列表响应
+     */
+    private <T> T parseJsonListResponse(String content, TypeToken<T> typeToken, String name) {
+        try {
+            return GsonUtils.fromJson(content, typeToken);
+        } catch (JsonSyntaxException e) {
+            log.error("{}解析失败, content={}", name, content, e);
+            throw new RuntimeException(name + "解析失败");
+        }
+    }
+
+    /**
+     * 构建配图结果
+     */
+    private ArticleState.ImageResult buildImageResult(ArticleState.ImageRequirement requirement, 
+                                                       String imageUrl, 
+                                                       ImageMethodEnum method) {
+        ArticleState.ImageResult imageResult = new ArticleState.ImageResult();
+        imageResult.setPosition(requirement.getPosition());
+        imageResult.setUrl(imageUrl);
+        imageResult.setMethod(method.getValue());
+        imageResult.setKeywords(requirement.getKeywords());
+        imageResult.setSectionTitle(requirement.getSectionTitle());
+        imageResult.setDescription(requirement.getType());
+        return imageResult;
+    }
+
+    /**
+     * 在章节标题后插入对应图片
+     */
+    private void insertImageAfterSection(StringBuilder fullContent, 
+                                          List<ArticleState.ImageResult> images, 
+                                          String sectionTitle) {
+        for (ArticleState.ImageResult image : images) {
+            if (image.getPosition() > 1 && 
+                image.getSectionTitle() != null && 
+                sectionTitle.contains(image.getSectionTitle().trim())) {
+                fullContent.append("\n![").append(image.getDescription())
+                        .append("](").append(image.getUrl()).append(")\n");
+                break;
+            }
+        }
+    }
+
+    // endregion
 }

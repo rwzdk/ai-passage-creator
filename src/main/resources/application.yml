@@ -21,6 +21,9 @@ spring:
       port: 6379
       database: 0
       password:
+mybatis-flex:
+  configuration:
+    map-underscore-to-camel-case: false
 server:
   port: 8567
   servlet:

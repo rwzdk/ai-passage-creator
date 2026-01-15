@@ -95,13 +95,22 @@ public interface PromptConstant {
             2. 建议配图数量: 3-5张
             3. 为每个配图位置生成英文搜索关键词(适合 Pexels 图库检索)
             4. 关键词要准确、具体,能检索到高质量图片
+            5. sectionTitle 必须与正文中的章节标题完全一致(用于定位插入位置)
+            6. position=1 为封面图,sectionTitle 留空
             
             请直接返回 JSON 格式,不要有其他内容:
             [
               {
                 "position": 1,
                 "type": "cover",
+                "sectionTitle": "",
                 "keywords": "AI technology office modern"
+              },
+              {
+                "position": 2,
+                "type": "section",
+                "sectionTitle": "章节标题（与正文完全一致）",
+                "keywords": "business success teamwork"
               }
             ]
             """;

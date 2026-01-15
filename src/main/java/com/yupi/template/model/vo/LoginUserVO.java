@@ -42,6 +42,11 @@ public class LoginUserVO implements Serializable {
     private String userRole;
 
     /**
+     * 剩余配额
+     */
+    private Integer quota;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createTime;
