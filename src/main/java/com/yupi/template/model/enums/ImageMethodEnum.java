@@ -25,6 +25,11 @@ public enum ImageMethodEnum {
     NANO_BANANA("NANO_BANANA", "Nano Banana AI 生图", true, false),
 
     /**
+     * Mermaid 流程图生成
+     */
+    MERMAID("MERMAID", "Mermaid 流程图生成", true, false),
+
+    /**
      * Picsum 随机图片（降级方案）
      */
     PICSUM("PICSUM", "Picsum 随机图片", false, true);

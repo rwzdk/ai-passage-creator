@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.UUID;
@@ -99,5 +100,63 @@ public class CosService {
      */
     public String useDirectUrl(String imageUrl) {
         return imageUrl;
+    }
+
+    /**
+     * 上传文件到 COS
+     *
+     * @param file   文件对象
+     * @param folder 文件夹
+     * @return COS 文件 URL
+     */
+    public String uploadFile(File file, String folder) {
+        try {
+            // 读取文件
+            byte[] fileBytes = java.nio.file.Files.readAllBytes(file.toPath());
+            
+            // 生成文件名
+            String extension = getFileExtension(file.getName());
+            String fileName = folder + "/" + UUID.randomUUID() + extension;
+            
+            // 上传到 COS
+            try (InputStream inputStream = new ByteArrayInputStream(fileBytes)) {
+                ObjectMetadata metadata = new ObjectMetadata();
+                metadata.setContentLength(fileBytes.length);
+                metadata.setContentType(getContentType(extension));
+                
+                PutObjectRequest putObjectRequest = new PutObjectRequest(
+                        cosConfig.getBucket(), fileName, inputStream, metadata);
+                
+                cosClient.putObject(putObjectRequest);
+                
+                // 返回访问 URL
+                return String.format("https://%s.cos.%s.myqcloud.com/%s", 
+                        cosConfig.getBucket(), cosConfig.getRegion(), fileName);
+            }
+        } catch (IOException e) {
+            log.error("上传文件到 COS 失败: {}", file.getName(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取文件扩展名
+     */
+    private String getFileExtension(String fileName) {
+        int lastDot = fileName.lastIndexOf('.');
+        return lastDot > 0 ? fileName.substring(lastDot) : ".svg";
+    }
+
+    /**
+     * 根据扩展名获取 Content-Type
+     */
+    private String getContentType(String extension) {
+        return switch (extension.toLowerCase()) {
+            case ".svg" -> "image/svg+xml";
+            case ".png" -> "image/png";
+            case ".jpg", ".jpeg" -> "image/jpeg";
+            case ".pdf" -> "application/pdf";
+            default -> "application/octet-stream";
+        };
     }
 }
