@@ -98,6 +98,7 @@ public interface PromptConstant {
                - NANO_BANANA: 适合创意插画、信息图表、需要文字渲染、抽象概念、艺术风格等 AI 生成图片
                - MERMAID: 适合流程图、架构图、时序图、关系图、甘特图等结构化图表
                - ICONIFY: 适合图标、符号、小型装饰性图标（如：箭头、勾选、星星、心形等）
+               - EMOJI_PACK: 适合表情包、搞笑图片、轻松幽默的配图
             4. 对于 PEXELS 来源: 提供英文搜索关键词(keywords),要准确、具体
             5. 对于 NANO_BANANA 来源: 提供详细的英文生图提示词(prompt),描述场景、风格、细节
             6. 对于 MERMAID 来源: 
@@ -108,8 +109,13 @@ public interface PromptConstant {
                - 识别需要图标的位置（如：列表项标记、步骤指示、重点强调等）
                - 提供英文图标关键词（keywords），如：check、arrow、star、heart
                - prompt 留空
-            8. sectionTitle 必须与正文中的章节标题完全一致(用于定位插入位置)
-            9. position=1 为封面图,sectionTitle 留空
+            8. 对于 EMOJI_PACK 来源:
+               - 识别文章中轻松幽默、需要表情包的位置
+               - 提供中文或英文关键词（keywords），描述表情内容，如：开心、哭笑、无语、疑问
+               - prompt 留空
+               - 系统会自动在关键词后添加"表情包"进行搜索
+            9. sectionTitle 必须与正文中的章节标题完全一致(用于定位插入位置)
+            10. position=1 为封面图,sectionTitle 留空
             
             请直接返回 JSON 格式,不要有其他内容:
             [
@@ -143,6 +149,14 @@ public interface PromptConstant {
                 "sectionTitle": "核心优势（与正文完全一致）",
                 "imageSource": "ICONIFY",
                 "keywords": "check circle",
+                "prompt": ""
+              },
+              {
+                "position": 5,
+                "type": "section",
+                "sectionTitle": "常见问题（与正文完全一致）",
+                "imageSource": "EMOJI_PACK",
+                "keywords": "疑问",
                 "prompt": ""
               }
             ]

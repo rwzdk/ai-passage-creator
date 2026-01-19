@@ -35,6 +35,11 @@ public enum ImageMethodEnum {
     ICONIFY("ICONIFY", "Iconify 图标库", false, false),
 
     /**
+     * 表情包检索（Bing 图片搜索）
+     */
+    EMOJI_PACK("EMOJI_PACK", "表情包检索", false, false),
+
+    /**
      * Picsum 随机图片（降级方案）
      */
     PICSUM("PICSUM", "Picsum 随机图片", false, true);
