@@ -56,6 +56,38 @@
                 show-count
                 class="topic-textarea"
               />
+              
+              <!-- 文章风格选择 -->
+              <div class="style-section">
+                <div class="section-header">
+                  <span class="section-title">文章风格</span>
+                  <span class="section-tip">（不选择使用默认风格）</span>
+                </div>
+                <a-radio-group v-model:value="selectedStyle" class="style-group">
+                  <a-radio value="">默认</a-radio>
+                  <a-radio value="tech">科技风格</a-radio>
+                  <a-radio value="emotional">情感风格</a-radio>
+                  <a-radio value="educational">教育风格</a-radio>
+                  <a-radio value="humorous">轻松幽默</a-radio>
+                </a-radio-group>
+              </div>
+
+              <!-- 配图方式选择 -->
+              <div class="image-methods-section">
+                <div class="section-header">
+                  <span class="section-title">配图方式</span>
+                  <span class="section-tip">（不选择表示支持所有方式）</span>
+                </div>
+                <a-checkbox-group v-model:value="selectedImageMethods" class="methods-group">
+                  <a-checkbox value="PEXELS">Pexels</a-checkbox>
+                  <a-checkbox value="NANO_BANANA">Nano Banana</a-checkbox>
+                  <a-checkbox value="MERMAID">Mermaid</a-checkbox>
+                  <a-checkbox value="ICONIFY">Iconify</a-checkbox>
+                  <a-checkbox value="EMOJI_PACK">表情包</a-checkbox>
+                  <a-checkbox value="SVG_DIAGRAM">SVG</a-checkbox>
+                </a-checkbox-group>
+              </div>
+              
               <a-button
                 type="primary"
                 size="large"
@@ -371,6 +403,8 @@ const exampleTopics = [
 
 // 状态
 const topic = ref('')
+const selectedStyle = ref('')  // 选中的文章风格（空字符串表示默认）
+const selectedImageMethods = ref<string[]>([])  // 选中的配图方式（空数组表示全部）
 const isCreating = ref(false)
 const isCompleted = ref(false)
 const isStreaming = ref(false)
@@ -482,7 +516,11 @@ const startCreate = async () => {
 
   try {
     // 创建任务
-    const res = await createArticle({ topic: topic.value })
+    const res = await createArticle({ 
+      topic: topic.value,
+      style: selectedStyle.value || undefined,
+      enabledImageMethods: selectedImageMethods.value.length > 0 ? selectedImageMethods.value : undefined
+    })
     taskId.value = res.data.data
 
     // 刷新用户信息（更新配额）
@@ -608,6 +646,7 @@ const viewArticle = () => {
 // 重新创作
 const resetCreate = () => {
   topic.value = ''
+  selectedStyle.value = ''
   isCreating.value = false
   isCompleted.value = false
   isStreaming.value = false
@@ -888,6 +927,90 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-md);
   color: #ff4d4f;
   font-size: 13px;
+}
+
+/* 文章风格选择 */
+.style-section {
+  padding: 16px;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+}
+
+.style-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.style-group :deep(.ant-radio-wrapper) {
+  margin: 0;
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+
+.style-group :deep(.ant-radio-wrapper:hover) {
+  border-color: var(--color-primary);
+  background: rgba(34, 197, 94, 0.04);
+}
+
+.style-group :deep(.ant-radio-wrapper-checked) {
+  border-color: var(--color-primary);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+/* 配图方式选择 */
+.image-methods-section {
+  padding: 16px;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.section-tip {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.methods-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.methods-group :deep(.ant-checkbox-wrapper) {
+  margin: 0;
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+
+.methods-group :deep(.ant-checkbox-wrapper:hover) {
+  border-color: var(--color-primary);
+  background: rgba(34, 197, 94, 0.04);
+}
+
+.methods-group :deep(.ant-checkbox-wrapper-checked) {
+  border-color: var(--color-primary);
+  background: rgba(34, 197, 94, 0.08);
 }
 
 /* 创作进行中 */

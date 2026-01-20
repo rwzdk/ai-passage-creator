@@ -1,6 +1,8 @@
 declare namespace API {
   type ArticleCreateRequest = {
     topic?: string
+    style?: string
+    enabledImageMethods?: string[]
   }
 
   type ArticleQueryRequest = {

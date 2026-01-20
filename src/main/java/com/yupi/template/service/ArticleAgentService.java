@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import com.yupi.template.constant.PromptConstant;
 import com.yupi.template.model.dto.article.ArticleState;
 import com.yupi.template.model.dto.image.ImageRequest;
+import com.yupi.template.model.enums.ArticleStyleEnum;
 import com.yupi.template.model.enums.ImageMethodEnum;
 import com.yupi.template.model.enums.SseMessageTypeEnum;
 import com.yupi.template.utils.GsonUtils;
@@ -86,7 +87,8 @@ public class ArticleAgentService {
      */
     private void agent1GenerateTitle(ArticleState state) {
         String prompt = PromptConstant.AGENT1_TITLE_PROMPT
-                .replace("{topic}", state.getTopic());
+                .replace("{topic}", state.getTopic())
+                + getStylePrompt(state.getStyle());
 
         String content = callLlm(prompt);
         ArticleState.TitleResult titleResult = parseJsonResponse(content, ArticleState.TitleResult.class, "标题");
@@ -100,7 +102,8 @@ public class ArticleAgentService {
     private void agent2GenerateOutline(ArticleState state, Consumer<String> streamHandler) {
         String prompt = PromptConstant.AGENT2_OUTLINE_PROMPT
                 .replace("{mainTitle}", state.getTitle().getMainTitle())
-                .replace("{subTitle}", state.getTitle().getSubTitle());
+                .replace("{subTitle}", state.getTitle().getSubTitle())
+                + getStylePrompt(state.getStyle());
 
         String content = callLlmWithStreaming(prompt, streamHandler, SseMessageTypeEnum.AGENT2_STREAMING);
         ArticleState.OutlineResult outlineResult = parseJsonResponse(content, ArticleState.OutlineResult.class, "大纲");
@@ -116,7 +119,8 @@ public class ArticleAgentService {
         String prompt = PromptConstant.AGENT3_CONTENT_PROMPT
                 .replace("{mainTitle}", state.getTitle().getMainTitle())
                 .replace("{subTitle}", state.getTitle().getSubTitle())
-                .replace("{outline}", outlineText);
+                .replace("{outline}", outlineText)
+                + getStylePrompt(state.getStyle());
 
         String content = callLlmWithStreaming(prompt, streamHandler, SseMessageTypeEnum.AGENT3_STREAMING);
         state.setContent(content);
@@ -127,9 +131,13 @@ public class ArticleAgentService {
      * 智能体4：分析配图需求
      */
     private void agent4AnalyzeImageRequirements(ArticleState state) {
+        // 构建可用配图方式说明
+        String availableMethods = buildAvailableMethodsDescription(state.getEnabledImageMethods());
+        
         String prompt = PromptConstant.AGENT4_IMAGE_REQUIREMENTS_PROMPT
                 .replace("{mainTitle}", state.getTitle().getMainTitle())
-                .replace("{content}", state.getContent());
+                .replace("{content}", state.getContent())
+                .replace("{availableMethods}", availableMethods);
 
         String content = callLlm(prompt);
         List<ArticleState.ImageRequirement> imageRequirements = parseJsonListResponse(
@@ -299,6 +307,81 @@ public class ArticleAgentService {
                 break;
             }
         }
+    }
+
+    /**
+     * 构建可用配图方式说明
+     */
+    private String buildAvailableMethodsDescription(List<String> enabledMethods) {
+        // 如果为空或 null，表示支持所有方式
+        if (enabledMethods == null || enabledMethods.isEmpty()) {
+            return getAllMethodsDescription();
+        }
+
+        // 只描述允许的方式
+        StringBuilder sb = new StringBuilder();
+        for (String method : enabledMethods) {
+            ImageMethodEnum methodEnum = ImageMethodEnum.getByValue(method);
+            if (methodEnum != null && !methodEnum.isFallback()) {
+                sb.append("   - ").append(methodEnum.getValue())
+                        .append(": ").append(getMethodUsageDescription(methodEnum))
+                        .append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 获取所有配图方式的完整描述
+     */
+    private String getAllMethodsDescription() {
+        return """
+               - PEXELS: 适合真实场景、产品照片、人物照片、自然风景等写实图片
+               - NANO_BANANA: 适合创意插画、信息图表、需要文字渲染、抽象概念、艺术风格等 AI 生成图片
+               - MERMAID: 适合流程图、架构图、时序图、关系图、甘特图等结构化图表
+               - ICONIFY: 适合图标、符号、小型装饰性图标（如：箭头、勾选、星星、心形等）
+               - EMOJI_PACK: 适合表情包、搞笑图片、轻松幽默的配图
+               - SVG_DIAGRAM: 适合概念示意图、思维导图样式、逻辑关系展示（不涉及精确数据）
+               """;
+    }
+
+    /**
+     * 获取配图方式的使用说明
+     */
+    private String getMethodUsageDescription(ImageMethodEnum method) {
+        return switch (method) {
+            case PEXELS -> "适合真实场景、产品照片、人物照片、自然风景等写实图片";
+            case NANO_BANANA -> "适合创意插画、信息图表、需要文字渲染、抽象概念、艺术风格等 AI 生成图片";
+            case MERMAID -> "适合流程图、架构图、时序图、关系图、甘特图等结构化图表";
+            case ICONIFY -> "适合图标、符号、小型装饰性图标（如：箭头、勾选、星星、心形等）";
+            case EMOJI_PACK -> "适合表情包、搞笑图片、轻松幽默的配图";
+            case SVG_DIAGRAM -> "适合概念示意图、思维导图样式、逻辑关系展示（不涉及精确数据）";
+            default -> method.getDescription();
+        };
+    }
+
+    /**
+     * 根据风格获取对应的 Prompt 附加内容
+     *
+     * @param style 文章风格
+     * @return 风格对应的 Prompt 附加内容，如果无风格则返回空字符串
+     */
+    private String getStylePrompt(String style) {
+        if (style == null || style.isEmpty()) {
+            return "";
+        }
+        
+        ArticleStyleEnum styleEnum = ArticleStyleEnum.getEnumByValue(style);
+        if (styleEnum == null) {
+            return "";
+        }
+        
+        return switch (styleEnum) {
+            case TECH -> PromptConstant.STYLE_TECH_PROMPT;
+            case EMOTIONAL -> PromptConstant.STYLE_EMOTIONAL_PROMPT;
+            case EDUCATIONAL -> PromptConstant.STYLE_EDUCATIONAL_PROMPT;
+            case HUMOROUS -> PromptConstant.STYLE_HUMOROUS_PROMPT;
+        };
     }
 
     // endregion

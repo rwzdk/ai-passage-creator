@@ -41,7 +41,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private QuotaService quotaService;
 
     @Override
-    public String createArticleTask(String topic, User loginUser) {
+    public String createArticleTask(String topic, String style, User loginUser) {
         // 生成任务ID
         String taskId = IdUtil.simpleUUID();
 
@@ -50,22 +50,23 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         article.setTaskId(taskId);
         article.setUserId(loginUser.getId());
         article.setTopic(topic);
+        article.setStyle(style);
         article.setStatus(ArticleStatusEnum.PENDING.getValue());
         article.setCreateTime(LocalDateTime.now());
 
         this.save(article);
 
-        log.info("文章任务已创建, taskId={}, userId={}", taskId, loginUser.getId());
+        log.info("文章任务已创建, taskId={}, userId={}, style={}", taskId, loginUser.getId(), style);
         return taskId;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String createArticleTaskWithQuotaCheck(String topic, User loginUser) {
+    public String createArticleTaskWithQuotaCheck(String topic, String style, User loginUser) {
         // 在同一事务中：先扣配额，再创建任务
         // 如果任务创建失败，配额会自动回滚
         quotaService.checkAndConsumeQuota(loginUser);
-        return createArticleTask(topic, loginUser);
+        return createArticleTask(topic, style, loginUser);
     }
 
     @Override

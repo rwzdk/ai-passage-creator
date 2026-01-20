@@ -24,6 +24,11 @@ public class ArticleState implements Serializable {
     private String topic;
 
     /**
+     * 文章风格
+     */
+    private String style;
+
+    /**
      * 标题结果（智能体1输出）
      */
     private TitleResult title;
@@ -52,6 +57,11 @@ public class ArticleState implements Serializable {
      * 配图结果列表（智能体5输出）
      */
     private List<ImageResult> images;
+
+    /**
+     * 允许的配图方式列表（为空表示支持所有方式）
+     */
+    private List<String> enabledImageMethods;
 
     /**
      * 标题结果
