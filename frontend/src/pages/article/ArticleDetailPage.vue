@@ -412,9 +412,19 @@ onMounted(() => {
       :deep(img) {
         display: block;
         max-width: 100%;
+        max-height: 600px;
+        width: auto;
+        height: auto;
         margin: 20px auto;
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-md);
+        object-fit: contain;
+      }
+
+      // Mermaid 图表特殊处理（SVG 格式）
+      :deep(img[src$=".svg"]) {
+        max-width: 800px;
+        max-height: 500px;
       }
     }
   }

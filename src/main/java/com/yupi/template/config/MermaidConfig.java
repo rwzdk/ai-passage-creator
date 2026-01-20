@@ -32,7 +32,7 @@ public class MermaidConfig {
     /**
      * 图片宽度（像素）
      */
-    private Integer width = 1200;
+    private Integer width = 800;
 
     /**
      * 命令执行超时时间（毫秒）

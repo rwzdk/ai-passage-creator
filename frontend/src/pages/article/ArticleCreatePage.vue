@@ -58,7 +58,7 @@
                 show-count
                 class="topic-textarea"
               />
-              
+
               <!-- 文章风格选择 -->
               <div class="style-section">
                 <div class="section-header">
@@ -89,7 +89,7 @@
                   <a-checkbox value="SVG_DIAGRAM">SVG</a-checkbox>
                 </a-checkbox-group>
               </div>
-              
+
               <a-button
                 type="primary"
                 size="large"
@@ -208,7 +208,7 @@
             <p class="article-subtitle">{{ article.subTitle }}</p>
           </div>
           <div class="content-preview">
-            <div v-html="markdownToHtml(article.fullContent || article.content)" class="markdown-body"></div>
+            <div v-html="markdownToHtml(article.fullContent || article.content || '')" class="markdown-body"></div>
           </div>
           </div>
         </Transition>
@@ -232,9 +232,9 @@
               <span class="quota-unit">次</span>
             </div>
             <div class="quota-label">剩余可用</div>
-            <a-progress 
-              :percent="(quota / 5) * 100" 
-              :show-info="false" 
+            <a-progress
+              :percent="(quota / 5) * 100"
+              :show-info="false"
               :stroke-color="quota <= 1 ? '#ff4d4f' : '#22C55E'"
               size="small"
               class="quota-progress"
@@ -534,8 +534,8 @@ const article = ref<Partial<API.ArticleVO>>({
 let eventSource: EventSource | null = null
 
 // Markdown 转 HTML
-const markdownToHtml = (markdown: string) => {
-  return marked(markdown)
+const markdownToHtml = (markdown: string | undefined) => {
+  return marked(markdown || '')
 }
 
 // 自动滚动到底部
@@ -564,12 +564,16 @@ const startCreate = async () => {
 
   try {
     // 创建任务
-    const res = await createArticle({ 
+    const res = await createArticle({
       topic: topic.value,
       style: selectedStyle.value || undefined,
       enabledImageMethods: selectedImageMethods.value.length > 0 ? selectedImageMethods.value : undefined
     })
-    taskId.value = res.data.data
+    const newTaskId = res.data.data
+    if (!newTaskId) {
+      throw new Error('创建任务失败：未返回任务ID')
+    }
+    taskId.value = newTaskId
 
     // 刷新用户信息（更新配额）
     await loginUserStore.fetchLoginUser()
@@ -580,8 +584,9 @@ const startCreate = async () => {
       onError: handleSSEError,
       onComplete: handleSSEComplete,
     })
-  } catch (error: any) {
-    message.error(error.message || '创建任务失败')
+  } catch (error) {
+    const err = error as Error
+    message.error(err.message || '创建任务失败')
     isCreating.value = false
   }
 }
@@ -692,8 +697,9 @@ const handleConfirmTitle = async (data: {mainTitle: string, subTitle: string, us
     })
     // 不直接切换阶段，等待 SSE 消息 OUTLINE_GENERATED
     message.success('标题已确认，正在生成大纲...')
-  } catch (error: any) {
-    message.error(error.message || '确认标题失败')
+  } catch (error) {
+    const err = error as Error
+    message.error(err.message || '确认标题失败')
   } finally {
     confirmLoading.value = false
   }
@@ -707,10 +713,13 @@ const handleConfirmOutline = async (outlineData: Array<{section: number, title: 
       taskId: taskId.value,
       outline: outlineData
     })
+    // 更新 outlineRaw 为用户修改后的大纲，确保 CONTENT_GENERATING 阶段展示正确的大纲
+    outlineRaw.value = JSON.stringify({ sections: outlineData })
     // 不直接切换阶段，等待后端开始生成正文并推送 AGENT3_STREAMING
     message.success('大纲已确认，正在生成正文...')
-  } catch (error: any) {
-    message.error(error.message || '确认大纲失败')
+  } catch (error) {
+    const err = error as Error
+    message.error(err.message || '确认大纲失败')
   } finally {
     confirmLoading.value = false
   }
@@ -838,8 +847,8 @@ onBeforeUnmount(() => {
     content: '';
     position: absolute;
     left: 15px;
-    top: 44px;
-    bottom: 0;
+    top: 46px;
+    bottom: -14px;
     width: 2px;
     background: var(--color-border);
   }
@@ -1227,9 +1236,19 @@ onBeforeUnmount(() => {
   :deep(img) {
     display: block;
     max-width: 100%;
+    max-height: 600px;
+    width: auto;
+    height: auto;
     margin: 20px auto;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
+    object-fit: contain;
+  }
+
+  // Mermaid 图表特殊处理（SVG 格式）
+  :deep(img[src$=".svg"]) {
+    max-width: 800px;
+    max-height: 500px;
   }
 }
 

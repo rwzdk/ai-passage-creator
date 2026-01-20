@@ -189,9 +189,16 @@ public class ArticleAgentService {
         
         // 更新正文为包含占位符的版本
         state.setContent(agent4Result.getContentWithPlaceholders());
-        state.setImageRequirements(agent4Result.getImageRequirements());
-        log.info("智能体4：配图需求分析成功, count={}, 已在正文中插入占位符", 
-                agent4Result.getImageRequirements().size());
+        
+        // 验证并过滤配图需求，确保所有 imageSource 都在允许列表中
+        List<ArticleState.ImageRequirement> validatedRequirements = validateAndFilterImageRequirements(
+                agent4Result.getImageRequirements(), 
+                state.getEnabledImageMethods()
+        );
+        
+        state.setImageRequirements(validatedRequirements);
+        log.info("智能体4：配图需求分析成功, count={}, validated={}, 已在正文中插入占位符", 
+                agent4Result.getImageRequirements().size(), validatedRequirements.size());
     }
 
     /**
@@ -384,6 +391,50 @@ public class ArticleAgentService {
             case SVG_DIAGRAM -> "适合概念示意图、思维导图样式、逻辑关系展示（不涉及精确数据）";
             default -> method.getDescription();
         };
+    }
+
+    /**
+     * 验证并过滤配图需求
+     * 确保所有 imageSource 都在允许列表中
+     *
+     * @param requirements    原始配图需求列表
+     * @param enabledMethods  允许的配图方式列表
+     * @return 验证后的配图需求列表
+     */
+    private List<ArticleState.ImageRequirement> validateAndFilterImageRequirements(
+            List<ArticleState.ImageRequirement> requirements,
+            List<String> enabledMethods) {
+        
+        // 如果没有限制，返回所有需求
+        if (enabledMethods == null || enabledMethods.isEmpty()) {
+            return requirements;
+        }
+        
+        List<ArticleState.ImageRequirement> validatedRequirements = new ArrayList<>();
+        
+        for (ArticleState.ImageRequirement req : requirements) {
+            String imageSource = req.getImageSource();
+            
+            // 验证 imageSource 是否在允许列表中
+            if (enabledMethods.contains(imageSource)) {
+                validatedRequirements.add(req);
+                log.debug("配图需求验证通过, position={}, imageSource={}", req.getPosition(), imageSource);
+            } else {
+                log.warn("配图需求不符合限制被过滤, position={}, imageSource={}, enabledMethods={}", 
+                        req.getPosition(), imageSource, enabledMethods);
+                
+                // 尝试替换为允许的方式（优先使用第一个允许的方式）
+                if (!enabledMethods.isEmpty()) {
+                    String fallbackSource = enabledMethods.get(0);
+                    req.setImageSource(fallbackSource);
+                    validatedRequirements.add(req);
+                    log.info("配图需求已替换为允许的方式, position={}, fallback={}", 
+                            req.getPosition(), fallbackSource);
+                }
+            }
+        }
+        
+        return validatedRequirements;
     }
 
     /**
