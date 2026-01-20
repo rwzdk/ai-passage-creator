@@ -82,12 +82,27 @@
                 </div>
                 <a-checkbox-group v-model:value="selectedImageMethods" class="methods-group">
                   <a-checkbox value="PEXELS">Pexels</a-checkbox>
-                  <a-checkbox value="NANO_BANANA">Nano Banana</a-checkbox>
+                  <a-tooltip :title="isVip ? '' : '仅限 VIP 会员'">
+                    <a-checkbox value="NANO_BANANA" :disabled="!isVip">
+                      Nano Banana
+                      <CrownOutlined v-if="!isVip" class="vip-icon" />
+                    </a-checkbox>
+                  </a-tooltip>
                   <a-checkbox value="MERMAID">Mermaid</a-checkbox>
                   <a-checkbox value="ICONIFY">Iconify</a-checkbox>
                   <a-checkbox value="EMOJI_PACK">表情包</a-checkbox>
-                  <a-checkbox value="SVG_DIAGRAM">SVG</a-checkbox>
+                  <a-tooltip :title="isVip ? '' : '仅限 VIP 会员'">
+                    <a-checkbox value="SVG_DIAGRAM" :disabled="!isVip">
+                      SVG
+                      <CrownOutlined v-if="!isVip" class="vip-icon" />
+                    </a-checkbox>
+                  </a-tooltip>
                 </a-checkbox-group>
+                <div v-if="!isVip" class="vip-notice">
+                  <CrownOutlined />
+                  <span>AI 生图和 SVG 图表为 VIP 专属功能，</span>
+                  <RouterLink to="/vip" class="upgrade-link">立即升级</RouterLink>
+                </div>
               </div>
 
               <a-button
@@ -251,6 +266,10 @@
           </h4>
           <div v-if="isAdmin" class="quota-admin">
             <span class="quota-badge admin">管理员</span>
+            <span class="quota-text">无限次</span>
+          </div>
+          <div v-else-if="isVip" class="quota-admin">
+            <span class="quota-badge vip">VIP 会员</span>
             <span class="quota-text">无限次</span>
           </div>
           <div v-else class="quota-info">
@@ -522,6 +541,7 @@ import {
   WarningOutlined,
   CrownOutlined
 } from '@ant-design/icons-vue'
+import { USER_ROLE_VIP } from '@/constants/user'
 import { createArticle, confirmTitle, confirmOutline } from '@/api/articleController'
 import { connectSSE, closeSSE, type SSEMessage } from '@/utils/sse'
 import { marked } from 'marked'
@@ -534,8 +554,9 @@ const loginUserStore = useLoginUserStore()
 
 // 配额相关计算属性
 const isAdmin = computed(() => loginUserStore.loginUser.userRole === USER_ROLE_ADMIN)
+const isVip = computed(() => loginUserStore.loginUser.userRole === USER_ROLE_VIP)
 const quota = computed(() => loginUserStore.loginUser.quota ?? 0)
-const hasQuota = computed(() => isAdmin.value || quota.value > 0)
+const hasQuota = computed(() => isAdmin.value || isVip.value || quota.value > 0)
 
 // 智能体步骤（对应后端 6 个步骤）
 const agentSteps = [
@@ -1248,6 +1269,44 @@ onBeforeUnmount(() => {
   background: rgba(34, 197, 94, 0.08);
 }
 
+.methods-group :deep(.ant-checkbox-wrapper-disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vip-icon {
+  color: var(--color-primary);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.vip-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(34, 197, 94, 0.08);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--color-primary-dark);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+
+  .anticon {
+    color: var(--color-primary);
+  }
+
+  .upgrade-link {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
 /* 创作进行中 */
 .creating-state,
 .completed-state {
@@ -1487,8 +1546,13 @@ onBeforeUnmount(() => {
   font-weight: 600;
 
   &.admin {
-    background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%);
-    color: #7c5c00;
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+    color: white;
+  }
+
+  &.vip {
+    background: var(--gradient-primary);
+    color: white;
   }
 }
 

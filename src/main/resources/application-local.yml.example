@@ -13,6 +13,13 @@ spring:
 pexels:
   api-key: your-pexels-api-key  # 请在 https://www.pexels.com/api/ 注册获取
 
+# Stripe 支付配置（测试模式）
+stripe:
+  api-key: sk_test_your_stripe_secret_key  # 请在 https://dashboard.stripe.com/test/apikeys 获取
+  webhook-secret: whsec_your_webhook_secret  # Webhook 签名密钥
+  success-url: http://localhost:5173/vip?success=true  # 支付成功回调 URL
+  cancel-url: http://localhost:5173/vip?cancelled=true  # 支付取消回调 URL
+
 # 腾讯云 COS 配置（可选，MVP 阶段可以不配置）
 tencent:
   cos:

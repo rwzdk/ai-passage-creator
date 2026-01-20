@@ -1,10 +1,8 @@
 package com.yupi.template.model.entity;
 
-import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
-import com.mybatisflex.core.keygen.KeyGenerators;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,10 +10,11 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 用户实体类
+ * 支付记录实体类
  *
  * @author <a href="https://codefather.cn">编程导航学习圈</a>
  */
@@ -23,8 +22,8 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(value = "user", camelToUnderline = false)
-public class User implements Serializable {
+@Table(value = "payment_record", camelToUnderline = false)
+public class PaymentRecord implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -32,53 +31,58 @@ public class User implements Serializable {
     /**
      * id
      */
-    @Id(keyType = KeyType.Generator, value = KeyGenerators.snowFlakeId)
+    @Id(keyType = KeyType.Auto)
     private Long id;
 
     /**
-     * 账号
+     * 用户ID
      */
-    private String userAccount;
+    private Long userId;
 
     /**
-     * 密码
+     * Stripe Checkout Session ID
      */
-    private String userPassword;
+    private String stripeSessionId;
 
     /**
-     * 用户昵称
+     * Stripe 支付意向ID
      */
-    private String userName;
+    private String stripePaymentIntentId;
 
     /**
-     * 用户头像
+     * 金额（美元）
      */
-    private String userAvatar;
+    private BigDecimal amount;
 
     /**
-     * 用户简介
+     * 货币
      */
-    private String userProfile;
+    private String currency;
 
     /**
-     * 用户角色：user/admin
+     * 状态：PENDING/SUCCEEDED/FAILED/REFUNDED
      */
-    private String userRole;
+    private String status;
 
     /**
-     * 剩余配额
+     * 产品类型：VIP_PERMANENT
      */
-    private Integer quota;
+    private String productType;
 
     /**
-     * 成为会员时间
+     * 描述
      */
-    private LocalDateTime vipTime;
+    private String description;
 
     /**
-     * 编辑时间
+     * 退款时间
      */
-    private LocalDateTime editTime;
+    private LocalDateTime refundTime;
+
+    /**
+     * 退款原因
+     */
+    private String refundReason;
 
     /**
      * 创建时间
@@ -89,11 +93,4 @@ public class User implements Serializable {
      * 更新时间
      */
     private LocalDateTime updateTime;
-
-    /**
-     * 是否删除
-     */
-    @Column(isLogicDelete = true)
-    private Integer isDelete;
-
 }

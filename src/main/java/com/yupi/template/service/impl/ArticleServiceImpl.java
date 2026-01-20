@@ -29,7 +29,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.yupi.template.model.enums.ImageMethodEnum;
+
 import static com.yupi.template.constant.UserConstant.ADMIN_ROLE;
+import static com.yupi.template.constant.UserConstant.VIP_ROLE;
 
 /**
  * 文章服务实现类
@@ -48,6 +51,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     public String createArticleTask(String topic, String style, List<String> enabledImageMethods, User loginUser) {
+        // 校验配图方式权限（普通用户不能使用 NANO_BANANA 和 SVG_DIAGRAM）
+        validateImageMethods(enabledImageMethods, loginUser);
+
         // 生成任务ID
         String taskId = IdUtil.simpleUUID();
 
@@ -296,6 +302,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 校验权限
         checkArticlePermission(article, loginUser);
 
+        // 校验 VIP 权限（普通用户不能使用 AI 修改大纲）
+        ThrowUtils.throwIf(!isVipOrAdmin(loginUser), ErrorCode.NO_AUTH_ERROR, 
+                "AI 修改大纲功能仅限 VIP 会员使用");
+
         // 校验当前阶段（必须是 OUTLINE_EDITING）
         ArticlePhaseEnum currentPhase = ArticlePhaseEnum.getByValue(article.getPhase());
         ThrowUtils.throwIf(currentPhase != ArticlePhaseEnum.OUTLINE_EDITING,
@@ -321,5 +331,37 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         log.info("AI修改大纲完成, taskId={}, sectionsCount={}", taskId, modifiedOutline.size());
         return modifiedOutline;
+    }
+
+    /**
+     * 校验配图方式权限
+     * 普通用户不能使用 NANO_BANANA 和 SVG_DIAGRAM
+     */
+    private void validateImageMethods(List<String> enabledImageMethods, User loginUser) {
+        if (enabledImageMethods == null || enabledImageMethods.isEmpty()) {
+            return;
+        }
+
+        // VIP 和管理员无限制
+        if (isVipOrAdmin(loginUser)) {
+            return;
+        }
+
+        // 普通用户限制
+        for (String method : enabledImageMethods) {
+            if (ImageMethodEnum.NANO_BANANA.getValue().equals(method) || 
+                ImageMethodEnum.SVG_DIAGRAM.getValue().equals(method)) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, 
+                        "高级配图功能（AI 生图、SVG 图表）仅限 VIP 会员使用");
+            }
+        }
+    }
+
+    /**
+     * 判断是否为 VIP 或管理员
+     */
+    private boolean isVipOrAdmin(User user) {
+        return ADMIN_ROLE.equals(user.getUserRole()) || 
+               VIP_ROLE.equals(user.getUserRole());
     }
 }
