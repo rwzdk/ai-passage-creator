@@ -318,8 +318,8 @@
           </div>
         </div>
 
-        <!-- 创作进行中的提示 -->
-        <div v-if="currentPhase === 'CONTENT_GENERATING' && isCreating" class="panel-section">
+        <!-- 创作进行中的提示（所有创作阶段） -->
+        <div v-if="isCreating || currentPhase === 'TITLE_SELECTING' || currentPhase === 'OUTLINE_EDITING'" class="panel-section">
           <h4 class="panel-title">
             <ClockCircleOutlined />
             创作进度
@@ -334,9 +334,100 @@
               <span class="step-value">{{ currentStep }}/{{ agentSteps.length }}</span>
             </div>
           </div>
-          <div class="progress-tip">
+          <div v-if="isCreating" class="progress-tip">
             <InfoCircleOutlined />
             <span>AI 正在努力创作中，请耐心等待...</span>
+          </div>
+          <div v-else class="progress-tip waiting">
+            <InfoCircleOutlined />
+            <span>等待您的确认...</span>
+          </div>
+        </div>
+
+        <!-- 当前选题提示 -->
+        <div v-if="currentPhase !== 'INPUT' && currentPhase !== 'COMPLETED' && topic" class="panel-section">
+          <h4 class="panel-title">
+            <BulbOutlined />
+            创作选题
+          </h4>
+          <div class="topic-display">
+            <p>{{ topic }}</p>
+          </div>
+        </div>
+
+        <!-- 阶段提示 -->
+        <div v-if="currentPhase === 'TITLE_GENERATING'" class="panel-section tips-section">
+          <h4 class="panel-title">
+            <StarOutlined />
+            提示
+          </h4>
+          <div class="tips-list">
+            <div class="tip-item">
+              <div class="tip-icon">💡</div>
+              <div class="tip-content">
+                <div class="tip-desc">AI 正在分析您的选题，生成多个吸引眼球的标题方案</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentPhase === 'TITLE_SELECTING'" class="panel-section tips-section">
+          <h4 class="panel-title">
+            <StarOutlined />
+            提示
+          </h4>
+          <div class="tips-list">
+            <div class="tip-item">
+              <div class="tip-icon">✅</div>
+              <div class="tip-content">
+                <div class="tip-desc">选择最符合您期望的标题，或添加补充描述让 AI 更好地理解您的需求</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentPhase === 'OUTLINE_GENERATING'" class="panel-section tips-section">
+          <h4 class="panel-title">
+            <StarOutlined />
+            提示
+          </h4>
+          <div class="tips-list">
+            <div class="tip-item">
+              <div class="tip-icon">📝</div>
+              <div class="tip-content">
+                <div class="tip-desc">AI 正在为您规划文章结构，构建清晰的章节脉络</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentPhase === 'OUTLINE_EDITING'" class="panel-section tips-section">
+          <h4 class="panel-title">
+            <StarOutlined />
+            编辑技巧
+          </h4>
+          <div class="tips-list">
+            <div class="tip-item">
+              <div class="tip-icon">1</div>
+              <div class="tip-content">
+                <div class="tip-title">拖动排序</div>
+                <div class="tip-desc">点击章节左侧拖动图标可调整章节顺序</div>
+              </div>
+            </div>
+            <div class="tip-item">
+              <div class="tip-icon">2</div>
+              <div class="tip-content">
+                <div class="tip-title">AI 助手</div>
+                <div class="tip-desc">使用 AI 助手快速修改大纲结构</div>
+              </div>
+            </div>
+            <div class="tip-item">
+              <div class="tip-icon">3</div>
+              <div class="tip-content">
+                <div class="tip-title">添加章节</div>
+                <div class="tip-desc">根据需要添加或删除章节和要点</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1569,6 +1660,38 @@ onBeforeUnmount(() => {
   .anticon {
     flex-shrink: 0;
     margin-top: 2px;
+  }
+
+  &.waiting {
+    background: rgba(250, 173, 20, 0.08);
+    color: #d48806;
+  }
+}
+
+/* 选题展示 */
+.topic-display {
+  padding: 12px 16px;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-primary);
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-text);
+    line-height: 1.6;
+  }
+}
+
+/* 提示面板样式 */
+.tips-section {
+  .tip-icon {
+    background: transparent;
+    font-size: 16px;
+  }
+
+  .tip-desc {
+    font-size: 12px;
   }
 }
 
