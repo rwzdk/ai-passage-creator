@@ -78,7 +78,8 @@ import {
   EditOutlined,
   UnorderedListOutlined,
   SettingOutlined,
-  CrownOutlined
+  CrownOutlined,
+  BarChartOutlined
 } from '@ant-design/icons-vue'
 import { isVip as checkIsVip } from '@/utils/permission'
 
@@ -115,6 +116,12 @@ const originItems = [
     key: '/admin/userManage',
     icon: SettingOutlined,
     label: '管理',
+    admin: true,
+  },
+  {
+    key: '/admin/statistics',
+    icon: BarChartOutlined,
+    label: '数据',
     admin: true,
   },
 ]
