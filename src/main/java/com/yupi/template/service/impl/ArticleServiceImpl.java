@@ -51,8 +51,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     public String createArticleTask(String topic, String style, List<String> enabledImageMethods, User loginUser) {
+        // 处理配图方式：如果用户未选择，给普通用户设置默认的非 VIP 方式
+        List<String> finalImageMethods = processImageMethods(enabledImageMethods, loginUser);
+        
         // 校验配图方式权限（普通用户不能使用 NANO_BANANA 和 SVG_DIAGRAM）
-        validateImageMethods(enabledImageMethods, loginUser);
+        validateImageMethods(finalImageMethods, loginUser);
 
         // 生成任务ID
         String taskId = IdUtil.simpleUUID();
@@ -63,8 +66,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         article.setUserId(loginUser.getId());
         article.setTopic(topic);
         article.setStyle(style);
-        article.setEnabledImageMethods(enabledImageMethods != null && !enabledImageMethods.isEmpty() 
-                ? GsonUtils.toJson(enabledImageMethods) : null);
+        article.setEnabledImageMethods(finalImageMethods != null && !finalImageMethods.isEmpty() 
+                ? GsonUtils.toJson(finalImageMethods) : null);
         article.setStatus(ArticleStatusEnum.PENDING.getValue());
         article.setPhase(ArticlePhaseEnum.PENDING.getValue());
         article.setCreateTime(LocalDateTime.now());
@@ -331,6 +334,30 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         log.info("AI修改大纲完成, taskId={}, sectionsCount={}", taskId, modifiedOutline.size());
         return modifiedOutline;
+    }
+
+    /**
+     * 处理配图方式
+     * 如果用户未选择，给普通用户设置默认的非 VIP 方式，VIP 用户不限制
+     */
+    private List<String> processImageMethods(List<String> enabledImageMethods, User loginUser) {
+        // 如果用户已选择，直接返回
+        if (enabledImageMethods != null && !enabledImageMethods.isEmpty()) {
+            return enabledImageMethods;
+        }
+
+        // VIP 和管理员：不限制，返回 null 表示支持所有方式
+        if (isVipOrAdmin(loginUser)) {
+            return null;
+        }
+
+        // 普通用户：返回默认的非 VIP 方式
+        return List.of(
+                ImageMethodEnum.PEXELS.getValue(),
+                ImageMethodEnum.MERMAID.getValue(),
+                ImageMethodEnum.ICONIFY.getValue(),
+                ImageMethodEnum.EMOJI_PACK.getValue()
+        );
     }
 
     /**

@@ -762,16 +762,18 @@ const handleSSEMessage = (msg: SSEMessage) => {
       outline.value = msg.outline || []
       isCreating.value = false
       isOutlineStreaming.value = false
+      // 保持在步骤1（规划大纲），用户编辑大纲时仍处于此阶段
       break
 
     case 'AGENT2_COMPLETE':
       // 大纲完成（内部处理，已在 OUTLINE_GENERATED 中切换阶段）
-      currentStep.value = 2
+      // 不改变 currentStep，保持在步骤1，等用户确认大纲后才进入步骤2
       break
 
     case 'AGENT3_STREAMING':
-      // 正文流式输出
+      // 正文流式输出，进入步骤2（撰写正文）
       currentPhase.value = 'CONTENT_GENERATING'
+      currentStep.value = 2
       isStreaming.value = true
       article.value.content += msg.content || ''
       scrollToBottom()
