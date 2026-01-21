@@ -185,11 +185,14 @@ public class ArticleAgentService {
     public void agent4AnalyzeImageRequirements(ArticleState state) {
         // 构建可用配图方式说明
         String availableMethods = buildAvailableMethodsDescription(state.getEnabledImageMethods());
+        // 构建各配图方式的详细使用指南（只包含允许的方式）
+        String methodUsageGuide = buildMethodUsageGuide(state.getEnabledImageMethods());
         
         String prompt = PromptConstant.AGENT4_IMAGE_REQUIREMENTS_PROMPT
                 .replace("{mainTitle}", state.getTitle().getMainTitle())
                 .replace("{content}", state.getContent())
-                .replace("{availableMethods}", availableMethods);
+                .replace("{availableMethods}", availableMethods)
+                .replace("{methodUsageGuide}", methodUsageGuide);
 
         String content = callLlm(prompt);
         ArticleState.Agent4Result agent4Result = parseJsonResponse(
@@ -403,6 +406,49 @@ public class ArticleAgentService {
             case EMOJI_PACK -> "适合表情包、搞笑图片、轻松幽默的配图";
             case SVG_DIAGRAM -> "适合概念示意图、思维导图样式、逻辑关系展示（不涉及精确数据）";
             default -> method.getDescription();
+        };
+    }
+
+    /**
+     * 构建配图方式的详细使用指南（只包含允许的方式）
+     */
+    private String buildMethodUsageGuide(List<String> enabledMethods) {
+        // 如果没有限制，返回所有方式的使用指南
+        List<String> methodsToInclude = (enabledMethods == null || enabledMethods.isEmpty())
+                ? List.of("PEXELS", "NANO_BANANA", "MERMAID", "ICONIFY", "EMOJI_PACK", "SVG_DIAGRAM")
+                : enabledMethods;
+
+        StringBuilder sb = new StringBuilder();
+        
+        for (String method : methodsToInclude) {
+            String guide = getMethodDetailedGuide(method);
+            if (guide != null && !guide.isEmpty()) {
+                sb.append(guide).append("\n");
+            }
+        }
+        
+        return sb.toString();
+    }
+
+    /**
+     * 获取单个配图方式的详细使用指南
+     */
+    private String getMethodDetailedGuide(String method) {
+        return switch (method) {
+            case "PEXELS" -> """
+                    - PEXELS: 提供英文搜索关键词(keywords)，要准确、具体。prompt 留空。""";
+            case "NANO_BANANA" -> """
+                    - NANO_BANANA: 提供详细的英文生图提示词(prompt)，描述场景、风格、细节。keywords 留空。""";
+            case "MERMAID" -> """
+                    - MERMAID: 在 prompt 字段生成完整的 Mermaid 代码（如流程图、架构图）。keywords 留空。""";
+            case "ICONIFY" -> """
+                    - ICONIFY: 提供英文图标关键词(keywords)，如：check、arrow、star、heart。prompt 留空。""";
+            case "EMOJI_PACK" -> """
+                    - EMOJI_PACK: 提供中文或英文关键词(keywords)描述表情内容。prompt 留空。系统会自动添加"表情包"搜索。""";
+            case "SVG_DIAGRAM" -> """
+                    - SVG_DIAGRAM: 在 prompt 字段描述示意图需求（中文），说明要表达的概念和关系。keywords 留空。
+                      示例：绘制思维导图样式的图，中心是"自律"，周围4个分支：习惯、环境、反馈、系统""";
+            default -> null;
         };
     }
 

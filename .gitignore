@@ -62,3 +62,5 @@ frontend/src/config/env.ts
 *.swp
 *.swo
 *~
+
+.claude/**

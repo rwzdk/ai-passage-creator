@@ -55,7 +55,7 @@ public interface ArticleConstant {
     /**
      * 表情包关键词后缀（程序固定拼接）
      */
-    String EMOJI_PACK_SUFFIX = "表情包";
+    String EMOJI_PACK_SUFFIX = "熊猫头表情包";
 
     /**
      * Bing 图片搜索每批最大数量
