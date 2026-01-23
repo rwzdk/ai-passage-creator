@@ -56,6 +56,12 @@ Thumbs.db
 src/main/resources/application-local.yml
 frontend/src/config/env.ts
 
+# Environment variables (keep .env.example)
+.env
+.env.local
+.env.*.local
+!.env.example
+
 # Temporary files
 *.tmp
 *.temp

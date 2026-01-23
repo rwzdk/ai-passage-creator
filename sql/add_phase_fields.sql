@@ -1,6 +1,8 @@
 # 添加阶段相关字段
 # @author <a href="https://codefather.cn">编程导航学习圈</a>
 
+use ai_passage_creator;
+
 -- 为 article 表添加阶段相关字段
 ALTER TABLE article
     ADD COLUMN phase VARCHAR(50) DEFAULT 'PENDING' COMMENT '当前阶段：PENDING/TITLE_GENERATING/TITLE_SELECTING/OUTLINE_GENERATING/OUTLINE_EDITING/CONTENT_GENERATING' AFTER status,

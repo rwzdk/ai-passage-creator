@@ -1,13 +1,18 @@
-# 数据库初始化
+# 数据库初始化（基础表结构）
 # @author <a href="https://codefather.cn">编程导航学习圈</a>
+# 注意：此文件只包含基础表结构，其他字段由增量 SQL 文件添加
+
+-- 设置字符集（解决中文乱码问题）
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
 
 -- 创建库
-create database if not exists ai_passage_creator;
+create database if not exists ai_passage_creator CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 切换库
 use ai_passage_creator;
 
--- 用户表
+-- 用户表（基础字段，quota 和 vipTime 由增量脚本添加）
 create table if not exists user
 (
     id           bigint auto_increment comment 'id' primary key,
@@ -17,7 +22,6 @@ create table if not exists user
     userAvatar   varchar(1024)                          null comment '用户头像',
     userProfile  varchar(512)                           null comment '用户简介',
     userRole     varchar(256) default 'user'            not null comment '用户角色：user/admin',
-    quota        int          default 5                 not null comment '剩余配额',
     editTime     datetime     default CURRENT_TIMESTAMP not null comment '编辑时间',
     createTime   datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime   datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
@@ -28,31 +32,26 @@ create table if not exists user
 
 -- 初始化数据
 -- 密码是 12345678（MD5 加密 + 盐值 yupi）
-INSERT INTO user (id, userAccount, userPassword, userName, userAvatar, userProfile, userRole, quota) VALUES
-(1, 'admin', '10670d38ec32fa8102be6a37f8cb52bf', '管理员', 'https://www.codefather.cn/logo.png', '系统管理员', 'admin', 5),
-(2, 'user', '10670d38ec32fa8102be6a37f8cb52bf', '普通用户', 'https://www.codefather.cn/logo.png', '我是一个普通用户', 'user', 5),
-(3, 'test', '10670d38ec32fa8102be6a37f8cb52bf', '测试账号', 'https://www.codefather.cn/logo.png', '这是一个测试账号', 'user', 5);
+INSERT INTO user (id, userAccount, userPassword, userName, userAvatar, userProfile, userRole) VALUES
+(1, 'admin', '10670d38ec32fa8102be6a37f8cb52bf', '管理员', 'https://www.codefather.cn/logo.png', '系统管理员', 'admin'),
+(2, 'user', '10670d38ec32fa8102be6a37f8cb52bf', '普通用户', 'https://www.codefather.cn/logo.png', '我是一个普通用户', 'user'),
+(3, 'test', '10670d38ec32fa8102be6a37f8cb52bf', '测试账号', 'https://www.codefather.cn/logo.png', '这是一个测试账号', 'user');
 
--- 文章表
+-- 文章表（基础字段，style/phase/titleOptions/userDescription/enabledImageMethods 由增量脚本添加）
 create table if not exists article
 (
     id              bigint auto_increment comment 'id' primary key,
     taskId          varchar(64)                        not null comment '任务ID（UUID）',
     userId          bigint                             not null comment '用户ID',
     topic           varchar(500)                       not null comment '选题',
-    userDescription text                               null comment '用户补充描述',
-    enabledImageMethods json                           null comment '允许的配图方式列表',
-    style           varchar(20)                        null comment '文章风格：tech/emotional/educational/humorous',
     mainTitle       varchar(200)                       null comment '主标题',
     subTitle        varchar(300)                       null comment '副标题',
-    titleOptions    json                               null comment '标题方案列表（3-5个方案）',
     outline         json                               null comment '大纲（JSON格式）',
     content         text                               null comment '正文（Markdown格式）',
     fullContent     text                               null comment '完整图文（Markdown格式，含配图）',
     coverImage      varchar(512)                       null comment '封面图 URL',
     images          json                               null comment '配图列表（JSON数组，包含封面图 position=1）',
     status          varchar(20) default 'PENDING'      not null comment '状态：PENDING/PROCESSING/COMPLETED/FAILED',
-    phase           varchar(50) default 'PENDING'      null comment '当前阶段：PENDING/TITLE_GENERATING/TITLE_SELECTING/OUTLINE_GENERATING/OUTLINE_EDITING/CONTENT_GENERATING',
     errorMessage    text                               null comment '错误信息',
     createTime      datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
     completedTime   datetime                           null comment '完成时间',

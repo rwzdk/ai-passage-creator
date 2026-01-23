@@ -4,8 +4,8 @@ import { useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { listArticle } from '@/api/articleController'
 import dayjs from 'dayjs'
-import { 
-  RocketOutlined, 
+import {
+  RocketOutlined,
   FileTextOutlined,
   OrderedListOutlined,
   EditOutlined,
@@ -44,7 +44,7 @@ const viewArticle = (article: API.ArticleVO) => {
 // 加载最近文章
 const loadRecentArticles = async () => {
   if (!loginUserStore.loginUser.id) return
-  
+
   loadingArticles.value = true
   try {
     const res = await listArticle({ pageNum: 1, pageSize: 6 })
@@ -57,7 +57,8 @@ const loadRecentArticles = async () => {
 }
 
 // 格式化时间
-const formatTime = (time: string) => {
+const formatTime = (time: string | undefined) => {
+  if (!time) return '--'
   return dayjs(time).format('MM-DD HH:mm')
 }
 
@@ -118,7 +119,7 @@ onMounted(() => {
         </div>
         <h1 class="hero-title">AI 爆款文章创作器</h1>
         <p class="hero-subtitle">让每个人都能写出 10万+ 文章</p>
-        
+
         <!-- 核心输入框 -->
         <div class="input-wrapper">
           <a-input
@@ -137,7 +138,7 @@ onMounted(() => {
             开始创作
           </a-button>
         </div>
-        
+
         <p class="hero-tips">工作总结、心得体会、演讲稿、分析报告... 一键生成</p>
       </div>
     </div>
@@ -151,8 +152,8 @@ onMounted(() => {
           <p class="section-subtitle">强大的 AI 能力，让创作变得简单高效</p>
         </div>
         <div class="features-grid">
-          <div 
-            v-for="(feature, index) in features" 
+          <div
+            v-for="(feature, index) in features"
             :key="index"
             class="feature-card"
           >
@@ -181,7 +182,7 @@ onMounted(() => {
             <RightOutlined />
           </a-button>
         </div>
-        
+
         <a-spin :spinning="loadingArticles">
           <div class="articles-grid">
             <div
@@ -191,9 +192,9 @@ onMounted(() => {
               @click="viewArticle(article)"
             >
               <div class="article-cover">
-                <img 
-                  v-if="article.coverImage" 
-                  :src="article.coverImage" 
+                <img
+                  v-if="article.coverImage"
+                  :src="article.coverImage"
                   :alt="article.mainTitle"
                 />
                 <div v-else class="cover-placeholder">
@@ -596,7 +597,7 @@ onMounted(() => {
   .features-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .articles-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -606,7 +607,7 @@ onMounted(() => {
   .hero-section {
     padding: 60px 20px 80px;
   }
-  
+
   .hero-title {
     font-size: 36px;
   }
@@ -614,29 +615,29 @@ onMounted(() => {
   .hero-subtitle {
     font-size: 16px;
   }
-  
+
   .input-wrapper {
     flex-direction: column;
     padding: 12px;
   }
-  
+
   .cta-btn {
     width: 100%;
     justify-content: center;
   }
-  
+
   .features-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .articles-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .section-title {
     font-size: 24px;
   }
-  
+
   .section-header-row {
     flex-direction: column;
     align-items: flex-start;
