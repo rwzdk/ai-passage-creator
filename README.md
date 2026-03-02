@@ -1,13 +1,46 @@
-# AI 爆款文章创作器
+# AI 爆款文章创作器 ✍️
 
-基于 Spring AI Alibaba 构建的智能文章生成系统，通过多智能体协作完成从选题到图文文章的全自动创作。
+<div align="center">
 
-## 项目介绍
+**AI 爆款文章创作器**
 
-通过 **5 个智能体协作** 完成文章创作：
+基于多智能体协作，自动完成从选题、大纲、正文到配图的全流程图文创作
 
-| 智能体 | 功能 | 功能说明 |
-|-------|------|------|
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.9-6DB33F?style=flat-square&logo=springboot&logoColor=white)
+![Spring AI Alibaba](https://img.shields.io/badge/Spring%20AI%20Alibaba-1.1.0-FF6A00?style=flat-square&logo=spring&logoColor=white)
+![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)
+![JDK](https://img.shields.io/badge/JDK-21+-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
+
+</div>
+
+## 🏗 项目简介
+
+AI 爆款文章创作器是一个基于 **Spring AI Alibaba** 构建的智能图文创作平台，通过 **5 个智能体协作** 完成从选题到图文文章的全自动创作，每个阶段都支持用户介入，实现人机协作的创作体验。
+
+```
+阶段1: 选题 → 生成 3-5 个标题方案 → 用户选择
+阶段2: 标题 → 生成大纲 → 用户编辑 / AI 优化大纲
+阶段3: 大纲 → 生成正文 → 分析配图需求 → 生成配图 → 图文合成
+```
+
+## 🎯 核心价值
+
+| 特性 | 说明 | 价值 |
+|------|------|------|
+| 🤖 多智能体协作 | 5 个 Agent 分工协作，StateGraph 编排 | 专业分工，质量更高 |
+| 🎨 多元配图 | 6 种配图策略 + 自动降级 | 图文并茂，永不中断 |
+| 📡 实时流式输出 | SSE 推送大纲/正文创作过程 | 所见即所得 |
+| 🧑‍💻 人机协作 | 三阶段创作，每步可介入 | 创作可控 |
+| 💎 VIP 会员体系 | Stripe 支付 + 配额管理 | 商业化就绪 |
+| 🐳 Docker 一键部署 | docker compose up 即可运行 | 5 分钟上手 |
+
+## ✨ 功能特性
+
+### 智能体协作
+
+| 智能体 | 功能 | 说明 |
+|--------|------|------|
 | Agent 1 | 标题生成 | 根据选题生成 3-5 个标题方案供用户选择 |
 | Agent 2 | 大纲生成 | 根据标题生成文章大纲（流式输出） |
 | Agent 3 | 正文生成 | 根据大纲生成 Markdown 正文（流式输出） |
@@ -15,58 +48,12 @@
 | Agent 5 | 配图生成 | 获取图片并上传到 COS |
 | 合成 | 合并图文 | 将配图插入正文生成完整图文 |
 
-### 三阶段创作流程
-
-```
-阶段1: 选题 → 生成 3-5 个标题方案 → 用户选择
-阶段2: 标题 → 生成大纲 → 用户编辑/AI优化大纲
-阶段3: 大纲 → 生成正文 → 分析配图需求 → 生成配图 → 图文合成
-```
-
-每个阶段都支持用户介入，实现人机协作的创作体验。
-
-## 技术栈
-
-### 后端
-
-| 技术 | 版本 | 说明 |
-|-----|------|------|
-| Spring Boot | 3.5.9 | Web 框架 |
-| Spring AI Alibaba | 1.1.0 | 多智能体编排框架 |
-| DashScope | - | 通义千问大模型 |
-| MyBatis-Flex | 1.11.1 | ORM 框架 |
-| MySQL | 8.0 | 数据存储 |
-| Spring Data Redis | 3.5.7 | Redis 客户端 |
-| Redisson | 3.50.0 | 分布式锁 |
-| Stripe | 31.2.0 | 支付集成 |
-
-### 前端
-
-| 技术 | 版本 | 说明 |
-|-----|------|------|
-| Vue | 3.5 | 前端框架 |
-| TypeScript | 5.8 | 类型安全 |
-| Ant Design Vue | 4.2 | UI 组件库 |
-| Vite | 7.0 | 构建工具 |
-| Pinia | 3.0 | 状态管理 |
-| ECharts | 6.0 | 数据可视化 |
-
-## 核心功能
-
-### 智能创作
-
-- ✅ 智能标题生成（多方案可选）
-- ✅ 自动大纲规划（支持 AI 优化）
-- ✅ 流式正文创作（实时预览）
-- ✅ 智能配图生成（多种方式）
-- ✅ 图文自动合成
-
 ### 配图方式（策略模式）
 
 系统采用策略模式实现多种配图方式，支持灵活扩展：
 
 | 方式 | 说明 | 数据来源 | 权限 |
-|-----|------|---------|------|
+|------|------|---------|------|
 | Pexels | 高质量图库检索 | 关键词检索 | 全部用户 |
 | Mermaid | 流程图/架构图生成 | AI Prompt 生成 | 全部用户 |
 | Iconify | 图标库检索 | 关键词检索 | 全部用户 |
@@ -86,7 +73,7 @@
 
 ### SSE 实时通信
 
-基于 Server-Sent Events 实现实时进度推送，支持以下消息类型：
+基于 Server-Sent Events 实现实时进度推送：
 
 | 消息类型 | 说明 |
 |---------|------|
@@ -103,14 +90,44 @@
 
 ### 其他特性
 
-- ✅ SSE 实时进度推送
 - ✅ 文章管理（列表、详情、删除）
 - ✅ Markdown 导出
 - ✅ VIP 会员体系（Stripe 支付）
 - ✅ 智能体执行日志追踪（AOP 自动记录）
 - ✅ 管理后台统计分析
 
-## 快速开始
+## 🛠 技术栈
+
+### 后端
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Spring Boot | 3.5.9 | Web 框架 |
+| Spring AI Alibaba | 1.1.0 | 多智能体编排框架 |
+| DashScope | - | 通义千问大模型 |
+| MyBatis-Flex | 1.11.1 | ORM 框架 |
+| MySQL | 8.0 | 数据存储 |
+| Spring Data Redis | - | Redis 客户端 |
+| Redisson | 3.50.0 | 分布式锁 |
+| Stripe | 31.2.0 | 支付集成 |
+| Knife4j | 4.4.0 | 接口文档 |
+| 腾讯云 COS SDK | 5.6.228 | 对象存储 |
+| Google Gen AI SDK | 1.35.0 | Gemini AI 生图 |
+
+### 前端
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Vue | 3.5 | 前端框架 |
+| TypeScript | 5.8 | 类型安全 |
+| Ant Design Vue | 4.2 | UI 组件库 |
+| Vite | 7.0 | 构建工具 |
+| Pinia | 3.0 | 状态管理 |
+| Vue Router | 4.5 | 路由管理 |
+| ECharts | 6.0 | 数据可视化 |
+| Axios | 1.11 | HTTP 客户端 |
+
+## 🚀 快速开始
 
 ### 环境要求
 
@@ -170,7 +187,7 @@ npm run dev
 
 前端页面：http://localhost:5173
 
-## Docker 一键部署（推荐）
+## 🐳 Docker 一键部署（推荐）
 
 ### 前置条件
 
@@ -199,14 +216,13 @@ docker compose up -d --build
 如果遇到 Docker 镜像拉取失败，使用国内镜像版本：
 
 ```bash
-# 使用国内镜像源启动（推荐）
 docker compose -f docker-compose.china.yml up -d --build
 ```
 
 ### 服务端口
 
 | 服务 | 端口 | 说明 |
-|-----|------|------|
+|------|------|------|
 | 前端 | 80 | 访问地址：http://localhost |
 | 后端 | 8123 | API 接口：http://localhost:8123/api |
 | 接口文档 | 8123 | http://localhost:8123/api/doc.html |
@@ -239,7 +255,7 @@ docker compose down -v
 ### 环境变量说明
 
 | 变量名 | 必需 | 默认值 | 说明 |
-|-------|------|--------|------|
+|--------|------|--------|------|
 | DASHSCOPE_API_KEY | ✅ | - | 通义千问 API Key |
 | PEXELS_API_KEY | ✅ | - | Pexels 图片 API Key |
 | MYSQL_ROOT_PASSWORD | - | 123456 | MySQL root 密码 |
@@ -251,7 +267,7 @@ docker compose down -v
 
 详见 `.env.example` 文件获取完整配置说明。
 
-## 项目结构
+## 📁 项目结构
 
 ```
 ├── src/main/java/com/yupi/template/
@@ -311,7 +327,7 @@ docker compose down -v
 └── pom.xml                          # Maven 配置
 ```
 
-## 数据库设计
+## 🗄 数据库设计
 
 ### 核心表
 
@@ -332,25 +348,25 @@ titleOptions         -- 标题方案列表（JSON）
 enabledImageMethods  -- 允许的配图方式（JSON 数组）
 ```
 
-## API Key 获取
+## 🔑 API Key 获取
 
 | 服务 | 获取地址 | 说明 |
-|-----|---------|------|
+|------|---------|------|
 | 通义千问 | https://bailian.console.aliyun.com | 必需 |
 | Pexels | https://www.pexels.com/api/ | 必需 |
 | Stripe | https://dashboard.stripe.com | 支付功能 |
 | 腾讯云 COS | https://console.cloud.tencent.com | 图片上传 |
 | Nano Banana | - | Gemini AI 生图（VIP 功能） |
 
-## 测试账号
+## 🧪 测试账号
 
 | 账号 | 密码 | 角色 |
-|-----|------|------|
+|------|------|------|
 | admin | 12345678 | 管理员 |
 | user | 12345678 | 普通用户 |
 | test | 12345678 | 测试账号 |
 
-## 架构特点
+## 🏛 架构特点
 
 ### 多智能体编排
 
@@ -393,7 +409,7 @@ public enum ImageMethodEnum {
 - 配图生成实时通知
 - 阶段状态实时更新
 
-## 扩展指南
+## 🔧 扩展指南
 
 ### 添加新的配图方式
 
@@ -424,12 +440,12 @@ public class NewMethodService implements ImageSearchService {
 2. 在 `PromptConstant` 添加对应的 Prompt 附加内容
 3. 在 `ArticleAgentService.getStylePrompt()` 添加 case
 
-## 相关文档
+## 📖 相关文档
 
 - [VIP 功能说明](VIP_FEATURES.md) - VIP 会员权益介绍
 - [Stripe 支付配置](STRIPE_SETUP.md) - 支付功能配置指南
 - [项目架构概览](PROJECT_OVERVIEW.md) - 详细技术架构文档
 
-## 作者
+## 👨‍💻 作者
 
 <a href="https://codefather.cn">编程导航学习圈</a>
