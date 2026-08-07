@@ -50,6 +50,9 @@
               <a-tag v-if="record.userRole === 'admin'" color="purple" class="role-tag">
                 管理员
               </a-tag>
+              <a-tag v-else-if="record.userRole === 'vip'" color="gold" class="role-tag">
+                VIP 会员
+              </a-tag>
               <a-tag v-else color="blue" class="role-tag">
                 普通用户
               </a-tag>
@@ -100,6 +103,22 @@ const columns = [
   {
     title: '简介',
     dataIndex: 'userProfile',
+  },
+  {
+    title: 'QQ 邮箱',
+    dataIndex: 'userEmail',
+  },
+  {
+    title: '电话',
+    dataIndex: 'userPhone',
+  },
+  {
+    title: '博客',
+    dataIndex: 'userBlog',
+  },
+  {
+    title: 'GitHub',
+    dataIndex: 'userGithub',
   },
   {
     title: '用户角色',
@@ -371,4 +390,63 @@ onMounted(() => {
     }
   }
 }
+  /* 沅水青山后台：清晰的检索带与可扫描的数据表 */
+  #userManagePage {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 84% 5%, rgba(199, 168, 120, .15), transparent 25%),
+    linear-gradient(150deg, #e7f0ea 0%, #f7f5ee 42%, #f3f7f3 100%);
+
+  .page-header {
+    position: relative;
+    padding: 42px 20px 34px;
+    background: linear-gradient(110deg, rgba(32, 59, 56, .94), rgba(69, 111, 100, .88));
+    color: #f7f5ee;
+  }
+
+  .page-header::after {
+    position: absolute;
+    right: 9%;
+    bottom: -36px;
+    width: 260px;
+    height: 92px;
+    border: 1px solid rgba(255, 255, 255, .18);
+    border-radius: 50%;
+    content: '';
+    transform: rotate(-8deg);
+  }
+
+  .page-title { color: #f7f5ee; font-size: 34px; letter-spacing: -.04em; }
+  .page-subtitle { color: rgba(247, 245, 238, .7); }
+  .content-card {
+    margin-top: 28px;
+    border: 1px solid rgba(255, 255, 255, .72);
+    border-radius: 18px;
+    background: rgba(247, 250, 246, .78);
+    box-shadow: 0 24px 70px rgba(32, 59, 56, .1), inset 0 1px 0 rgba(255, 255, 255, .74);
+    backdrop-filter: blur(18px) saturate(115%);
+    -webkit-backdrop-filter: blur(18px) saturate(115%);
+  }
+
+  .search-section { padding: 4px 0; }
+  .search-form :deep(.ant-form-item-label > label) { color: var(--ink-muted); font-size: 12px; }
+  .search-input { border-color: rgba(69, 111, 100, .18); background: rgba(255, 255, 255, .68); }
+  .search-input:focus { box-shadow: 0 0 0 3px rgba(143, 184, 164, .2); }
+  .search-btn { border: 0 !important; border-radius: 999px; background: var(--ink-deep) !important; box-shadow: 0 8px 18px rgba(32, 59, 56, .15) !important; }
+  .search-btn:hover { background: var(--mountain-green) !important; }
+  .user-table :deep(.ant-table) { background: transparent; }
+  .user-table :deep(.ant-table-thead > tr > th) { background: rgba(224, 236, 229, .62); color: var(--ink-muted); border-bottom-color: rgba(69, 111, 100, .15); }
+  .user-table :deep(.ant-table-tbody > tr > td) { border-bottom-color: rgba(69, 111, 100, .1); color: var(--ink-deep); }
+  .user-table :deep(.ant-table-tbody > tr:hover > td) { background: rgba(224, 236, 229, .45); }
+  .user-avatar { border-color: rgba(255, 255, 255, .9); box-shadow: 0 5px 14px rgba(32, 59, 56, .12); }
+  .role-tag { border: 0; }
+  .delete-btn { border-radius: 999px; }
+
+  @media (max-width: 768px) {
+    .page-header { padding: 32px 20px 28px; }
+    .page-title { font-size: 28px; }
+    .content-card { margin-top: 18px; }
+  }
+  }
 </style>
