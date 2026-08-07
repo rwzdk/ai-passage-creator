@@ -17,6 +17,7 @@ import {
 import ScrollReveal from '@/components/motion/ScrollReveal.vue'
 import CountUpNumber from '@/components/motion/CountUpNumber.vue'
 import StaggerList from '@/components/motion/StaggerList.vue'
+import TextReveal from '@/components/motion/TextReveal.vue'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
@@ -141,7 +142,7 @@ onMounted(loadRecentArticles)
 
         <StaggerList class="metrics-grid" :step="100">
           <article v-for="metric in metrics" :key="metric.label" class="metric-card">
-            <div class="metric-value"><CountUpNumber :value="metric.value" /></div>
+            <div class="metric-value"><CountUpNumber :value="metric.value" :replay-on-view="true" /></div>
             <h3>{{ metric.label }}</h3>
             <p>{{ metric.note }}</p>
           </article>
@@ -152,10 +153,10 @@ onMounted(loadRecentArticles)
     <section v-if="loginUserStore.loginUser.id" class="recent-section">
       <div class="home-container">
         <ScrollReveal class="section-heading compact-heading">
-          <div>
-            <div class="eyebrow">Recent notes</div>
-            <h2>最近留下的作品</h2>
-            <p>从这里继续你的下一段表达。</p>
+          <div class="recent-heading-copy">
+            <div class="eyebrow"><span class="signal-dot" /> Recent notes</div>
+            <TextReveal tag="h2" text="最近留下的作品" :step="34" />
+            <TextReveal tag="p" text="从这里继续你的下一段表达。" :step="20" />
           </div>
           <a-button type="link" class="text-link" @click="goToList">查看全部 <ArrowRightOutlined /></a-button>
         </ScrollReveal>
@@ -398,8 +399,13 @@ onMounted(loadRecentArticles)
 
 .compact-heading { display: flex; width: 100%; max-width: none; align-items: flex-end; justify-content: space-between; }
 .compact-heading h2 { margin-bottom: 8px; font-size: clamp(2rem, 4vw, 3.4rem); }
+.recent-heading-copy { position: relative; }
+.recent-heading-copy::after { position: absolute; top: 4px; left: -18px; width: 1px; height: calc(100% - 8px); background: linear-gradient(180deg, transparent, rgba(69, 111, 100, .35), transparent); content: ''; }
+.recent-section .signal-dot { display: inline-block; margin-right: 8px; vertical-align: middle; animation: signal-pulse 2s ease-in-out infinite; }
 .article-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-.article-card { overflow: hidden; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: rgba(255,255,255,0.72); cursor: pointer; transition: transform var(--transition-normal), box-shadow var(--transition-normal); }
+.article-card { position: relative; overflow: hidden; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: rgba(255,255,255,0.72); cursor: pointer; transition: transform var(--transition-normal), box-shadow var(--transition-normal); }
+.article-card::after { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 25%, rgba(255,255,255,.28) 48%, transparent 72%); content: ''; pointer-events: none; transform: translateX(-130%); transition: transform 900ms var(--ease-out); }
+.article-card:hover::after { transform: translateX(130%); }
 .article-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-card-hover); }
 .article-cover { display: grid; place-items: center; height: 160px; overflow: hidden; background: var(--color-background-tertiary); color: var(--mountain-green); font-size: 32px; }
 .article-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-slow); }
@@ -408,7 +414,8 @@ onMounted(loadRecentArticles)
 .article-info h3 { display: -webkit-box; overflow: hidden; margin: 0 0 16px; color: var(--ink-deep); font-size: 17px; font-weight: 600; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .article-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--ink-muted); font-size: 12px; }
 .article-meta span:first-child { display: inline-flex; align-items: center; gap: 5px; }
-.article-status { color: var(--mountain-green); }
+.article-status { display: inline-flex; align-items: center; gap: 6px; color: var(--mountain-green); }
+.article-status::before { width: 6px; height: 6px; border-radius: 50%; background: var(--mountain-green); box-shadow: 0 0 0 4px rgba(143, 184, 164, .16); content: ''; }
 .empty-articles { display: grid; justify-items: center; gap: 10px; padding: 58px 20px; border: 1px dashed var(--line-soft); border-radius: var(--radius-lg); color: var(--ink-muted); text-align: center; }
 .empty-articles > :first-child { color: var(--river-green); font-size: 32px; }
 .empty-articles strong { color: var(--ink-deep); }
@@ -445,6 +452,12 @@ onMounted(loadRecentArticles)
   .feature-card { min-height: auto; }
   .feature-card h3 { margin-top: 28px; }
   .compact-heading { align-items: start; flex-direction: column; gap: 12px; }
+  .recent-heading-copy::after { display: none; }
+}
+
+@keyframes signal-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(143, 184, 164, .16); opacity: .72; }
+  50% { box-shadow: 0 0 0 8px rgba(143, 184, 164, .04); opacity: 1; }
 }
 /* 新生成的沅水场景背景 */
 .home-hero {
