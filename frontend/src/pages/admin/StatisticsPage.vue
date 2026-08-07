@@ -220,8 +220,8 @@ const renderTrendChart = () => {
         ],
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#4ADE80' },
-            { offset: 1, color: '#22C55E' }
+            { offset: 0, color: '#8fb8a4' },
+            { offset: 1, color: '#456f64' }
           ]),
           borderRadius: [4, 4, 0, 0]
         },
@@ -279,17 +279,17 @@ const renderUserChart = () => {
           {
             value: stats.value.vipUserCount ?? 0,
             name: 'VIP 会员',
-            itemStyle: { color: '#22C55E' }
+            itemStyle: { color: '#456f64' }
           },
           {
             value: stats.value.activeUserCount ?? 0,
             name: '活跃用户',
-            itemStyle: { color: '#3B82F6' }
+            itemStyle: { color: '#c7a878' }
           },
           {
             value: (stats.value.totalUserCount ?? 0) - (stats.value.activeUserCount ?? 0) - (stats.value.vipUserCount ?? 0),
             name: '其他用户',
-            itemStyle: { color: '#94A3B8' }
+            itemStyle: { color: '#9db6ad' }
           }
         ]
       }
@@ -325,12 +325,12 @@ const renderQuotaChart = () => {
           {
             value: usedQuota,
             name: '已使用',
-            itemStyle: { color: '#EF4444' }
+            itemStyle: { color: '#b86d67' }
           },
           {
             value: remainingQuota,
             name: '剩余',
-            itemStyle: { color: '#22C55E' }
+            itemStyle: { color: '#8fb8a4' }
           }
         ],
         emphasis: {
@@ -587,5 +587,55 @@ onUnmounted(() => {
       }
     }
   }
+}
+/* 沅水青山运营视图：让关键数据先被看见，再进入图表细节 */
+.statistics-page {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 82% 6%, rgba(199, 168, 120, .15), transparent 23%),
+    linear-gradient(155deg, #e7f0ea 0%, #f7f5ee 48%, #eef5f0 100%);
+}
+
+.statistics-page .page-header {
+  position: relative;
+  padding: 42px 20px 36px;
+  background: linear-gradient(110deg, rgba(32, 59, 56, .95), rgba(69, 111, 100, .88));
+}
+
+.statistics-page .page-header::after {
+  position: absolute;
+  right: 8%;
+  bottom: -40px;
+  width: 300px;
+  height: 100px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 50%;
+  content: '';
+  transform: rotate(-8deg);
+}
+
+.statistics-page .page-title { color: #f7f5ee; font-size: 34px; letter-spacing: -.04em; }
+.statistics-page .page-subtitle { color: rgba(247, 245, 238, .7); }
+.statistics-page .refresh-btn { border: 1px solid rgba(255, 255, 255, .34); color: #f7f5ee; background: rgba(255, 255, 255, .1); border-radius: 999px; }
+.statistics-page .refresh-btn:hover { color: #fff; border-color: rgba(255, 255, 255, .7); background: rgba(255, 255, 255, .18); }
+.statistics-page .container { position: relative; z-index: 1; }
+.statistics-page .stat-card, .statistics-page .chart-card { border: 1px solid rgba(255, 255, 255, .76); background: rgba(247, 250, 246, .8); box-shadow: 0 22px 58px rgba(32, 59, 56, .08), inset 0 1px 0 rgba(255, 255, 255, .72); backdrop-filter: blur(16px) saturate(112%); -webkit-backdrop-filter: blur(16px) saturate(112%); }
+.statistics-page .stat-card { position: relative; overflow: hidden; }
+.statistics-page .stat-card::after { position: absolute; right: -22px; bottom: -28px; width: 96px; height: 56px; border: 1px solid rgba(69, 111, 100, .16); border-radius: 50%; content: ''; transform: rotate(-14deg); }
+.statistics-page .stat-card:hover { box-shadow: 0 26px 64px rgba(32, 59, 56, .13); }
+.statistics-page .stat-icon { background: rgba(143, 184, 164, .18) !important; }
+.statistics-page .stat-icon .anticon { color: var(--mountain-green) !important; }
+.statistics-page .stat-label, .statistics-page .perf-label { color: var(--ink-muted); }
+.statistics-page .stat-value, .statistics-page .perf-value { color: var(--ink-deep); }
+.statistics-page .chart-card { border-radius: 18px; }
+.statistics-page .chart-title { color: var(--ink-deep); }
+.statistics-page .chart-title .anticon { color: var(--mountain-green); }
+.statistics-page .performance-stats { padding: 14px 4px; }
+.statistics-page .performance-stats :deep(.ant-divider) { border-color: var(--line-soft); }
+
+@media (max-width: 768px) {
+  .statistics-page .page-header { padding: 32px 16px 28px; }
+  .statistics-page .page-title { font-size: 28px; }
 }
 </style>
