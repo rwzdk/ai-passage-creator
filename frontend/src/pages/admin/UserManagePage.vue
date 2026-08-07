@@ -402,7 +402,11 @@ onMounted(() => {
   overflow: hidden;
   background:
     radial-gradient(circle at 84% 5%, rgba(199, 168, 120, .15), transparent 25%),
-    linear-gradient(150deg, #e7f0ea 0%, #f7f5ee 42%, #f3f7f3 100%);
+    linear-gradient(150deg, rgba(231, 240, 234, .78) 0%, rgba(247, 245, 238, .76) 42%, rgba(243, 247, 243, .82) 100%),
+    url('@/assets/scenes/admin-users.png');
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
 
   .page-header {
     position: relative;
