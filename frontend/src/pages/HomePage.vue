@@ -32,6 +32,7 @@ const promptPaused = ref(false)
 const homeHotTopics = ref<API.HotTopicItem[]>([])
 const hotTopicsSource = ref('fallback')
 const hotTopicsRefreshing = ref(false)
+const hotTopicsUpdatedAt = ref('')
 let promptTimer: ReturnType<typeof window.setInterval> | undefined
 const promptCards = [
   { type: '工作总结', title: '总结一次项目复盘，提炼可复制的团队协作方法', description: '适合季度总结与项目复盘' },
@@ -78,8 +79,8 @@ const selectPrompt = (prompt: string) => {
   nextTick(() => topicInputRef.value?.querySelector('input')?.focus())
 }
 
-const nextPrompt = () => {
-  if (promptPaused.value || displayPromptCards.value.length === 0) return
+const nextPrompt = (manual = false) => {
+  if ((!manual && promptPaused.value) || displayPromptCards.value.length === 0) return
   promptNoTransition.value = false
   promptIndex.value += 1
   if (promptIndex.value >= displayPromptCards.value.length) {
@@ -118,7 +119,9 @@ const loadHomeHotTopics = async (refresh = false) => {
     if (data?.items?.length) {
       homeHotTopics.value = data.items
       hotTopicsSource.value = data.source || 'gnews'
+      hotTopicsUpdatedAt.value = data.updatedAt || new Date().toISOString()
       promptIndex.value = 0
+      activePromptIndex.value = 0
     }
   } catch (error) {
     console.warn('首页热门选题加载失败，继续使用本地推荐', error)
@@ -128,6 +131,11 @@ const loadHomeHotTopics = async (refresh = false) => {
 }
 
 const refreshHomeHotTopics = () => loadHomeHotTopics(true)
+
+const formatHotTopicsTime = (value: string) => {
+  if (!value) return ''
+  return dayjs(value).format('HH:mm:ss')
+}
 
 const goToList = () => router.push('/article/list')
 const viewArticle = (article: API.ArticleVO) => router.push(`/article/${article.taskId}`)
@@ -213,17 +221,17 @@ onBeforeUnmount(() => {
             <div class="prompt-carousel-heading">
               <span><span class="signal-dot" /> {{ hotTopicsSource === 'gnews' ? '正在发生的灵感' : '创作灵感推荐' }}</span>
               <span class="prompt-carousel-actions">
-                <span class="prompt-carousel-hint">点击主题即可填入</span>
-                <a-button
-                  type="text"
-                  size="small"
-                  class="prompt-refresh"
-                  :loading="hotTopicsRefreshing"
-                  aria-label="刷新实时热点"
-                  @click="refreshHomeHotTopics"
-                >
-                  <ReloadOutlined /> 刷新
-                </a-button>
+                  <span class="prompt-carousel-hint">点击主题即可填入<span v-if="hotTopicsUpdatedAt"> · {{ formatHotTopicsTime(hotTopicsUpdatedAt) }} 更新</span></span>
+                  <a-button
+                    type="text"
+                    size="small"
+                    class="prompt-refresh"
+                    :loading="hotTopicsRefreshing"
+                    aria-label="刷新实时热点"
+                    @click="refreshHomeHotTopics"
+                  >
+                    <ReloadOutlined /> 刷新
+                  </a-button>
               </span>
             </div>
             <button type="button" class="prompt-arrow prompt-arrow-left" aria-label="上一个主题" @click="previousPrompt">‹</button>
@@ -246,7 +254,7 @@ onBeforeUnmount(() => {
                 </button>
               </div>
             </div>
-            <button type="button" class="prompt-arrow prompt-arrow-right" aria-label="下一个主题" @click="nextPrompt">›</button>
+            <button type="button" class="prompt-arrow prompt-arrow-right" aria-label="下一个主题" @click="nextPrompt(true)">›</button>
           </div>
         </ScrollReveal>
       </div>

@@ -294,6 +294,19 @@
             <BulbOutlined />
             热门选题
           </h4>
+          <div class="hot-topics-toolbar">
+            <span class="hot-topics-meta">{{ hotTopicsSource === 'gnews' ? '实时热点' : '本地推荐' }}<span v-if="hotTopicsUpdatedAt"> · {{ formatHotTopicsTime(hotTopicsUpdatedAt) }} 更新</span></span>
+            <a-button
+              type="text"
+              size="small"
+              class="hot-topics-refresh"
+              :loading="hotTopicsLoading"
+              aria-label="刷新热门选题"
+              @click="loadHotTopics(true)"
+            >
+              <ReloadOutlined /> 刷新
+            </a-button>
+          </div>
           <div class="hot-tags">
             <span
               v-for="item in hotTopics"
@@ -557,7 +570,8 @@ import {
   PictureOutlined,
   WarningOutlined,
   CrownOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  ReloadOutlined
 } from '@ant-design/icons-vue'
 import { createArticle, confirmTitle, confirmOutline } from '@/api/articleController'
 import { getHotTopics } from '@/api/hotTopicController'
@@ -996,10 +1010,10 @@ onMounted(() => {
   loadHotTopics()
 })
 
-const loadHotTopics = async () => {
+const loadHotTopics = async (refresh = false) => {
   hotTopicsLoading.value = true
   try {
-    const res = await getHotTopics()
+    const res = await getHotTopics(refresh ? { params: { refresh: true } } : undefined)
     const data = res.data.data
     if (data?.items?.length) {
       hotTopics.value = data.items
@@ -1011,6 +1025,11 @@ const loadHotTopics = async () => {
   } finally {
     hotTopicsLoading.value = false
   }
+}
+
+const formatHotTopicsTime = (value: string) => {
+  if (!value) return ''
+  return new Date(value).toLocaleTimeString('zh-CN', { hour12: false })
 }
 
 const selectHotTopic = (item: API.HotTopicItem) => {
@@ -1694,6 +1713,31 @@ onBeforeUnmount(() => {
 }
 
 /* 热门选题 */
+.hot-topics-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 26px;
+  margin: 2px 0 8px;
+}
+
+.hot-topics-meta {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.hot-topics-refresh {
+  height: 24px;
+  padding: 0 6px;
+  color: var(--color-primary);
+  font-size: 12px;
+}
+
+.hot-topics-refresh:hover {
+  color: var(--color-primary-hover);
+  background: rgba(34, 197, 94, 0.08);
+}
+
 .hot-tags {
   display: flex;
   flex-wrap: wrap;
