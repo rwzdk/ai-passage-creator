@@ -867,4 +867,25 @@ onMounted(() => {
     }
   }
 }
+/* 沿江阅读页视觉层 */
+.article-detail-page {
+  background:
+    radial-gradient(circle at 84% 4%, rgba(143, 184, 164, 0.2), transparent 35rem),
+    var(--paper-warm);
+}
+
+.article-detail-page .page-header { background: transparent; }
+.article-detail-page .article-card { border-color: var(--line-soft); background: rgba(255, 255, 255, 0.8); box-shadow: var(--shadow-xl); backdrop-filter: blur(15px); }
+.article-detail-page .article-card :deep(.ant-card-body) { padding: clamp(28px, 5vw, 64px); }
+.article-detail-page .title-section { padding-bottom: 26px; border-bottom: 1px solid var(--line-soft); }
+.article-detail-page .title-section .main-title { color: var(--ink-deep); font-family: 'Outfit', 'Microsoft YaHei', sans-serif; font-size: clamp(2rem, 4vw, 3.6rem); font-weight: 500; }
+.article-detail-page .content-section .markdown-content { max-width: 760px; margin: 0 auto; font-size: 16px; line-height: 2; }
+.article-detail-page .content-section .markdown-content :deep(p) { color: #34504a; }
+.article-detail-page .outline-section .outline-list .outline-item { border-color: var(--line-soft); border-left: 3px solid var(--river-green); background: rgba(243, 247, 243, 0.65); }
+.article-detail-page .execution-logs-section { border-color: var(--line-soft); background: rgba(243, 247, 243, 0.65); }
+.article-detail-page .images-section .images-grid .image-item { border-color: var(--line-soft); }
+.article-detail-page .images-section .images-grid .image-item:hover { border-color: var(--river-green); box-shadow: var(--shadow-card-hover); transform: translateY(-4px); }
+.article-detail-page .content-section, .article-detail-page .outline-section, .article-detail-page .execution-logs-section { animation: reading-section-in 520ms var(--ease-out) both; }
+
+@keyframes reading-section-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 </style>

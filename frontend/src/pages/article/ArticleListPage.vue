@@ -759,4 +759,42 @@ onMounted(() => {
     }
   }
 }
+/* 沿江作品库视觉层 */
+.article-list-page {
+  background:
+    radial-gradient(circle at 82% 6%, rgba(143, 184, 164, 0.18), transparent 31rem),
+    var(--paper-warm);
+}
+
+.article-list-page .page-header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(224, 236, 229, 0.9), rgba(247, 245, 238, 0.95));
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.article-list-page .page-header::after {
+  position: absolute;
+  right: 8%;
+  bottom: -46px;
+  width: 220px;
+  height: 140px;
+  border: 1px solid rgba(69, 111, 100, 0.18);
+  border-radius: 50% 50% 0 0;
+  content: '';
+  transform: rotate(-8deg);
+}
+
+.article-list-page .header-container,
+.article-list-page .container { position: relative; z-index: 1; }
+.article-list-page .page-title { color: var(--ink-deep); font-family: 'Outfit', 'Microsoft YaHei', sans-serif; font-weight: 500; }
+.article-list-page .filter-bar,
+.article-list-page .table-card { border-color: var(--line-soft); background: rgba(255, 255, 255, 0.7); box-shadow: var(--shadow-card); backdrop-filter: blur(12px); }
+.article-list-page :deep(.ant-table-wrapper) { animation: list-settle 520ms var(--ease-out) both; }
+.article-list-page :deep(.ant-table-tbody > tr) { transition: background var(--transition-fast), transform var(--transition-fast); }
+.article-list-page :deep(.ant-table-tbody > tr:hover > td) { background: rgba(143, 184, 164, 0.1) !important; }
+.article-list-page :deep(.ant-pagination-item-active) { border-color: var(--mountain-green); }
+.article-list-page :deep(.ant-pagination-item-active a) { color: var(--mountain-green); }
+
+@keyframes list-settle { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 </style>
