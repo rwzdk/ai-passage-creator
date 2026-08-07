@@ -381,6 +381,12 @@ onUnmounted(() => {
   background: var(--color-background-secondary);
   min-height: calc(100vh - 64px);
   padding-bottom: 60px;
+  background-image:
+    linear-gradient(155deg, rgba(231, 240, 234, .74), rgba(247, 245, 238, .9)),
+    url('@/assets/profile/creation-stats-bg.png');
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
 
   .page-header {
     background: var(--gradient-hero);
@@ -634,7 +640,17 @@ onUnmounted(() => {
 .statistics-page .performance-stats { padding: 14px 4px; }
 .statistics-page .performance-stats :deep(.ant-divider) { border-color: var(--line-soft); }
 
+.statistics-page {
+  background-image:
+    linear-gradient(155deg, rgba(231, 240, 234, .74), rgba(247, 245, 238, .9)),
+    url('@/assets/profile/creation-stats-bg.png');
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
 @media (max-width: 768px) {
+  .statistics-page { background-attachment: scroll; }
   .statistics-page .page-header { padding: 32px 16px 28px; }
   .statistics-page .page-title { font-size: 28px; }
 }

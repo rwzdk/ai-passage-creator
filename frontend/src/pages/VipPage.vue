@@ -677,6 +677,7 @@ const handlePurchase = async () => {
 @keyframes river-drift { from { transform: rotate(-12deg) translate3d(-14px, 0, 0); } to { transform: rotate(-9deg) translate3d(14px, 10px, 0); } }
 
 .page-header { position: relative; margin-bottom: 42px; text-align: left; }
+.vip-page .page-header { margin: 0 0 30px; padding: 0 0 18px; background: transparent; }
 .eyebrow, .section-kicker { color: var(--mountain-green); font-size: 11px; font-weight: 700; letter-spacing: .18em; }
 .header-row { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-top: 18px; }
 .header-badge { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 14px; padding: 7px 12px; border: 1px solid rgba(69, 111, 100, .2); border-radius: 999px; color: var(--mountain-green); background: rgba(247, 250, 246, .62); font-size: 12px; }
@@ -685,9 +686,9 @@ const handlePurchase = async () => {
 .header-note { display: flex; align-items: center; gap: 12px; padding-bottom: 7px; color: var(--ink-muted); font-size: 12px; line-height: 1.7; text-align: right; white-space: nowrap; }
 .note-mark { color: var(--accent-gold); font-size: 36px; font-weight: 300; letter-spacing: -.08em; }
 
-.main-section { grid-template-columns: 380px minmax(0, 1fr); gap: 24px; align-items: start; margin-bottom: 28px; }
+.main-section { grid-template-columns: 380px minmax(0, 1fr); gap: 24px; align-items: stretch; margin-bottom: 28px; }
 .pricing-card, .features-section, .faq-section { border: 1px solid rgba(255, 255, 255, .78); background: rgba(247, 250, 246, .72); box-shadow: 0 26px 80px rgba(32, 59, 56, .11), inset 0 1px 0 rgba(255, 255, 255, .74); backdrop-filter: blur(20px) saturate(115%); -webkit-backdrop-filter: blur(20px) saturate(115%); }
-.pricing-card { position: sticky; top: 88px; padding: 36px 32px 28px; border: 1px solid rgba(69, 111, 100, .36); border-radius: 20px; }
+.pricing-card { position: sticky; top: 88px; padding: 36px 32px 28px; border: 1px solid rgba(255, 255, 255, .84); border-radius: 24px; }
 .pricing-badge { background: var(--ink-deep); box-shadow: 0 10px 24px rgba(32, 59, 56, .18); }
 .plan-icon { border-radius: 50%; background: rgba(199, 168, 120, .17); }
 .plan-icon .anticon { color: var(--accent-gold); }
@@ -708,12 +709,12 @@ const handlePurchase = async () => {
 .checkout-step span { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid rgba(69, 111, 100, .3); border-radius: 50%; color: var(--mountain-green); background: rgba(255, 255, 255, .62); }
 .checkout-step p { margin: 0; }
 
-.features-section { padding: 32px; border-radius: 20px; }
+.features-section { display: flex; min-height: 100%; flex-direction: column; padding: 32px; border-radius: 24px; }
 .benefits-header { justify-content: space-between; align-items: end; margin-bottom: 24px; }
 .section-title { margin: 8px 0 0; color: var(--ink-deep); font-size: 24px; font-weight: 600; letter-spacing: -.04em; }
 .section-count { color: var(--ink-muted); font-size: 12px; }
-.features-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.feature-card { padding: 18px; border: 1px solid transparent; border-radius: 12px; background: rgba(255, 255, 255, .48); transition: transform var(--transition-normal), border-color var(--transition-normal), background var(--transition-normal); }
+.features-grid { flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-content: center; }
+.feature-card { padding: 20px 18px; border: 1px solid rgba(255, 255, 255, .62); border-radius: 16px; background: rgba(255, 255, 255, .48); transition: transform var(--transition-normal), border-color var(--transition-normal), background var(--transition-normal); }
 .feature-card:hover { border-color: rgba(69, 111, 100, .2); background: rgba(255, 255, 255, .82); transform: translateY(-3px); }
 .feature-icon-wrapper { width: 36px; height: 36px; border-radius: 10px; background: rgba(143, 184, 164, .2); }
 .feature-icon, .features-title .anticon { color: var(--mountain-green); }
@@ -762,6 +763,16 @@ const handlePurchase = async () => {
   background-position: center;
   background-size: cover;
   background-attachment: fixed;
+}
+
+.vip-page .page-header::before {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(69, 111, 100, .3), transparent);
+  content: '';
 }
 
 @media (max-width: 768px) {

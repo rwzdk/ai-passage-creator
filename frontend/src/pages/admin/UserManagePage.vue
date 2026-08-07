@@ -208,6 +208,12 @@ onMounted(() => {
   background: var(--color-background-secondary);
   min-height: 100vh;
   padding-bottom: 60px;
+  background-image:
+    linear-gradient(180deg, rgba(247, 250, 246, .72), rgba(247, 245, 238, .92)),
+    url('@/assets/profile/my-works-bg.png');
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
 
   .page-header {
     background: var(--gradient-hero);

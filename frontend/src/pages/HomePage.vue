@@ -474,4 +474,33 @@ onMounted(loadRecentArticles)
 @media (prefers-reduced-motion: reduce) {
   .hero-mist, .orbit-ring, .topic-composer::before { animation: none; }
 }
+
+/* 首页每个分段使用独立场景，避免滚动后画面重复 */
+.method-section {
+  background-image:
+    linear-gradient(180deg, rgba(247, 245, 238, .9), rgba(247, 250, 246, .82)),
+    url('@/assets/scenes/article-list-river.png');
+  background-position: 20% 44%;
+  background-size: cover;
+}
+
+.metrics-section {
+  background-image:
+    linear-gradient(135deg, rgba(32, 59, 56, .94), rgba(49, 87, 79, .78)),
+    url('@/assets/scenes/article-detail-mist.png');
+  background-position: 72% 60%;
+  background-size: cover;
+}
+
+.recent-section {
+  background-image:
+    linear-gradient(180deg, rgba(247, 245, 238, .84), rgba(247, 245, 238, .94)),
+    url('@/assets/scenes/create-desk.png');
+  background-position: 88% 78%;
+  background-size: cover;
+}
+
+@media (max-width: 768px) {
+  .method-section, .metrics-section, .recent-section { background-attachment: scroll; }
+}
 </style>
