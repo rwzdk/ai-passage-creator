@@ -1,26 +1,33 @@
 <template>
   <div class="vip-page">
+    <div class="river-lines" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
     <div class="vip-container">
-      <!-- 页面头部 -->
       <div class="page-header">
-        <div class="header-badge">
-          <CrownOutlined />
-          <span>会员专属</span>
+        <div class="eyebrow">AI PASSAGE CREATOR · MEMBERSHIP</div>
+        <div class="header-row">
+          <div>
+            <div class="header-badge"><CrownOutlined /><span>创作者长期方案</span></div>
+            <h1 class="page-title">让灵感，不再被配额打断</h1>
+            <p class="page-subtitle">一次购买，解锁完整创作工作台。把更多时间留给选题、表达和下一篇作品。</p>
+          </div>
+          <div class="header-note">
+            <span class="note-mark">01</span>
+            <span>永久会员<br />一次支付 · 终身有效</span>
+          </div>
         </div>
-        <h1 class="page-title">升级永久会员</h1>
-        <p class="page-subtitle">解锁全部高级功能，无限创作配额，终身有效</p>
       </div>
 
-      <!-- 主内容区：左右布局 -->
       <div class="main-section">
-        <!-- 左侧：价格卡片 -->
         <div class="pricing-card">
-          <div class="pricing-badge">限时优惠</div>
+          <div class="pricing-badge">创作者专享</div>
           <div class="pricing-header">
             <div class="plan-icon">
               <CrownOutlined />
             </div>
             <h2 class="plan-name">永久会员</h2>
+            <p class="plan-copy">为持续写作准备的一张长期通行证</p>
             <div class="price-display">
               <span class="currency">$</span>
               <span class="price">199</span>
@@ -57,16 +64,22 @@
 
           <div class="security-notice">
             <SafetyOutlined />
-            <span>安全支付 · 7天无理由退款</span>
+            <span>Stripe 安全托管 · 支持 7 天内退款</span>
+          </div>
+          <div class="checkout-steps" aria-label="支付流程">
+            <div class="checkout-step"><span>1</span><p>点击升级</p></div>
+            <i></i>
+            <div class="checkout-step"><span>2</span><p>完成支付</p></div>
+            <i></i>
+            <div class="checkout-step"><span>3</span><p>立即解锁</p></div>
           </div>
         </div>
 
-        <!-- 右侧：会员特权 -->
         <div class="features-section">
-          <h3 class="features-title">
-            <GiftOutlined />
-            会员特权
-          </h3>
+          <div class="section-header benefits-header">
+            <div><span class="section-kicker">THE CREATOR'S TOOLKIT</span><h2 class="section-title">一套完整的创作支撑</h2></div>
+            <span class="section-count">06 项权益</span>
+          </div>
           <div class="features-grid">
             <div v-for="(feature, index) in features" :key="index" class="feature-card">
               <div class="feature-icon-wrapper">
@@ -78,22 +91,26 @@
               </div>
             </div>
           </div>
+          <div class="feature-footnote"><span></span> 会员能力会持续跟随产品更新</div>
         </div>
       </div>
 
-      <!-- 常见问题 -->
       <div class="faq-section">
         <div class="section-header">
+          <div><span class="section-kicker">BEFORE YOU BEGIN</span><h2 class="section-title">购买前，先了解这些</h2></div>
           <QuestionCircleOutlined class="section-icon" />
-          <h2 class="section-title">常见问题</h2>
         </div>
         <div class="faq-grid">
-          <div v-for="(faq, index) in faqs" :key="index" class="faq-card">
-            <h4 class="faq-question">{{ faq.question }}</h4>
-            <p class="faq-answer">{{ faq.answer }}</p>
+          <div v-for="(faq, index) in faqs" :key="index" :class="['faq-card', { open: openFaq === index }]">
+            <button type="button" class="faq-question" @click="openFaq = openFaq === index ? -1 : index">
+              <span>{{ faq.question }}</span><span class="faq-toggle">+</span>
+            </button>
+            <p v-if="openFaq === index" class="faq-answer">{{ faq.answer }}</p>
           </div>
         </div>
       </div>
+
+      <p class="page-footer-note">在沅水边写下每一篇文章，也把每一次成长留在自己的时间线上。</p>
     </div>
   </div>
 </template>
@@ -123,6 +140,7 @@ const router = useRouter()
 const route = useRoute()
 const loginUserStore = useLoginUserStore()
 const purchasing = ref(false)
+const openFaq = ref<number | null>(0)
 
 // 是否是 VIP（管理员也视为 VIP）
 const isVip = computed(() => checkIsVip(loginUserStore.loginUser))
@@ -638,5 +656,102 @@ const handlePurchase = async () => {
   .faq-section {
     padding: 24px;
   }
+}
+/* 沅水青山会员页：用轻量的水纹与纸面层次承接全局视觉 */
+.vip-page {
+  position: relative;
+  overflow: hidden;
+  min-height: calc(100vh - 64px);
+  padding: 66px 24px 84px;
+  background:
+    radial-gradient(circle at 78% 12%, rgba(199, 168, 120, .16), transparent 28%),
+    linear-gradient(160deg, #e6f0ea 0%, #f7f5ee 48%, #e2eee8 100%);
+}
+
+.vip-container { position: relative; z-index: 1; max-width: 1180px; }
+.river-lines { position: absolute; inset: 0; pointer-events: none; opacity: .34; }
+.river-lines span { position: absolute; display: block; width: 65vw; height: 18vw; border: 1px solid rgba(69, 111, 100, .18); border-radius: 50%; transform: rotate(-12deg); animation: river-drift 12s ease-in-out infinite alternate; }
+.river-lines span:nth-child(1) { right: -16vw; top: 8%; }
+.river-lines span:nth-child(2) { left: -22vw; top: 48%; width: 72vw; animation-delay: -4s; }
+.river-lines span:nth-child(3) { right: -20vw; bottom: 6%; width: 60vw; animation-delay: -8s; }
+@keyframes river-drift { from { transform: rotate(-12deg) translate3d(-14px, 0, 0); } to { transform: rotate(-9deg) translate3d(14px, 10px, 0); } }
+
+.page-header { position: relative; margin-bottom: 42px; text-align: left; }
+.eyebrow, .section-kicker { color: var(--mountain-green); font-size: 11px; font-weight: 700; letter-spacing: .18em; }
+.header-row { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-top: 18px; }
+.header-badge { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 14px; padding: 7px 12px; border: 1px solid rgba(69, 111, 100, .2); border-radius: 999px; color: var(--mountain-green); background: rgba(247, 250, 246, .62); font-size: 12px; }
+.page-title { max-width: 760px; margin: 0 0 14px; color: var(--ink-deep); font-size: clamp(36px, 5vw, 62px); font-weight: 600; line-height: 1.08; letter-spacing: -.04em; }
+.page-subtitle { max-width: 600px; margin: 0; color: var(--ink-muted); font-size: 16px; line-height: 1.8; }
+.header-note { display: flex; align-items: center; gap: 12px; padding-bottom: 7px; color: var(--ink-muted); font-size: 12px; line-height: 1.7; text-align: right; white-space: nowrap; }
+.note-mark { color: var(--accent-gold); font-size: 36px; font-weight: 300; letter-spacing: -.08em; }
+
+.main-section { grid-template-columns: 380px minmax(0, 1fr); gap: 24px; align-items: start; margin-bottom: 28px; }
+.pricing-card, .features-section, .faq-section { border: 1px solid rgba(255, 255, 255, .78); background: rgba(247, 250, 246, .72); box-shadow: 0 26px 80px rgba(32, 59, 56, .11), inset 0 1px 0 rgba(255, 255, 255, .74); backdrop-filter: blur(20px) saturate(115%); -webkit-backdrop-filter: blur(20px) saturate(115%); }
+.pricing-card { position: sticky; top: 88px; padding: 36px 32px 28px; border: 1px solid rgba(69, 111, 100, .36); border-radius: 20px; }
+.pricing-badge { background: var(--ink-deep); box-shadow: 0 10px 24px rgba(32, 59, 56, .18); }
+.plan-icon { border-radius: 50%; background: rgba(199, 168, 120, .17); }
+.plan-icon .anticon { color: var(--accent-gold); }
+.plan-name { color: var(--ink-deep); }
+.plan-copy { margin: -6px 0 18px; color: var(--ink-muted); font-size: 12px; }
+.price { color: var(--ink-deep); font-weight: 500; }
+.currency, .period, .original-label, .original-value { color: var(--ink-muted); }
+.pricing-divider { background: var(--line-soft); }
+.pricing-feature { color: var(--ink-deep); }
+.pricing-feature .feature-check { color: var(--mountain-green); }
+.purchase-btn { background: var(--ink-deep) !important; box-shadow: 0 12px 24px rgba(32, 59, 56, .2) !important; border-radius: 999px !important; transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast); }
+.purchase-btn:hover:not(:disabled) { opacity: 1; background: var(--mountain-green) !important; transform: translateY(-2px); box-shadow: 0 16px 28px rgba(69, 111, 100, .24) !important; }
+.security-notice { color: var(--ink-muted); }
+.security-notice .anticon { color: var(--mountain-green); }
+.checkout-steps { display: flex; align-items: flex-start; gap: 8px; margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
+.checkout-steps > i { flex: 1; height: 1px; margin-top: 12px; background: rgba(69, 111, 100, .2); }
+.checkout-step { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 54px; color: var(--ink-muted); font-size: 11px; text-align: center; }
+.checkout-step span { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid rgba(69, 111, 100, .3); border-radius: 50%; color: var(--mountain-green); background: rgba(255, 255, 255, .62); }
+.checkout-step p { margin: 0; }
+
+.features-section { padding: 32px; border-radius: 20px; }
+.benefits-header { justify-content: space-between; align-items: end; margin-bottom: 24px; }
+.section-title { margin: 8px 0 0; color: var(--ink-deep); font-size: 24px; font-weight: 600; letter-spacing: -.04em; }
+.section-count { color: var(--ink-muted); font-size: 12px; }
+.features-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.feature-card { padding: 18px; border: 1px solid transparent; border-radius: 12px; background: rgba(255, 255, 255, .48); transition: transform var(--transition-normal), border-color var(--transition-normal), background var(--transition-normal); }
+.feature-card:hover { border-color: rgba(69, 111, 100, .2); background: rgba(255, 255, 255, .82); transform: translateY(-3px); }
+.feature-icon-wrapper { width: 36px; height: 36px; border-radius: 10px; background: rgba(143, 184, 164, .2); }
+.feature-icon, .features-title .anticon { color: var(--mountain-green); }
+.feature-title { color: var(--ink-deep); }
+.feature-desc { color: var(--ink-muted); }
+.feature-footnote { margin-top: 20px; color: var(--ink-muted); font-size: 12px; }
+.feature-footnote span { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent-gold); box-shadow: 0 0 0 5px rgba(199, 168, 120, .12); }
+
+.faq-section { padding: 28px 32px; border-radius: 20px; }
+.faq-section .section-header { justify-content: space-between; align-items: end; margin-bottom: 22px; }
+.section-icon { color: var(--accent-gold); }
+.faq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 26px; }
+.faq-card { padding: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; background: transparent; }
+.faq-question { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 17px 0; border: 0; color: var(--ink-deep); background: transparent; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; }
+.faq-toggle { color: var(--mountain-green); font-size: 22px; font-weight: 300; transition: transform var(--transition-fast); }
+.faq-card.open .faq-toggle { transform: rotate(45deg); }
+.faq-answer { margin: -4px 26px 16px 0; color: var(--ink-muted); font-size: 13px; line-height: 1.75; }
+.page-footer-note { margin: 28px 0 0; color: var(--ink-muted); font-size: 12px; text-align: center; letter-spacing: .08em; }
+
+@media (max-width: 992px) {
+  .header-row { align-items: flex-start; flex-direction: column; gap: 18px; }
+  .header-note { text-align: left; }
+  .main-section { grid-template-columns: 1fr; }
+  .pricing-card { position: relative; top: auto; max-width: 520px; width: 100%; margin: 0 auto; }
+}
+
+@media (max-width: 680px) {
+  .vip-page { padding: 40px 16px 60px; }
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-size: 38px; }
+  .page-subtitle { font-size: 14px; }
+  .pricing-card, .features-section, .faq-section { padding: 24px 20px; border-radius: 16px; }
+  .features-grid, .faq-grid { grid-template-columns: 1fr; }
+  .price { font-size: 46px; }
+  .checkout-steps { gap: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .river-lines span, .feature-card, .purchase-btn, .faq-toggle { animation: none; transition: none; }
 }
 </style>
