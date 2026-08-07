@@ -1,368 +1,118 @@
 <template>
-  <div id="userLoginPage">
-    <div class="auth-container">
-      <!-- 左侧品牌区域 -->
-      <div class="brand-section">
-        <div class="brand-bg"></div>
-        <div class="brand-content">
-          <div class="brand-logo">
-            <img src="@/assets/logo.png" alt="Logo" class="logo-img" />
-          </div>
-          <h1 class="brand-title">AI 爆款文章创作器</h1>
-          <p class="brand-subtitle">让每个人都能写出 10万+ 文章</p>
-          <div class="brand-features">
-            <div class="feature-item">
-              <CheckCircleOutlined class="feature-check" />
-              <span>智能生成标题与大纲</span>
-            </div>
-            <div class="feature-item">
-              <CheckCircleOutlined class="feature-check" />
-              <span>流式生成高质量正文</span>
-            </div>
-            <div class="feature-item">
-              <CheckCircleOutlined class="feature-check" />
-              <span>自动配图一键导出</span>
-            </div>
-          </div>
+  <main id="userLoginPage" class="auth-page">
+    <section class="auth-visual">
+      <div class="visual-water" aria-hidden="true" />
+      <div class="visual-bridge" aria-hidden="true"><span /><span /><span /></div>
+      <div class="visual-copy">
+        <div class="visual-mark"><img src="@/assets/logo.png" alt="AI 文章创作器" /></div>
+        <div class="eyebrow">A quiet place to write</div>
+        <h1>把灵感，<br />安静地写下来。</h1>
+        <p>从一个题目开始，沿着自己的节奏，完成一篇真正属于你的作品。</p>
+        <div class="visual-note"><span /> 今日也可以只写一句。</div>
+      </div>
+    </section>
+
+    <section class="auth-form-wrap">
+      <div class="auth-form-card">
+        <div class="form-kicker">WELCOME BACK</div>
+        <h2>欢迎回来</h2>
+        <p class="form-subtitle">登录你的创作空间，继续未完成的表达。</p>
+
+        <a-form :model="formState" name="login" autocomplete="off" class="auth-form" @finish="handleSubmit">
+          <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号' }]">
+            <a-input v-model:value="formState.userAccount" size="large" placeholder="账号" class="form-input">
+              <template #prefix><UserOutlined /></template>
+            </a-input>
+          </a-form-item>
+          <a-form-item name="userPassword" :rules="[{ required: true, message: '请输入密码' }, { min: 8, message: '密码不能少于 8 位' }]">
+            <a-input-password v-model:value="formState.userPassword" size="large" placeholder="密码" class="form-input">
+              <template #prefix><LockOutlined /></template>
+            </a-input-password>
+          </a-form-item>
+          <a-button type="primary" html-type="submit" size="large" block class="submit-button" :loading="isSubmitting">
+            进入创作空间 <ArrowRightOutlined />
+          </a-button>
+        </a-form>
+
+        <div class="auth-footer">
+          <span>还没有账号？</span>
+          <RouterLink to="/user/register">创建一个账号</RouterLink>
         </div>
       </div>
-      
-      <!-- 右侧表单区域 -->
-      <div class="form-section">
-        <div class="form-card">
-          <h2 class="form-title">欢迎回来</h2>
-          <p class="form-subtitle">登录您的账号继续创作</p>
-          
-          <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit" class="login-form">
-            <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号' }]">
-              <a-input 
-                v-model:value="formState.userAccount" 
-                placeholder="请输入账号" 
-                size="large"
-                class="form-input"
-              >
-                <template #prefix>
-                  <UserOutlined class="input-icon" />
-                </template>
-              </a-input>
-            </a-form-item>
-            <a-form-item
-              name="userPassword"
-              :rules="[
-                { required: true, message: '请输入密码' },
-                { min: 8, message: '密码长度不能小于 8 位' },
-              ]"
-            >
-              <a-input-password 
-                v-model:value="formState.userPassword" 
-                placeholder="请输入密码" 
-                size="large"
-                class="form-input"
-              >
-                <template #prefix>
-                  <LockOutlined class="input-icon" />
-                </template>
-              </a-input-password>
-            </a-form-item>
-            
-            <a-form-item>
-              <a-button type="primary" html-type="submit" size="large" block class="submit-btn">
-                登录
-              </a-button>
-            </a-form-item>
-          </a-form>
-          
-          <div class="form-footer">
-            <span class="footer-text">还没有账号？</span>
-            <RouterLink to="/user/register" class="register-link">立即注册</RouterLink>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+    </section>
+  </main>
 </template>
 
-<script lang="ts" setup>
-import { reactive } from 'vue'
-import { userLogin } from '@/api/userController.ts'
-import { useLoginUserStore } from '@/stores/loginUser.ts'
-import { useRouter } from 'vue-router'
+<script setup lang="ts">
+import { reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
-import { UserOutlined, LockOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
+import { useRouter } from 'vue-router'
+import { ArrowRightOutlined, LockOutlined, UserOutlined } from '@ant-design/icons-vue'
+import { userLogin } from '@/api/userController'
+import { useLoginUserStore } from '@/stores/loginUser'
 
-const formState = reactive<API.UserLoginRequest>({
-  userAccount: '',
-  userPassword: '',
-})
-
+const formState = reactive<API.UserLoginRequest>({ userAccount: '', userPassword: '' })
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
+const isSubmitting = ref(false)
 
-/**
- * 提交表单
- * @param values
- */
-const handleSubmit = async (values: any) => {
-  const res = await userLogin(values)
-  // 登录成功，把登录态保存到全局状态中
-  if (res.data.code === 0 && res.data.data) {
-    await loginUserStore.fetchLoginUser()
-    message.success('登录成功')
-    router.push({
-      path: '/',
-      replace: true,
-    })
-  } else {
-    message.error('登录失败，' + res.data.message)
+const handleSubmit = async (values: API.UserLoginRequest) => {
+  isSubmitting.value = true
+  try {
+    const res = await userLogin(values)
+    if (res.data.code === 0 && res.data.data) {
+      await loginUserStore.fetchLoginUser()
+      message.success('登录成功')
+      await router.replace('/')
+    } else {
+      message.error(`登录失败，${res.data.message}`)
+    }
+  } catch (error) {
+    console.error('登录请求失败:', error)
+    message.error('登录服务暂时不可用，请稍后重试')
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
 
 <style scoped>
-#userLoginPage {
-  min-height: calc(100vh - 64px);
-  background: var(--color-background-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-}
+.auth-page { display: grid; grid-template-columns: 1.08fr 0.92fr; min-height: calc(100vh - 64px); background: var(--paper-warm); }
+.auth-visual { position: relative; display: grid; place-items: center; overflow: hidden; padding: 72px 8vw; background: linear-gradient(150deg, #456f64, #203b38 72%); color: white; }
+.visual-water { position: absolute; inset: 28% -12% -18%; border: 1px solid rgba(213,234,219,0.28); border-radius: 50% 50% 0 0; transform: rotate(-7deg); box-shadow: 0 -20px 120px rgba(143,184,164,0.16); }
+.visual-water::before, .visual-water::after { position: absolute; left: 9%; right: 8%; height: 1px; background: rgba(213,234,219,0.22); content: ''; }
+.visual-water::before { top: 23%; transform: rotate(5deg); }
+.visual-water::after { top: 54%; transform: rotate(-2deg); }
+.visual-bridge { position: absolute; right: -2%; bottom: 18%; width: 48%; height: 32%; border-top: 2px solid rgba(247,245,238,0.24); transform: rotate(-10deg); }
+.visual-bridge span { position: absolute; top: -2px; width: 2px; height: 100%; background: rgba(247,245,238,0.18); transform: rotate(8deg); }
+.visual-bridge span:nth-child(1) { left: 32%; }.visual-bridge span:nth-child(2) { left: 58%; }.visual-bridge span:nth-child(3) { left: 82%; }
+.visual-copy { position: relative; z-index: 1; max-width: 450px; }
+.visual-mark { display: grid; place-items: center; width: 72px; height: 72px; margin-bottom: 32px; border: 1px solid rgba(255,255,255,0.32); border-radius: 22px; background: rgba(247,245,238,0.92); box-shadow: 0 14px 35px rgba(0,0,0,0.15); }
+.visual-mark img { width: 56px; height: 56px; object-fit: contain; }
+.eyebrow, .form-kicker { color: var(--river-green); font-size: 11px; font-weight: 700; letter-spacing: 0.16em; }
+.visual-copy h1 { margin: 22px 0 20px; font-size: clamp(3rem, 5vw, 5.2rem); font-weight: 500; line-height: 1.02; }
+.visual-copy p { max-width: 360px; margin: 0; color: rgba(243,247,243,0.74); font-size: 16px; line-height: 1.9; }
+.visual-note { display: flex; align-items: center; gap: 10px; margin-top: 42px; color: rgba(243,247,243,0.82); font-size: 13px; }
+.visual-note span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-gold); box-shadow: 0 0 0 5px rgba(199,168,120,0.18); }
+.auth-form-wrap { display: grid; place-items: center; padding: 56px 7vw; background: rgba(247,245,238,0.92); }
+.auth-form-card { width: min(100%, 390px); }
+.form-kicker { color: var(--mountain-green); }
+.auth-form-card h2 { margin: 18px 0 8px; color: var(--ink-deep); font-size: 38px; font-weight: 500; }
+.form-subtitle { margin: 0 0 36px; color: var(--ink-muted); font-size: 14px; line-height: 1.7; }
+.auth-form :deep(.ant-form-item) { margin-bottom: 18px; }
+.form-input { border-radius: var(--radius-md); border-color: var(--line-soft); background: rgba(255,255,255,0.68); }
+.form-input :deep(.ant-input), .form-input :deep(.ant-input-password) { padding-top: 12px; padding-bottom: 12px; }
+.form-input :deep(.anticon) { color: var(--ink-muted); }
+.submit-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 50px; margin-top: 8px; border: 0; }
+.auth-footer { margin-top: 28px; color: var(--ink-muted); font-size: 13px; text-align: center; }
+.auth-footer a { margin-left: 6px; color: var(--mountain-green); font-weight: 700; }
 
-.auth-container {
-  display: flex;
-  width: 100%;
-  max-width: 900px;
-  min-height: 520px;
-  background: white;
-  border-radius: var(--radius-2xl);
-  overflow: hidden;
-  box-shadow: var(--shadow-xl);
-}
-
-/* 左侧品牌区域 */
-.brand-section {
-  flex: 1;
-  padding: 48px 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.brand-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #22C55E 0%, #16A34A 50%, #15803D 100%);
-}
-
-.brand-bg::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-  animation: pulse-bg 8s ease-in-out infinite;
-}
-
-@keyframes pulse-bg {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 0.3; }
-}
-
-.brand-content {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  color: white;
-}
-
-.brand-logo {
-  margin-bottom: 24px;
-}
-
-.logo-img {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: var(--radius-xl);
-  padding: 8px;
-}
-
-.brand-title {
-  font-size: 26px;
-  font-weight: 700;
-  margin: 0 0 10px;
-  letter-spacing: -0.5px;
-}
-
-.brand-subtitle {
-  font-size: 15px;
-  opacity: 0.9;
-  margin: 0 0 36px;
-}
-
-.brand-features {
-  text-align: left;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  backdrop-filter: blur(8px);
-}
-
-.feature-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-  font-size: 14px;
-}
-
-.feature-item:last-child {
-  margin-bottom: 0;
-}
-
-.feature-check {
-  font-size: 18px;
-  color: white;
-}
-
-/* 右侧表单区域 */
-.form-section {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 40px;
-  background: white;
-}
-
-.form-card {
-  width: 100%;
-  max-width: 320px;
-}
-
-.form-title {
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 6px;
-  letter-spacing: -0.5px;
-}
-
-.form-subtitle {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  margin: 0 0 32px;
-}
-
-.login-form {
-  margin-bottom: 24px;
-}
-
-.form-input {
-  border-radius: var(--radius-lg);
-  border-color: var(--color-border);
-  transition: all var(--transition-fast);
-}
-
-.form-input:hover {
-  border-color: var(--color-primary-light);
-}
-
-.form-input:focus,
-.form-input:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
-}
-
-.form-input :deep(.ant-input) {
-  padding: 12px 14px;
-}
-
-.input-icon {
-  color: var(--color-text-muted);
-  font-size: 16px;
-}
-
-.submit-btn {
-  height: 48px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: var(--radius-lg);
-  background: var(--gradient-primary) !important;
-  border: none !important;
-  color: white !important;
-  box-shadow: var(--shadow-green) !important;
-  transition: opacity var(--transition-normal) !important;
-}
-
-.submit-btn:hover,
-.submit-btn:focus,
-.submit-btn:active {
-  background: var(--gradient-primary) !important;
-  border: none !important;
-  color: white !important;
-  box-shadow: var(--shadow-green) !important;
-  opacity: 0.92;
-}
-
-.submit-btn :deep(.ant-wave) {
-  display: none;
-}
-
-.form-footer {
-  text-align: center;
-}
-
-.footer-text {
-  color: var(--color-text-secondary);
-  font-size: 14px;
-}
-
-.register-link {
-  color: var(--color-primary);
-  font-weight: 600;
-  margin-left: 4px;
-  transition: color var(--transition-fast);
-}
-
-.register-link:hover {
-  color: var(--color-primary-dark);
-}
-
-/* 响应式 */
-@media (max-width: 768px) {
-  .auth-container {
-    flex-direction: column;
-    min-height: auto;
-    border-radius: var(--radius-xl);
-  }
-  
-  .brand-section {
-    padding: 32px 24px;
-  }
-  
-  .brand-title {
-    font-size: 22px;
-  }
-  
-  .brand-features {
-    display: none;
-  }
-  
-  .form-section {
-    padding: 32px 24px;
-  }
-
-  .form-title {
-    font-size: 22px;
-  }
+@media (max-width: 800px) {
+  .auth-page { grid-template-columns: 1fr; }
+  .auth-visual { min-height: 420px; padding: 52px 32px; }
+  .visual-copy { width: min(100%, 420px); }
+  .visual-copy h1 { font-size: 3.4rem; }
+  .visual-note { margin-top: 26px; }
+  .auth-form-wrap { min-height: 520px; padding: 52px 24px 72px; }
 }
 </style>
