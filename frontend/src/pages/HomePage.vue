@@ -396,7 +396,7 @@ onMounted(loadRecentArticles)
 .metric-card h3 { margin: 18px 0 6px; color: white; font-size: 15px; }
 .metric-card p { margin: 0; color: rgba(243,247,243,0.62); font-size: 12px; }
 
-.compact-heading { display: flex; align-items: end; justify-content: space-between; }
+.compact-heading { display: flex; width: 100%; max-width: none; align-items: flex-end; justify-content: space-between; }
 .compact-heading h2 { margin-bottom: 8px; font-size: clamp(2rem, 4vw, 3.4rem); }
 .article-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .article-card { overflow: hidden; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: rgba(255,255,255,0.72); cursor: pointer; transition: transform var(--transition-normal), box-shadow var(--transition-normal); }
