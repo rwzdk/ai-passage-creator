@@ -19,10 +19,13 @@ import com.yupi.template.model.entity.User;
 import com.yupi.template.model.enums.ArticleStyleEnum;
 import com.yupi.template.model.vo.AgentExecutionStats;
 import com.yupi.template.model.vo.ArticleVO;
+import com.yupi.template.model.vo.UserArticleStatsVO;
+import com.yupi.template.model.vo.HotTopicsVO;
 import com.yupi.template.service.AgentLogService;
 import com.yupi.template.service.ArticleAsyncService;
 import com.yupi.template.service.ArticleService;
 import com.yupi.template.service.UserService;
+import com.yupi.template.service.HotTopicService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -55,6 +58,15 @@ public class ArticleController {
 
     @Resource
     private AgentLogService agentLogService;
+
+    @Resource
+    private HotTopicService hotTopicService;
+
+    @GetMapping("/hot-topics")
+    @Operation(summary = "获取热门选题")
+    public BaseResponse<HotTopicsVO> getHotTopics() {
+        return ResultUtils.success(hotTopicService.getHotTopics());
+    }
 
     /**
      * 创建文章任务
@@ -135,6 +147,14 @@ public class ArticleController {
         Page<ArticleVO> articleVOPage = articleService.listArticleByPage(request, loginUser);
         
         return ResultUtils.success(articleVOPage);
+    }
+
+    /** 获取当前用户的创作统计。 */
+    @GetMapping("/profile/stats")
+    @Operation(summary = "获取个人创作统计")
+    public BaseResponse<UserArticleStatsVO> getUserArticleStats(HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(articleService.getUserArticleStats(loginUser));
     }
 
     /**

@@ -296,12 +296,12 @@
           </h4>
           <div class="hot-tags">
             <span
-              v-for="example in exampleTopics"
-              :key="example"
+              v-for="item in hotTopics"
+              :key="item.title"
               class="hot-tag"
-              @click="topic = example"
+              @click="selectHotTopic(item)"
             >
-              {{ example }}
+              {{ item.title }}
             </span>
           </div>
         </div>
@@ -560,6 +560,7 @@ import {
   FileTextOutlined
 } from '@ant-design/icons-vue'
 import { createArticle, confirmTitle, confirmOutline } from '@/api/articleController'
+import { getHotTopics } from '@/api/hotTopicController'
 import { connectSSE, closeSSE, type SSEMessage } from '@/utils/sse'
 import { isAdmin as checkIsAdmin, isVip as checkIsVip, hasQuota as checkHasQuota } from '@/utils/permission'
 import { marked } from 'marked'
@@ -595,6 +596,11 @@ const exampleTopics = [
   '新能源汽车趋势',
   '健康饮食指南',
 ]
+
+const hotTopics = ref<API.HotTopicItem[]>(exampleTopics.map(title => ({ title, source: '推荐选题' })))
+const hotTopicsLoading = ref(false)
+const hotTopicsUpdatedAt = ref('')
+const hotTopicsSource = ref('fallback')
 
 // 阶段状态
 const currentPhase = ref<string>('INPUT')  // INPUT, TITLE_SELECTING, OUTLINE_EDITING, CONTENT_GENERATING, COMPLETED
@@ -987,7 +993,29 @@ onMounted(() => {
   if (route.query.topic) {
     topic.value = route.query.topic as string
   }
+  loadHotTopics()
 })
+
+const loadHotTopics = async () => {
+  hotTopicsLoading.value = true
+  try {
+    const res = await getHotTopics()
+    const data = res.data.data
+    if (data?.items?.length) {
+      hotTopics.value = data.items
+      hotTopicsSource.value = data.source || 'gnews'
+      hotTopicsUpdatedAt.value = data.updatedAt || ''
+    }
+  } catch (error) {
+    console.warn('加载热门选题失败，继续使用推荐选题', error)
+  } finally {
+    hotTopicsLoading.value = false
+  }
+}
+
+const selectHotTopic = (item: API.HotTopicItem) => {
+  if (item.title) topic.value = item.title
+}
 
 // 组件卸载前关闭 SSE
 onBeforeUnmount(() => {

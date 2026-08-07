@@ -156,6 +156,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseUserArticleStatsVO = {
+    code?: number
+    data?: UserArticleStatsVO
+    message?: string
+  }
+
   type BaseResponseVoid = {
     code?: number
     data?: Record<string, any>
@@ -201,6 +207,10 @@ declare namespace API {
     userName?: string
     userAvatar?: string
     userProfile?: string
+    userEmail?: string
+    userPhone?: string
+    userBlog?: string
+    userGithub?: string
     userRole?: string
     quota?: number
     vipTime?: string
@@ -275,6 +285,25 @@ declare namespace API {
     quotaUsed?: number
   }
 
+  type HotTopicItem = {
+    title?: string
+    source?: string
+    publishedAt?: string
+    url?: string
+  }
+
+  type HotTopicsVO = {
+    source?: string
+    updatedAt?: string
+    items?: HotTopicItem[]
+  }
+
+  type BaseResponseHotTopicsVO = {
+    code?: number
+    data?: HotTopicsVO
+    message?: string
+  }
+
   type TitleOption = {
     mainTitle?: string
     subTitle?: string
@@ -287,6 +316,10 @@ declare namespace API {
     userName?: string
     userAvatar?: string
     userProfile?: string
+    userEmail?: string
+    userPhone?: string
+    userBlog?: string
+    userGithub?: string
     userRole?: string
     quota?: number
     vipTime?: string
@@ -301,6 +334,10 @@ declare namespace API {
     userAccount?: string
     userAvatar?: string
     userProfile?: string
+    userEmail?: string
+    userPhone?: string
+    userBlog?: string
+    userGithub?: string
     userRole?: string
   }
 
@@ -325,6 +362,9 @@ declare namespace API {
     userAccount?: string
     userPassword?: string
     checkPassword?: string
+    userName?: string
+    userEmail?: string
+    userPhone?: string
   }
 
   type UserUpdateRequest = {
@@ -332,6 +372,10 @@ declare namespace API {
     userName?: string
     userAvatar?: string
     userProfile?: string
+    userEmail?: string
+    userPhone?: string
+    userBlog?: string
+    userGithub?: string
     userRole?: string
   }
 
@@ -341,7 +385,27 @@ declare namespace API {
     userName?: string
     userAvatar?: string
     userProfile?: string
+    userEmail?: string
+    userPhone?: string
+    userBlog?: string
+    userGithub?: string
     userRole?: string
     createTime?: string
+  }
+
+  type UserProfileUpdateRequest = {
+    userName?: string
+    userProfile?: string
+    userEmail?: string
+    userPhone?: string
+    userBlog?: string
+    userGithub?: string
+  }
+
+  type UserArticleStatsVO = {
+    totalWorks?: number
+    completedWorks?: number
+    totalCharacters?: number
+    latestWorkTime?: string
   }
 }

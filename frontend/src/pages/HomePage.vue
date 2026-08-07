@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { listArticle } from '@/api/articleController'
@@ -22,6 +22,17 @@ import TextReveal from '@/components/motion/TextReveal.vue'
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
 const topic = ref('')
+const topicInputRef = ref<HTMLElement | null>(null)
+const activePromptIndex = ref(0)
+let promptTimer: ReturnType<typeof window.setInterval> | undefined
+const promptCards = [
+  { type: '工作总结', title: '总结一次项目复盘，提炼可复制的团队协作方法', description: '适合季度总结与项目复盘' },
+  { type: '心得体会', title: '写一篇关于长期学习与自我成长的心得体会', description: '适合个人经历与观点表达' },
+  { type: '演讲稿', title: '围绕人工智能时代的机会与挑战写一篇演讲稿', description: '适合分享、汇报与公开表达' },
+  { type: '分析报告', title: '分析生成式 AI 对内容创作行业的影响', description: '适合行业观察与趋势分析' },
+  { type: '爆款文章', title: '为什么越来越多人开始重新安排自己的生活节奏', description: '适合公众号和内容平台创作' },
+  { type: '职场观察', title: '远程办公如何改变团队沟通与工作效率', description: '适合职场热点和经验分享' },
+]
 const recentArticles = ref<API.ArticleVO[]>([])
 const loadingArticles = ref(false)
 
@@ -41,6 +52,18 @@ const features = [
 const goToCreate = () => {
   const value = topic.value.trim()
   router.push(value ? { path: '/create', query: { topic: value } } : '/create')
+}
+
+const selectPrompt = (prompt: string) => {
+  topic.value = prompt
+  nextTick(() => topicInputRef.value?.querySelector('input')?.focus())
+}
+
+const startPromptRotation = () => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  promptTimer = window.setInterval(() => {
+    activePromptIndex.value = (activePromptIndex.value + 1) % promptCards.length
+  }, 4500)
 }
 
 const goToList = () => router.push('/article/list')
@@ -66,7 +89,13 @@ const statusText = (status?: string) => {
   return '等待中'
 }
 
-onMounted(loadRecentArticles)
+onMounted(() => {
+  loadRecentArticles()
+  startPromptRotation()
+})
+onBeforeUnmount(() => {
+  if (promptTimer) window.clearInterval(promptTimer)
+})
 </script>
 
 <template>
@@ -95,6 +124,7 @@ onMounted(loadRecentArticles)
           <div class="composer-label"><span class="signal-dot" /> 今天，想写些什么？</div>
           <div class="composer-row">
             <a-input
+              ref="topicInputRef"
               v-model:value="topic"
               class="topic-input"
               size="large"
@@ -108,6 +138,19 @@ onMounted(loadRecentArticles)
             </a-button>
           </div>
           <p class="composer-hint">工作总结、心得体会、演讲稿、分析报告，都可以从这里开始。</p>
+          <div class="prompt-strip" aria-label="创作主题灵感">
+            <button
+              v-for="(prompt, index) in promptCards"
+              :key="prompt.title"
+              type="button"
+              :class="['prompt-card', { active: index === activePromptIndex }]"
+              @click="selectPrompt(prompt.title)"
+            >
+              <span class="prompt-type">{{ prompt.type }}</span>
+              <strong>{{ prompt.title }}</strong>
+              <small>{{ prompt.description }}</small>
+            </button>
+          </div>
         </ScrollReveal>
       </div>
     </section>
@@ -366,6 +409,12 @@ onMounted(loadRecentArticles)
 .topic-input :deep(input) { height: 56px; font-size: 16px; }
 .cta-button { display: inline-flex; align-items: center; gap: 8px; height: 56px; padding: 0 28px; white-space: nowrap; font-size: 15px; }
 .composer-hint { margin: 12px 2px 0; color: var(--ink-muted); font-size: 13px; }
+.prompt-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 18px; }
+.prompt-card { min-height: 108px; padding: 14px; border: 1px solid rgba(69,111,100,.14); border-radius: 14px; background: rgba(247,250,246,.68); color: var(--ink-deep); text-align: left; cursor: pointer; transition: transform .35s ease, border-color .35s ease, background .35s ease, box-shadow .35s ease; }
+.prompt-card:hover, .prompt-card.active { transform: translateY(-3px); border-color: rgba(69,111,100,.42); background: rgba(255,255,255,.92); box-shadow: 0 10px 24px rgba(48,79,70,.1); }
+.prompt-type { display: block; margin-bottom: 8px; color: var(--mountain-green); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+.prompt-card strong { display: -webkit-box; overflow: hidden; font-size: 13px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.prompt-card small { display: block; margin-top: 7px; color: var(--ink-muted); font-size: 11px; }
 
 .method-section,
 .recent-section { padding: 112px 0; background: var(--paper-warm); }
@@ -444,6 +493,8 @@ onMounted(loadRecentArticles)
   .hero-subtitle { font-size: 15px; }
   .composer-row { flex-direction: column; }
   .topic-composer { padding: 18px; }
+  .prompt-strip { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 4px; scroll-snap-type: x mandatory; }
+  .prompt-card { flex: 0 0 78%; scroll-snap-align: start; }
   .topic-input :deep(input) { font-size: 14px; }
   .cta-button { justify-content: center; }
   .method-section, .metrics-section, .recent-section { padding: 76px 0; }

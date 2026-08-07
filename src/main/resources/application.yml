@@ -47,6 +47,14 @@ knife4j:
 # Pexels API 配置
 pexels:
   api-key: ${PEXELS_API_KEY:xxx}
+
+# GNews 热门选题配置，建议通过环境变量 GNEWS_API_KEY 提供密钥
+gnews:
+  api-key: ${GNEWS_API_KEY:}
+  base-url: https://gnews.io/api/v4
+  cache-minutes: 10
+  max-items: 8
+
 # Nano Banana (Gemini 原生图片生成) 配置
 nano-banana:
   api-key: xxx  # 请在 https://aistudio.google.com/apikey 获取
