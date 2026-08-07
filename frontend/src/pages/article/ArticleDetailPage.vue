@@ -888,4 +888,19 @@ onMounted(() => {
 .article-detail-page .content-section, .article-detail-page .outline-section, .article-detail-page .execution-logs-section { animation: reading-section-in 520ms var(--ease-out) both; }
 
 @keyframes reading-section-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+/* 雾中正文阅读背景 */
+.article-detail-page {
+  background-image:
+    linear-gradient(180deg, rgba(247, 250, 246, .58), rgba(247, 245, 238, .9) 78%),
+    url('@/assets/scenes/article-detail-mist.png');
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+.article-detail-page .article-card { background: rgba(255, 255, 255, .78); }
+
+@media (max-width: 768px) {
+  .article-detail-page { background-attachment: scroll; background-position: center top; }
+}
 </style>

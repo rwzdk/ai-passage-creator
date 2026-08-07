@@ -754,4 +754,17 @@ const handlePurchase = async () => {
 @media (prefers-reduced-motion: reduce) {
   .river-lines span, .feature-card, .purchase-btn, .faq-toggle { animation: none; transition: none; }
 }
+/* 深色沅水背景承接会员页面的长期陪伴感 */
+.vip-page {
+  background-image:
+    linear-gradient(160deg, rgba(32, 59, 56, .62), rgba(247, 245, 238, .72) 65%),
+    url('@/assets/scenes/vip-river-dawn.png');
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+@media (max-width: 768px) {
+  .vip-page { background-attachment: scroll; background-position: 62% center; }
+}
 </style>

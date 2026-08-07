@@ -115,4 +115,12 @@ const handleSubmit = async (values: API.UserLoginRequest) => {
   .visual-note { margin-top: 26px; }
   .auth-form-wrap { min-height: 520px; padding: 52px 24px 72px; }
 }
+/* 渡口黄昏背景 */
+.auth-page .auth-visual {
+  background-image:
+    linear-gradient(145deg, rgba(32, 59, 56, .58), rgba(32, 59, 56, .78)),
+    url('@/assets/scenes/auth-dusk-bridge.png');
+  background-position: center;
+  background-size: cover;
+}
 </style>

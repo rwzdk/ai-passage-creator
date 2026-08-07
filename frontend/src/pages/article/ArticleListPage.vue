@@ -797,4 +797,19 @@ onMounted(() => {
 .article-list-page :deep(.ant-pagination-item-active a) { color: var(--mountain-green); }
 
 @keyframes list-settle { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+/* 作品列表沿江背景 */
+.article-list-page {
+  background-image:
+    linear-gradient(180deg, rgba(247, 250, 246, .56), rgba(247, 245, 238, .88) 76%),
+    url('@/assets/scenes/article-list-river.png');
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+.article-list-page .page-header { background: linear-gradient(135deg, rgba(224, 236, 229, .78), rgba(247, 245, 238, .62)); }
+
+@media (max-width: 768px) {
+  .article-list-page { background-attachment: scroll; background-position: 56% top; }
+}
 </style>

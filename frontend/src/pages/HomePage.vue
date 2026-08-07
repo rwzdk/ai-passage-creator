@@ -201,7 +201,7 @@ onMounted(loadRecentArticles)
 
 .home-hero {
   position: relative;
-  min-height: 650px;
+  min-height: 700px;
   overflow: hidden;
   background: linear-gradient(180deg, #dcebe2 0%, #eff5ef 56%, #f7f5ee 100%);
 }
@@ -332,11 +332,12 @@ onMounted(loadRecentArticles)
 .orbit-label-bottom { bottom: 0; left: 50%; transform: translateX(-50%); }
 
 .topic-composer {
-  grid-column: 1;
-  width: min(760px, calc(100% - 280px));
-  justify-self: start;
-  margin-top: 28px;
-  padding: 18px;
+  position: relative;
+  grid-column: 1 / -1;
+  width: min(920px, calc(100% - 96px));
+  justify-self: center;
+  margin: 38px auto 0;
+  padding: 24px 26px;
   border: 1px solid rgba(69, 111, 100, 0.16);
   border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.7);
@@ -344,12 +345,26 @@ onMounted(loadRecentArticles)
   backdrop-filter: blur(16px);
 }
 
+.topic-composer::before {
+  position: absolute;
+  top: -1px;
+  right: 12%;
+  left: 12%;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(69, 111, 100, .5), transparent);
+  content: '';
+  opacity: .55;
+  animation: composer-breathe 4.5s ease-in-out infinite;
+}
+
 .composer-label { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--ink-deep); font-size: 13px; font-weight: 600; }
 .signal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mountain-green); box-shadow: 0 0 0 5px rgba(143, 184, 164, 0.24); }
-.composer-row { display: flex; gap: 12px; }
+.composer-row { display: flex; gap: 16px; }
 .topic-input { flex: 1; border: 0 !important; box-shadow: none !important; background: rgba(255, 255, 255, 0.68) !important; }
-.cta-button { display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 22px; white-space: nowrap; }
-.composer-hint { margin: 10px 2px 0; color: var(--ink-muted); font-size: 12px; }
+.topic-input :deep(input) { height: 56px; font-size: 16px; }
+.cta-button { display: inline-flex; align-items: center; gap: 8px; height: 56px; padding: 0 28px; white-space: nowrap; font-size: 15px; }
+.composer-hint { margin: 12px 2px 0; color: var(--ink-muted); font-size: 13px; }
 
 .method-section,
 .recent-section { padding: 112px 0; background: var(--paper-warm); }
@@ -401,6 +416,7 @@ onMounted(loadRecentArticles)
 
 @keyframes mist-drift { from { transform: translate3d(-2%, 0, 0) scale(1); } to { transform: translate3d(4%, 10px, 0) scale(1.05); } }
 @keyframes orbit-spin { to { transform: rotate(360deg); } }
+@keyframes composer-breathe { 0%, 100% { opacity: .28; transform: scaleX(.9); } 50% { opacity: .85; transform: scaleX(1); } }
 
 @media (max-width: 900px) {
   .hero-layout { gap: 24px; padding-top: 76px; }
@@ -420,6 +436,8 @@ onMounted(loadRecentArticles)
   .hero-copy h1 { font-size: clamp(3rem, 15vw, 4.5rem); }
   .hero-subtitle { font-size: 15px; }
   .composer-row { flex-direction: column; }
+  .topic-composer { padding: 18px; }
+  .topic-input :deep(input) { font-size: 14px; }
   .cta-button { justify-content: center; }
   .method-section, .metrics-section, .recent-section { padding: 76px 0; }
   .section-heading h2, .metrics-copy h2 { font-size: 2.7rem; }
@@ -427,5 +445,33 @@ onMounted(loadRecentArticles)
   .feature-card { min-height: auto; }
   .feature-card h3 { margin-top: 28px; }
   .compact-heading { align-items: start; flex-direction: column; gap: 12px; }
+}
+/* 新生成的沅水场景背景 */
+.home-hero {
+  background-image:
+    linear-gradient(180deg, rgba(247, 250, 246, .42) 0%, rgba(247, 245, 238, .82) 92%),
+    url('@/assets/scenes/home-river.png');
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+.home-hero::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(90deg, rgba(247, 250, 246, .56), rgba(247, 250, 246, .12) 58%, rgba(32, 59, 56, .12));
+  content: '';
+  pointer-events: none;
+}
+
+.home-hero .hero-layout { position: relative; z-index: 1; }
+
+@media (max-width: 768px) {
+  .home-hero { background-attachment: scroll; background-position: 58% center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-mist, .orbit-ring, .topic-composer::before { animation: none; }
 }
 </style>

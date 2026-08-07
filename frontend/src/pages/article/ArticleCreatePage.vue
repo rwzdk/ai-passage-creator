@@ -2310,4 +2310,22 @@ onBeforeUnmount(() => {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* 临水书桌背景：保留中间工作台阅读区域 */
+.article-create-page {
+  background-image:
+    linear-gradient(90deg, rgba(243, 247, 243, .9) 0%, rgba(247, 245, 238, .72) 52%, rgba(247, 245, 238, .32) 100%),
+    url('@/assets/scenes/create-desk.png');
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+.article-create-page::before {
+  opacity: .16;
+  background: linear-gradient(180deg, rgba(247, 250, 246, .2), rgba(69, 111, 100, .1));
+}
+
+@media (max-width: 768px) {
+  .article-create-page { background-attachment: scroll; background-position: 64% center; }
+}
 </style>

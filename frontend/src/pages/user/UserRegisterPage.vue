@@ -113,4 +113,12 @@ const handleSubmit = async (values: API.UserRegisterRequest) => {
 .submit-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 50px; margin-top: 8px; border: 0; }.auth-footer { margin-top: 24px; color: var(--ink-muted); font-size: 13px; text-align: center; }.auth-footer a { margin-left: 6px; color: var(--mountain-green); font-weight: 700; }
 @media (max-width: 800px) { .auth-page { grid-template-columns: 1fr; }.auth-visual { min-height: 420px; padding: 52px 32px; }.visual-copy { width: min(100%, 420px); }.visual-copy h1 { font-size: 3.4rem; }.visual-note { margin-top: 26px; }.auth-form-wrap { min-height: 580px; padding: 52px 24px 72px; } }
 @media (max-width: 560px) { .register-row { grid-template-columns: 1fr; gap: 0; } }
+/* 渡口黄昏背景 */
+.auth-page .auth-visual {
+  background-image:
+    linear-gradient(145deg, rgba(32, 59, 56, .58), rgba(32, 59, 56, .78)),
+    url('@/assets/scenes/auth-dusk-bridge.png');
+  background-position: center;
+  background-size: cover;
+}
 </style>
