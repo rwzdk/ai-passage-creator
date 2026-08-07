@@ -53,7 +53,12 @@ public class HotTopicServiceImpl implements HotTopicService {
 
     @Override
     public HotTopicsVO getHotTopics() {
-        if (isCacheValid()) {
+        return getHotTopics(false);
+    }
+
+    @Override
+    public HotTopicsVO getHotTopics(boolean refresh) {
+        if (!refresh && isCacheValid()) {
             return cachedTopics;
         }
         if (gNewsConfig.getApiKey() == null || gNewsConfig.getApiKey().isBlank()) {

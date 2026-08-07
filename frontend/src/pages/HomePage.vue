@@ -13,6 +13,7 @@ import {
   OrderedListOutlined,
   PictureOutlined,
   RocketOutlined,
+  ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons-vue'
 import ScrollReveal from '@/components/motion/ScrollReveal.vue'
@@ -30,6 +31,7 @@ const promptNoTransition = ref(false)
 const promptPaused = ref(false)
 const homeHotTopics = ref<API.HotTopicItem[]>([])
 const hotTopicsSource = ref('fallback')
+const hotTopicsRefreshing = ref(false)
 let promptTimer: ReturnType<typeof window.setInterval> | undefined
 const promptCards = [
   { type: '工作总结', title: '总结一次项目复盘，提炼可复制的团队协作方法', description: '适合季度总结与项目复盘' },
@@ -105,12 +107,13 @@ const startPromptRotation = () => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
   promptTimer = window.setInterval(() => {
     nextPrompt()
-  }, 4500)
+  }, 3000)
 }
 
-const loadHomeHotTopics = async () => {
+const loadHomeHotTopics = async (refresh = false) => {
+  if (refresh) hotTopicsRefreshing.value = true
   try {
-    const res = await getHotTopics()
+    const res = await getHotTopics(refresh ? { params: { refresh: true } } : undefined)
     const data = res.data.data
     if (data?.items?.length) {
       homeHotTopics.value = data.items
@@ -119,8 +122,12 @@ const loadHomeHotTopics = async () => {
     }
   } catch (error) {
     console.warn('首页热门选题加载失败，继续使用本地推荐', error)
+  } finally {
+    hotTopicsRefreshing.value = false
   }
 }
+
+const refreshHomeHotTopics = () => loadHomeHotTopics(true)
 
 const goToList = () => router.push('/article/list')
 const viewArticle = (article: API.ArticleVO) => router.push(`/article/${article.taskId}`)
@@ -205,7 +212,19 @@ onBeforeUnmount(() => {
           >
             <div class="prompt-carousel-heading">
               <span><span class="signal-dot" /> {{ hotTopicsSource === 'gnews' ? '正在发生的灵感' : '创作灵感推荐' }}</span>
-              <span class="prompt-carousel-hint">点击主题即可填入</span>
+              <span class="prompt-carousel-actions">
+                <span class="prompt-carousel-hint">点击主题即可填入</span>
+                <a-button
+                  type="text"
+                  size="small"
+                  class="prompt-refresh"
+                  :loading="hotTopicsRefreshing"
+                  aria-label="刷新实时热点"
+                  @click="refreshHomeHotTopics"
+                >
+                  <ReloadOutlined /> 刷新
+                </a-button>
+              </span>
             </div>
             <button type="button" class="prompt-arrow prompt-arrow-left" aria-label="上一个主题" @click="previousPrompt">‹</button>
             <div class="prompt-viewport">
@@ -491,7 +510,10 @@ onBeforeUnmount(() => {
 .prompt-carousel-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: var(--ink-muted); font-size: 11px; }
 .prompt-carousel-heading > span:first-child { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-deep); font-weight: 600; }
 .prompt-carousel-heading .signal-dot { width: 6px; height: 6px; box-shadow: 0 0 0 4px rgba(143,184,164,.16); }
+.prompt-carousel-actions { display: inline-flex; align-items: center; gap: 8px; }
 .prompt-carousel-hint { opacity: .72; }
+.prompt-refresh { height: 24px; padding-inline: 6px; color: var(--mountain-green); font-size: 11px; }
+.prompt-refresh:hover { color: var(--ink-deep); background: rgba(143,184,164,.12); }
 .prompt-viewport { overflow: hidden; width: 100%; }
 .prompt-track { display: flex; gap: 12px; width: max-content; transform: translate3d(calc(var(--prompt-index) * -1 * (var(--prompt-card-width) + 12px)), 0, 0); transition: transform 520ms cubic-bezier(.22,.61,.36,1); }
 .prompt-track.no-transition { transition: none; }

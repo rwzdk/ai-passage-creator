@@ -64,8 +64,9 @@ public class ArticleController {
 
     @GetMapping("/hot-topics")
     @Operation(summary = "获取热门选题")
-    public BaseResponse<HotTopicsVO> getHotTopics() {
-        return ResultUtils.success(hotTopicService.getHotTopics());
+    public BaseResponse<HotTopicsVO> getHotTopics(
+            @RequestParam(value = "refresh", defaultValue = "false") boolean refresh) {
+        return ResultUtils.success(hotTopicService.getHotTopics(refresh));
     }
 
     /**
