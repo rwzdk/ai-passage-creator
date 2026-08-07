@@ -174,24 +174,35 @@ const renderTrendChart = () => {
 
   const option: EChartsOption = {
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      axisPointer: {
+        type: 'line',
+        lineStyle: { color: 'rgba(69, 111, 100, .35)' }
+      },
+      backgroundColor: 'rgba(32, 59, 56, .92)',
+      borderWidth: 0,
+      textStyle: { color: '#f7f5ee' },
+      padding: [10, 14]
     },
     grid: {
-      left: '3%',
-      right: '4%',
+      left: '2%',
+      right: '2%',
+      top: '9%',
       bottom: '3%',
       containLabel: true
     },
     xAxis: {
       type: 'category',
       data: ['今日', '本周', '本月', '总计'],
+      boundaryGap: false,
       axisLine: {
         lineStyle: {
-          color: '#E2E8F0'
+          color: 'rgba(69, 111, 100, .16)'
         }
       },
       axisLabel: {
-        color: '#64748B'
+        color: '#64766f',
+        margin: 14
       }
     },
     yAxis: {
@@ -201,17 +212,22 @@ const renderTrendChart = () => {
       },
       splitLine: {
         lineStyle: {
-          color: '#F1F5F9'
+          color: 'rgba(69, 111, 100, .1)',
+          type: 'dashed'
         }
       },
       axisLabel: {
-        color: '#64748B'
+        color: '#64766f'
       }
     },
     series: [
       {
         name: '创作数量',
-        type: 'bar',
+        type: 'line',
+        smooth: true,
+        showSymbol: true,
+        symbol: 'circle',
+        symbolSize: 9,
         data: [
           stats.value.todayCount ?? 0,
           stats.value.weekCount ?? 0,
@@ -219,13 +235,28 @@ const renderTrendChart = () => {
           stats.value.totalCount ?? 0
         ],
         itemStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#8fb8a4' },
-            { offset: 1, color: '#456f64' }
-          ]),
-          borderRadius: [4, 4, 0, 0]
+          color: '#456f64',
+          borderColor: '#f7f5ee',
+          borderWidth: 3
         },
-        barWidth: '40%'
+        lineStyle: {
+          color: '#456f64',
+          width: 3,
+          shadowColor: 'rgba(69, 111, 100, .22)',
+          shadowBlur: 10
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(143, 184, 164, .48)' },
+            { offset: 1, color: 'rgba(143, 184, 164, .04)' }
+          ])
+        },
+        emphasis: {
+          scale: true,
+          itemStyle: { color: '#c7a878' }
+        },
+        animationDuration: 1200,
+        animationEasing: 'cubicOut'
       }
     ]
   }
@@ -244,26 +275,53 @@ const renderUserChart = () => {
   const option: EChartsOption = {
     tooltip: {
       trigger: 'item',
-      formatter: '{b}: {c} ({d}%)'
+      formatter: '{b}<br/><strong>{c}</strong> 位 · {d}%',
+      backgroundColor: 'rgba(32, 59, 56, .92)',
+      borderWidth: 0,
+      textStyle: { color: '#f7f5ee' },
+      padding: [10, 14]
     },
     legend: {
       orient: 'vertical',
       right: '10%',
       top: 'center',
+      itemGap: 14,
       textStyle: {
-        color: '#64748B'
+        color: '#64766f',
+        fontSize: 12
       }
     },
+    graphic: [{
+      type: 'text',
+      left: '35%',
+      top: '43%',
+      style: {
+        text: `${stats.value.totalUserCount ?? 0}`,
+        fill: '#203b38',
+        fontSize: 24,
+        fontWeight: 600,
+      }
+    }, {
+      type: 'text',
+      left: '35%',
+      top: '55%',
+      style: {
+        text: '用户总数',
+        fill: '#71817a',
+        fontSize: 12,
+      }
+    }],
     series: [
       {
         name: '用户分布',
         type: 'pie',
-        radius: ['40%', '70%'],
+        radius: ['48%', '72%'],
+        center: ['35%', '50%'],
         avoidLabelOverlap: false,
         itemStyle: {
-          borderRadius: 8,
-          borderColor: '#fff',
-          borderWidth: 2
+          borderRadius: 10,
+          borderColor: 'rgba(247, 250, 246, .92)',
+          borderWidth: 3
         },
         label: {
           show: false
@@ -289,9 +347,11 @@ const renderUserChart = () => {
           {
             value: (stats.value.totalUserCount ?? 0) - (stats.value.activeUserCount ?? 0) - (stats.value.vipUserCount ?? 0),
             name: '其他用户',
-            itemStyle: { color: '#9db6ad' }
+            itemStyle: { color: '#b9c9c2' }
           }
-        ]
+        ],
+        animationDuration: 1100,
+        animationEasing: 'cubicOut'
       }
     ]
   }
@@ -313,19 +373,44 @@ const renderQuotaChart = () => {
 
   const option: EChartsOption = {
     tooltip: {
-      trigger: 'item'
+      trigger: 'item',
+      formatter: '{b}<br/><strong>{c}</strong> 次',
+      backgroundColor: 'rgba(32, 59, 56, .92)',
+      borderWidth: 0,
+      textStyle: { color: '#f7f5ee' },
+      padding: [10, 14]
     },
+    graphic: [{
+      type: 'text',
+      left: 'center',
+      top: '41%',
+      style: {
+        text: `${usedQuota}`,
+        fill: '#203b38',
+        fontSize: 24,
+        fontWeight: 600,
+      }
+    }, {
+      type: 'text',
+      left: 'center',
+      top: '54%',
+      style: {
+        text: '已使用配额',
+        fill: '#71817a',
+        fontSize: 12,
+      }
+    }],
     series: [
       {
         name: '配额统计',
         type: 'pie',
-        radius: '70%',
+        radius: ['54%', '74%'],
         center: ['50%', '50%'],
         data: [
           {
             value: usedQuota,
             name: '已使用',
-            itemStyle: { color: '#b86d67' }
+            itemStyle: { color: '#c78b7d' }
           },
           {
             value: remainingQuota,
@@ -341,8 +426,10 @@ const renderQuotaChart = () => {
           }
         },
         label: {
-          formatter: '{b}: {c}'
-        }
+          show: false
+        },
+        animationDuration: 1100,
+        animationEasing: 'cubicOut'
       }
     ]
   }
@@ -635,10 +722,21 @@ onUnmounted(() => {
 .statistics-page .stat-label, .statistics-page .perf-label { color: var(--ink-muted); }
 .statistics-page .stat-value, .statistics-page .perf-value { color: var(--ink-deep); }
 .statistics-page .chart-card { border-radius: 18px; }
+.statistics-page .chart-card { position: relative; overflow: hidden; }
+.statistics-page .chart-card::before {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  left: 24px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(143, 184, 164, .72), rgba(199, 168, 120, .58), transparent);
+  content: '';
+}
 .statistics-page .chart-title { color: var(--ink-deep); }
 .statistics-page .chart-title .anticon { color: var(--mountain-green); }
 .statistics-page .performance-stats { padding: 14px 4px; }
 .statistics-page .performance-stats :deep(.ant-divider) { border-color: var(--line-soft); }
+.statistics-page .chart-container { min-height: 300px; }
 
 .statistics-page {
   background-image:
