@@ -479,7 +479,7 @@ onMounted(loadRecentArticles)
 .method-section {
   background-image:
     linear-gradient(180deg, rgba(247, 245, 238, .9), rgba(247, 250, 246, .82)),
-    url('@/assets/scenes/article-list-river.png');
+    url('@/assets/scenes/home-method.png');
   background-position: 20% 44%;
   background-size: cover;
 }
@@ -487,7 +487,7 @@ onMounted(loadRecentArticles)
 .metrics-section {
   background-image:
     linear-gradient(135deg, rgba(32, 59, 56, .94), rgba(49, 87, 79, .78)),
-    url('@/assets/scenes/article-detail-mist.png');
+    url('@/assets/scenes/home-metrics.png');
   background-position: 72% 60%;
   background-size: cover;
 }
@@ -495,7 +495,7 @@ onMounted(loadRecentArticles)
 .recent-section {
   background-image:
     linear-gradient(180deg, rgba(247, 245, 238, .84), rgba(247, 245, 238, .94)),
-    url('@/assets/scenes/create-desk.png');
+    url('@/assets/scenes/home-works.png');
   background-position: 88% 78%;
   background-size: cover;
 }

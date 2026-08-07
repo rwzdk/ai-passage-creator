@@ -210,7 +210,7 @@ onMounted(() => {
   padding-bottom: 60px;
   background-image:
     linear-gradient(180deg, rgba(247, 250, 246, .72), rgba(247, 245, 238, .92)),
-    url('@/assets/profile/my-works-bg.png');
+    url('@/assets/scenes/admin-users.png');
   background-position: center top;
   background-size: cover;
   background-attachment: fixed;

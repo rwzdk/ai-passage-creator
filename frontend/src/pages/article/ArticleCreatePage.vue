@@ -2314,7 +2314,7 @@ onBeforeUnmount(() => {
 .article-create-page {
   background-image:
     linear-gradient(90deg, rgba(243, 247, 243, .74) 0%, rgba(247, 245, 238, .54) 52%, rgba(247, 245, 238, .18) 100%),
-    url('@/assets/scenes/create-desk.png');
+    url('@/assets/scenes/create-desk-new.png');
   background-position: center;
   background-size: cover;
   background-attachment: fixed;
