@@ -179,3 +179,137 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
 }
+
+/* 沅水青山主题增强 */
+html {
+  background: var(--mist-white);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(143, 184, 164, 0.17), transparent 32rem),
+    var(--mist-white);
+  color: var(--color-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Outfit', 'Microsoft YaHei', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(143, 184, 164, 0.55);
+  outline-offset: 3px;
+}
+
+.ant-btn {
+  font-weight: 600;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-normal),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.ant-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.ant-btn-primary {
+  background: var(--gradient-primary);
+  border-color: transparent;
+  box-shadow: var(--shadow-green);
+}
+
+.ant-btn-primary:not(:disabled):hover {
+  background: var(--gradient-primary);
+  border-color: transparent;
+  box-shadow: var(--shadow-card-hover);
+}
+
+.ant-btn:disabled,
+.ant-btn.ant-btn-disabled {
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.ant-card {
+  box-shadow: var(--shadow-card);
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  border-color: var(--mountain-green) !important;
+  box-shadow: 0 0 0 3px rgba(143, 184, 164, 0.22) !important;
+}
+
+.ant-input:hover,
+.ant-input-affix-wrapper:hover {
+  border-color: var(--river-green);
+}
+
+.ant-progress-bg {
+  background: var(--gradient-primary);
+}
+
+.ant-spin-dot-item {
+  background-color: var(--mountain-green);
+}
+
+.motion-fade-up {
+  animation: motion-fade-up 680ms var(--ease-out) both;
+}
+
+.motion-float {
+  animation: motion-float 6s ease-in-out infinite;
+}
+
+@keyframes motion-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes motion-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

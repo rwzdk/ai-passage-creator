@@ -10,6 +10,8 @@ import 'ant-design-vue/dist/reset.css'
 import 'dayjs/locale/zh-cn'
 
 import '@/access'
+import '@/styles/variables.css'
+import '@/styles/common.css'
 
 const app = createApp(App)
 
