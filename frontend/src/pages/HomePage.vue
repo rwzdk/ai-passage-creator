@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { listArticle } from '@/api/articleController'
+import { getHotTopics } from '@/api/hotTopicController'
 import dayjs from 'dayjs'
 import {
   ArrowRightOutlined,
@@ -24,6 +25,11 @@ const loginUserStore = useLoginUserStore()
 const topic = ref('')
 const topicInputRef = ref<HTMLElement | null>(null)
 const activePromptIndex = ref(0)
+const promptIndex = ref(0)
+const promptNoTransition = ref(false)
+const promptPaused = ref(false)
+const homeHotTopics = ref<API.HotTopicItem[]>([])
+const hotTopicsSource = ref('fallback')
 let promptTimer: ReturnType<typeof window.setInterval> | undefined
 const promptCards = [
   { type: '工作总结', title: '总结一次项目复盘，提炼可复制的团队协作方法', description: '适合季度总结与项目复盘' },
@@ -33,6 +39,17 @@ const promptCards = [
   { type: '爆款文章', title: '为什么越来越多人开始重新安排自己的生活节奏', description: '适合公众号和内容平台创作' },
   { type: '职场观察', title: '远程办公如何改变团队沟通与工作效率', description: '适合职场热点和经验分享' },
 ]
+const displayPromptCards = computed(() => {
+  if (homeHotTopics.value.length) {
+    return homeHotTopics.value.map(item => ({
+      type: '实时热点',
+      title: item.title || '值得关注的今日话题',
+      description: item.source || '来自 GNews 实时资讯',
+    }))
+  }
+  return promptCards
+})
+const loopedPromptCards = computed(() => [...displayPromptCards.value, ...displayPromptCards.value])
 const recentArticles = ref<API.ArticleVO[]>([])
 const loadingArticles = ref(false)
 
@@ -59,11 +76,50 @@ const selectPrompt = (prompt: string) => {
   nextTick(() => topicInputRef.value?.querySelector('input')?.focus())
 }
 
+const nextPrompt = () => {
+  if (promptPaused.value || displayPromptCards.value.length === 0) return
+  promptNoTransition.value = false
+  promptIndex.value += 1
+  if (promptIndex.value >= displayPromptCards.value.length) {
+    window.setTimeout(() => {
+      promptNoTransition.value = true
+      promptIndex.value = 0
+      requestAnimationFrame(() => { promptNoTransition.value = false })
+    }, 520)
+  }
+  activePromptIndex.value = promptIndex.value % displayPromptCards.value.length
+}
+
+const previousPrompt = () => {
+  if (displayPromptCards.value.length === 0) return
+  if (promptIndex.value === 0) {
+    promptNoTransition.value = true
+    promptIndex.value = displayPromptCards.value.length
+    requestAnimationFrame(() => { promptNoTransition.value = false })
+  }
+  promptIndex.value -= 1
+  activePromptIndex.value = promptIndex.value % displayPromptCards.value.length
+}
+
 const startPromptRotation = () => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
   promptTimer = window.setInterval(() => {
-    activePromptIndex.value = (activePromptIndex.value + 1) % promptCards.length
+    nextPrompt()
   }, 4500)
+}
+
+const loadHomeHotTopics = async () => {
+  try {
+    const res = await getHotTopics()
+    const data = res.data.data
+    if (data?.items?.length) {
+      homeHotTopics.value = data.items
+      hotTopicsSource.value = data.source || 'gnews'
+      promptIndex.value = 0
+    }
+  } catch (error) {
+    console.warn('首页热门选题加载失败，继续使用本地推荐', error)
+  }
 }
 
 const goToList = () => router.push('/article/list')
@@ -91,6 +147,7 @@ const statusText = (status?: string) => {
 
 onMounted(() => {
   loadRecentArticles()
+  loadHomeHotTopics()
   startPromptRotation()
 })
 onBeforeUnmount(() => {
@@ -138,18 +195,39 @@ onBeforeUnmount(() => {
             </a-button>
           </div>
           <p class="composer-hint">工作总结、心得体会、演讲稿、分析报告，都可以从这里开始。</p>
-          <div class="prompt-strip" aria-label="创作主题灵感">
-            <button
-              v-for="(prompt, index) in promptCards"
-              :key="prompt.title"
-              type="button"
-              :class="['prompt-card', { active: index === activePromptIndex }]"
-              @click="selectPrompt(prompt.title)"
-            >
-              <span class="prompt-type">{{ prompt.type }}</span>
-              <strong>{{ prompt.title }}</strong>
-              <small>{{ prompt.description }}</small>
-            </button>
+          <div
+            class="prompt-carousel"
+            aria-label="实时创作主题"
+            @mouseenter="promptPaused = true"
+            @mouseleave="promptPaused = false"
+            @focusin="promptPaused = true"
+            @focusout="promptPaused = false"
+          >
+            <div class="prompt-carousel-heading">
+              <span><span class="signal-dot" /> {{ hotTopicsSource === 'gnews' ? '正在发生的灵感' : '创作灵感推荐' }}</span>
+              <span class="prompt-carousel-hint">点击主题即可填入</span>
+            </div>
+            <button type="button" class="prompt-arrow prompt-arrow-left" aria-label="上一个主题" @click="previousPrompt">‹</button>
+            <div class="prompt-viewport">
+              <div
+                class="prompt-track"
+                :class="{ 'no-transition': promptNoTransition }"
+                :style="{ '--prompt-index': promptIndex }"
+              >
+                <button
+                  v-for="(prompt, index) in loopedPromptCards"
+                  :key="`${prompt.title}-${index}`"
+                  type="button"
+                  :class="['prompt-card', { active: index % displayPromptCards.length === activePromptIndex }]"
+                  @click="selectPrompt(prompt.title)"
+                >
+                  <span class="prompt-type">{{ prompt.type }}</span>
+                  <strong>{{ prompt.title }}</strong>
+                  <small>{{ prompt.description }}</small>
+                </button>
+              </div>
+            </div>
+            <button type="button" class="prompt-arrow prompt-arrow-right" aria-label="下一个主题" @click="nextPrompt">›</button>
           </div>
         </ScrollReveal>
       </div>
@@ -409,12 +487,23 @@ onBeforeUnmount(() => {
 .topic-input :deep(input) { height: 56px; font-size: 16px; }
 .cta-button { display: inline-flex; align-items: center; gap: 8px; height: 56px; padding: 0 28px; white-space: nowrap; font-size: 15px; }
 .composer-hint { margin: 12px 2px 0; color: var(--ink-muted); font-size: 13px; }
-.prompt-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 18px; }
-.prompt-card { min-height: 108px; padding: 14px; border: 1px solid rgba(69,111,100,.14); border-radius: 14px; background: rgba(247,250,246,.68); color: var(--ink-deep); text-align: left; cursor: pointer; transition: transform .35s ease, border-color .35s ease, background .35s ease, box-shadow .35s ease; }
+.prompt-carousel { --prompt-card-width: clamp(240px, 28vw, 300px); position: relative; margin-top: 18px; padding: 12px 34px 0; border-top: 1px solid rgba(69,111,100,.1); }
+.prompt-carousel-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: var(--ink-muted); font-size: 11px; }
+.prompt-carousel-heading > span:first-child { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-deep); font-weight: 600; }
+.prompt-carousel-heading .signal-dot { width: 6px; height: 6px; box-shadow: 0 0 0 4px rgba(143,184,164,.16); }
+.prompt-carousel-hint { opacity: .72; }
+.prompt-viewport { overflow: hidden; width: 100%; }
+.prompt-track { display: flex; gap: 12px; width: max-content; transform: translate3d(calc(var(--prompt-index) * -1 * (var(--prompt-card-width) + 12px)), 0, 0); transition: transform 520ms cubic-bezier(.22,.61,.36,1); }
+.prompt-track.no-transition { transition: none; }
+.prompt-card { flex: 0 0 var(--prompt-card-width); min-height: 108px; padding: 14px; border: 1px solid rgba(69,111,100,.14); border-radius: 14px; background: rgba(247,250,246,.68); color: var(--ink-deep); text-align: left; cursor: pointer; transition: transform .35s ease, border-color .35s ease, background .35s ease, box-shadow .35s ease; }
 .prompt-card:hover, .prompt-card.active { transform: translateY(-3px); border-color: rgba(69,111,100,.42); background: rgba(255,255,255,.92); box-shadow: 0 10px 24px rgba(48,79,70,.1); }
 .prompt-type { display: block; margin-bottom: 8px; color: var(--mountain-green); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
 .prompt-card strong { display: -webkit-box; overflow: hidden; font-size: 13px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .prompt-card small { display: block; margin-top: 7px; color: var(--ink-muted); font-size: 11px; }
+.prompt-arrow { position: absolute; top: 55%; z-index: 2; display: grid; width: 25px; height: 25px; place-items: center; padding: 0; border: 1px solid rgba(69,111,100,.16); border-radius: 50%; background: rgba(255,255,255,.75); color: var(--mountain-green); font-size: 22px; line-height: 1; cursor: pointer; transform: translateY(-50%); transition: background .25s ease, color .25s ease, transform .25s ease; }
+.prompt-arrow:hover { background: var(--mountain-green); color: white; transform: translateY(-50%) scale(1.08); }
+.prompt-arrow-left { left: 0; }
+.prompt-arrow-right { right: 0; }
 
 .method-section,
 .recent-section { padding: 112px 0; background: var(--paper-warm); }
@@ -493,8 +582,8 @@ onBeforeUnmount(() => {
   .hero-subtitle { font-size: 15px; }
   .composer-row { flex-direction: column; }
   .topic-composer { padding: 18px; }
-  .prompt-strip { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 4px; scroll-snap-type: x mandatory; }
-  .prompt-card { flex: 0 0 78%; scroll-snap-align: start; }
+  .prompt-carousel { --prompt-card-width: 78%; padding-inline: 30px; }
+  .prompt-carousel-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
   .topic-input :deep(input) { font-size: 14px; }
   .cta-button { justify-content: center; }
   .method-section, .metrics-section, .recent-section { padding: 76px 0; }
