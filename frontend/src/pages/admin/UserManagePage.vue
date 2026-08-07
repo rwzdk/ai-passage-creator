@@ -454,5 +454,18 @@ onMounted(() => {
     .page-title { font-size: 28px; }
     .content-card { margin-top: 18px; }
   }
+
+  .page-header {
+    background: linear-gradient(135deg, rgba(224, 236, 229, .88), rgba(247, 245, 238, .72));
+    color: var(--ink-deep);
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .page-header::after {
+    border-color: rgba(69, 111, 100, .14);
+  }
+
+  .page-title { color: var(--ink-deep); }
+  .page-subtitle { color: var(--ink-muted); }
   }
 </style>

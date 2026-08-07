@@ -654,4 +654,27 @@ onUnmounted(() => {
   .statistics-page .page-header { padding: 32px 16px 28px; }
   .statistics-page .page-title { font-size: 28px; }
 }
+
+.statistics-page .page-header {
+  background: linear-gradient(135deg, rgba(224, 236, 229, .88), rgba(247, 245, 238, .72));
+  color: var(--ink-deep);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.statistics-page .page-header::after {
+  border-color: rgba(69, 111, 100, .14);
+}
+
+.statistics-page .page-title { color: var(--ink-deep); }
+.statistics-page .page-subtitle { color: var(--ink-muted); }
+.statistics-page .refresh-btn {
+  color: var(--ink-deep);
+  border-color: rgba(69, 111, 100, .2);
+  background: rgba(255, 255, 255, .45);
+}
+.statistics-page .refresh-btn:hover {
+  color: var(--mountain-green);
+  border-color: rgba(69, 111, 100, .42);
+  background: rgba(255, 255, 255, .72);
+}
 </style>
