@@ -34,19 +34,6 @@ defineProps<{
   isolation: isolate;
 }
 
-.workspace-page-header::after {
-  position: absolute;
-  right: 8%;
-  bottom: -48px;
-  width: 260px;
-  height: 128px;
-  border: 1px solid rgba(69, 111, 100, 0.16);
-  border-radius: 50%;
-  content: '';
-  transform: rotate(-8deg);
-  pointer-events: none;
-}
-
 .workspace-page-header__inner {
   position: relative;
   z-index: 1;
