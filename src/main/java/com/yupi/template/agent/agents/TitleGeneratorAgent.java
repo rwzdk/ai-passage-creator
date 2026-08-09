@@ -33,6 +33,7 @@ public class TitleGeneratorAgent implements NodeAction {
 
     public static final String INPUT_TOPIC = "topic";
     public static final String INPUT_STYLE = "style";
+    public static final String INPUT_REFERENCE_SUMMARY = "referenceSummary";
     public static final String OUTPUT_TITLE_OPTIONS = "titleOptions";
 
     @Override
@@ -44,12 +45,16 @@ public class TitleGeneratorAgent implements NodeAction {
         String style = state.value(INPUT_STYLE)
                 .map(Object::toString)
                 .orElse(null);
+        String referenceSummary = state.value(INPUT_REFERENCE_SUMMARY)
+                .map(Object::toString)
+                .orElse(null);
         
         log.info("TitleGeneratorAgent 开始执行: topic={}, style={}", topic, style);
         
         // 构建 prompt
         String prompt = PromptConstant.AGENT1_TITLE_PROMPT
                 .replace("{topic}", topic)
+                + referenceSection(referenceSummary)
                 + getStylePrompt(style);
         
         // 调用 LLM
@@ -65,6 +70,13 @@ public class TitleGeneratorAgent implements NodeAction {
         log.info("TitleGeneratorAgent 执行完成: 生成了 {} 个标题方案", titleOptions.size());
         
         return Map.of(OUTPUT_TITLE_OPTIONS, titleOptions);
+    }
+
+    private String referenceSection(String referenceSummary) {
+        if (referenceSummary == null || referenceSummary.isBlank()) {
+            return "";
+        }
+        return PromptConstant.REFERENCE_SUMMARY_SECTION.replace("{referenceSummary}", referenceSummary);
     }
 
     /**

@@ -1,20 +1,15 @@
 <template>
   <div class="statistics-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-container">
-        <div class="header-content">
-          <h1 class="page-title">数据分析</h1>
-          <p class="page-subtitle">系统运营数据概览</p>
-        </div>
+    <WorkspacePageHeader title="数据分析" subtitle="系统运营数据概览">
+      <template #actions>
         <a-button @click="loadData" :loading="loading" class="refresh-btn">
           <template #icon>
             <ReloadOutlined />
           </template>
           刷新数据
         </a-button>
-      </div>
-    </div>
+      </template>
+    </WorkspacePageHeader>
 
     <div class="container">
       <a-spin :spinning="loading" tip="加载中...">
@@ -122,6 +117,7 @@ import {
 import { getStatistics } from '@/api/statisticsController'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
+import WorkspacePageHeader from '@/components/WorkspacePageHeader.vue'
 
 const loading = ref(false)
 const stats = ref<API.StatisticsVO | null>(null)

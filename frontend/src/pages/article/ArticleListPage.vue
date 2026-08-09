@@ -1,20 +1,15 @@
 <template>
   <div class="article-list-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-container">
-        <div class="header-content">
-          <h1 class="page-title">历史记录</h1>
-          <p class="page-subtitle">管理您创作的所有文章</p>
-        </div>
+    <WorkspacePageHeader title="历史记录" subtitle="管理您创作的所有文章">
+      <template #actions>
         <a-button type="primary" size="large" @click="goToCreate" class="create-btn">
           <template #icon>
             <PlusOutlined />
           </template>
           创作新文章
         </a-button>
-      </div>
-    </div>
+      </template>
+    </WorkspacePageHeader>
 
     <div class="container">
       <!-- 搜索筛选栏 -->
@@ -166,6 +161,7 @@ import {
 } from '@ant-design/icons-vue'
 import { listArticle, deleteArticle as deleteArticleApi, getArticle } from '@/api/articleController'
 import dayjs, { type Dayjs } from 'dayjs'
+import WorkspacePageHeader from '@/components/WorkspacePageHeader.vue'
 
 const router = useRouter()
 

@@ -37,6 +37,7 @@ public class OutlineGeneratorAgent implements NodeAction {
     public static final String INPUT_SUB_TITLE = "subTitle";
     public static final String INPUT_USER_DESCRIPTION = "userDescription";
     public static final String INPUT_STYLE = "style";
+    public static final String INPUT_REFERENCE_SUMMARY = "referenceSummary";
     public static final String OUTPUT_OUTLINE = "outline";
 
     @Override
@@ -56,6 +57,9 @@ public class OutlineGeneratorAgent implements NodeAction {
         String style = state.value(INPUT_STYLE)
                 .map(Object::toString)
                 .orElse(null);
+        String referenceSummary = state.value(INPUT_REFERENCE_SUMMARY)
+                .map(Object::toString)
+                .orElse(null);
         
         log.info("OutlineGeneratorAgent 开始执行: mainTitle={}, subTitle={}", mainTitle, subTitle);
         
@@ -71,6 +75,7 @@ public class OutlineGeneratorAgent implements NodeAction {
                 .replace("{mainTitle}", mainTitle)
                 .replace("{subTitle}", subTitle)
                 .replace("{descriptionSection}", descriptionSection)
+                + referenceSection(referenceSummary)
                 + getStylePrompt(style);
         
         // 获取流式处理器
@@ -89,6 +94,13 @@ public class OutlineGeneratorAgent implements NodeAction {
                 outlineResult.getSections().size());
         
         return Map.of(OUTPUT_OUTLINE, outlineResult);
+    }
+
+    private String referenceSection(String referenceSummary) {
+        if (referenceSummary == null || referenceSummary.isBlank()) {
+            return "";
+        }
+        return PromptConstant.REFERENCE_SUMMARY_SECTION.replace("{referenceSummary}", referenceSummary);
     }
 
     /**

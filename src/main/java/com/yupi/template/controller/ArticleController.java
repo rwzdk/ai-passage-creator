@@ -5,6 +5,7 @@ import com.yupi.template.common.BaseResponse;
 import com.yupi.template.common.DeleteRequest;
 import com.yupi.template.common.ResultUtils;
 import com.yupi.template.exception.ErrorCode;
+import com.yupi.template.exception.BusinessException;
 import com.yupi.template.exception.ThrowUtils;
 import com.yupi.template.manager.SseEmitterManager;
 import com.yupi.template.model.dto.article.ArticleAiModifyOutlineRequest;
@@ -19,17 +20,21 @@ import com.yupi.template.model.entity.User;
 import com.yupi.template.model.enums.ArticleStyleEnum;
 import com.yupi.template.model.vo.AgentExecutionStats;
 import com.yupi.template.model.vo.ArticleVO;
+import com.yupi.template.model.vo.DocumentReferenceVO;
 import com.yupi.template.model.vo.UserArticleStatsVO;
 import com.yupi.template.model.vo.HotTopicsVO;
 import com.yupi.template.service.AgentLogService;
 import com.yupi.template.service.ArticleAsyncService;
 import com.yupi.template.service.ArticleService;
+import com.yupi.template.service.DocumentReferenceService;
 import com.yupi.template.service.UserService;
 import com.yupi.template.service.HotTopicService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,6 +67,23 @@ public class ArticleController {
     @Resource
     private HotTopicService hotTopicService;
 
+    @Resource
+    private DocumentReferenceService documentReferenceService;
+
+    /** 上传并总结本次创作使用的参考文档，不保存原文件。 */
+    @PostMapping(value = "/reference/parse", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "解析文章参考文档")
+    public BaseResponse<DocumentReferenceVO> parseReferenceDocument(
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest httpServletRequest) {
+        userService.getLoginUser(httpServletRequest);
+        try {
+            return ResultUtils.success(documentReferenceService.parse(file));
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, e.getMessage());
+        }
+    }
+
     @GetMapping("/hot-topics")
     @Operation(summary = "获取热门选题")
     public BaseResponse<HotTopicsVO> getHotTopics(
@@ -89,6 +111,7 @@ public class ArticleController {
                 request.getTopic(), 
                 request.getStyle(), 
                 request.getEnabledImageMethods(),
+                request.getReferenceSummary(),
                 loginUser
         );
 
@@ -96,7 +119,8 @@ public class ArticleController {
         articleAsyncService.executePhase1(
                 taskId, 
                 request.getTopic(),
-                request.getStyle()
+                request.getStyle(),
+                request.getReferenceSummary()
         );
 
         return ResultUtils.success(taskId);

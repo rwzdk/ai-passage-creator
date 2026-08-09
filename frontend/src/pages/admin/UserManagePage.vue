@@ -1,14 +1,6 @@
 <template>
   <div id="userManagePage">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-container">
-        <div class="header-content">
-          <h1 class="page-title">用户管理</h1>
-          <p class="page-subtitle">管理系统中的所有用户</p>
-        </div>
-      </div>
-    </div>
+    <WorkspacePageHeader title="用户管理" subtitle="管理系统中的所有用户" />
 
     <div class="container">
       <a-card :bordered="false" class="content-card">
@@ -83,6 +75,7 @@ import { deleteUser, listUserVoByPage } from '@/api/userController.ts'
 import { message } from 'ant-design-vue'
 import { SearchOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
+import WorkspacePageHeader from '@/components/WorkspacePageHeader.vue'
 
 const columns = [
   {

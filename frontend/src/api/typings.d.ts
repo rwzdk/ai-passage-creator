@@ -45,8 +45,21 @@ declare namespace API {
   type ArticleCreateRequest = {
     topic?: string
     style?: string
+    referenceSummary?: string
     /** PEXELS, NANO_BANANA, NANO_BANANA_APICLAUDE, IMAGE_2, MERMAID, ICONIFY, EMOJI_PACK, SVG_DIAGRAM */
     enabledImageMethods?: string[]
+  }
+
+  type DocumentReference = {
+    fileName?: string
+    summary?: string
+    characterCount?: number
+  }
+
+  type BaseResponseDocumentReference = {
+    code?: number
+    data?: DocumentReference
+    message?: string
   }
 
   type ArticleQueryRequest = {

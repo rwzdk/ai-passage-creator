@@ -125,6 +125,7 @@ public class ArticleAgentService {
     public void agent1GenerateTitleOptions(ArticleState state) {
         String prompt = PromptConstant.AGENT1_TITLE_PROMPT
                 .replace("{topic}", state.getTopic())
+                + referenceSection(state.getReferenceSummary())
                 + getStylePrompt(state.getStyle());
 
         String content = callLlm(prompt);
@@ -153,6 +154,7 @@ public class ArticleAgentService {
                 .replace("{mainTitle}", state.getTitle().getMainTitle())
                 .replace("{subTitle}", state.getTitle().getSubTitle())
                 .replace("{descriptionSection}", descriptionSection)
+                + referenceSection(state.getReferenceSummary())
                 + getStylePrompt(state.getStyle());
 
         String content = callLlmWithStreaming(prompt, streamHandler, SseMessageTypeEnum.AGENT2_STREAMING);
@@ -171,6 +173,7 @@ public class ArticleAgentService {
                 .replace("{mainTitle}", state.getTitle().getMainTitle())
                 .replace("{subTitle}", state.getTitle().getSubTitle())
                 .replace("{outline}", outlineText)
+                + referenceSection(state.getReferenceSummary())
                 + getStylePrompt(state.getStyle());
 
         String content = callLlmWithStreaming(prompt, streamHandler, SseMessageTypeEnum.AGENT3_STREAMING);
@@ -523,6 +526,13 @@ public class ArticleAgentService {
             case EDUCATIONAL -> PromptConstant.STYLE_EDUCATIONAL_PROMPT;
             case HUMOROUS -> PromptConstant.STYLE_HUMOROUS_PROMPT;
         };
+    }
+
+    private String referenceSection(String referenceSummary) {
+        if (referenceSummary == null || referenceSummary.isBlank()) {
+            return "";
+        }
+        return PromptConstant.REFERENCE_SUMMARY_SECTION.replace("{referenceSummary}", referenceSummary);
     }
 
     /**

@@ -29,5 +29,10 @@ public class ArticleCreateRequest implements Serializable {
      */
     private List<String> enabledImageMethods;
 
+    /**
+     * 上传文档生成的参考摘要，可为空
+     */
+    private String referenceSummary;
+
     private static final long serialVersionUID = 1L;
 }

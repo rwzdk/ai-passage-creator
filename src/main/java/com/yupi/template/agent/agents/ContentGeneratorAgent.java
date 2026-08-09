@@ -37,6 +37,7 @@ public class ContentGeneratorAgent implements NodeAction {
     public static final String INPUT_SUB_TITLE = "subTitle";
     public static final String INPUT_OUTLINE = "outline";
     public static final String INPUT_STYLE = "style";
+    public static final String INPUT_REFERENCE_SUMMARY = "referenceSummary";
     public static final String OUTPUT_CONTENT = "content";
 
     @Override
@@ -62,6 +63,9 @@ public class ContentGeneratorAgent implements NodeAction {
         String style = state.value(INPUT_STYLE)
                 .map(Object::toString)
                 .orElse(null);
+        String referenceSummary = state.value(INPUT_REFERENCE_SUMMARY)
+                .map(Object::toString)
+                .orElse(null);
         
         log.info("ContentGeneratorAgent 开始执行: mainTitle={}", mainTitle);
         
@@ -71,6 +75,7 @@ public class ContentGeneratorAgent implements NodeAction {
                 .replace("{mainTitle}", mainTitle)
                 .replace("{subTitle}", subTitle)
                 .replace("{outline}", outlineText)
+                + referenceSection(referenceSummary)
                 + getStylePrompt(style);
         
         // 获取流式处理器
@@ -82,6 +87,13 @@ public class ContentGeneratorAgent implements NodeAction {
         log.info("ContentGeneratorAgent 执行完成: 正文长度={}", content.length());
         
         return Map.of(OUTPUT_CONTENT, content);
+    }
+
+    private String referenceSection(String referenceSummary) {
+        if (referenceSummary == null || referenceSummary.isBlank()) {
+            return "";
+        }
+        return PromptConstant.REFERENCE_SUMMARY_SECTION.replace("{referenceSummary}", referenceSummary);
     }
 
     /**

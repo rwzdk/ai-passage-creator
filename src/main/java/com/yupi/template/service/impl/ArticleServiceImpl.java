@@ -51,7 +51,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private ArticleAgentService articleAgentService;
 
     @Override
-    public String createArticleTask(String topic, String style, List<String> enabledImageMethods, User loginUser) {
+    public String createArticleTask(String topic, String style, List<String> enabledImageMethods,
+                                    String referenceSummary, User loginUser) {
         // 处理配图方式：如果用户未选择，给普通用户设置默认的非 VIP 方式
         List<String> finalImageMethods = processImageMethods(enabledImageMethods, loginUser);
         
@@ -66,6 +67,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         article.setTaskId(taskId);
         article.setUserId(loginUser.getId());
         article.setTopic(topic);
+        article.setReferenceSummary(referenceSummary);
         article.setStyle(style);
         article.setEnabledImageMethods(finalImageMethods != null && !finalImageMethods.isEmpty() 
                 ? GsonUtils.toJson(finalImageMethods) : null);
@@ -81,11 +83,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String createArticleTaskWithQuotaCheck(String topic, String style, List<String> enabledImageMethods, User loginUser) {
+    public String createArticleTaskWithQuotaCheck(String topic, String style, List<String> enabledImageMethods,
+                                                  String referenceSummary, User loginUser) {
         // 在同一事务中：先扣配额，再创建任务
         // 如果任务创建失败，配额会自动回滚
         quotaService.checkAndConsumeQuota(loginUser);
-        return createArticleTask(topic, style, enabledImageMethods, loginUser);
+        return createArticleTask(topic, style, enabledImageMethods, referenceSummary, loginUser);
     }
 
     @Override

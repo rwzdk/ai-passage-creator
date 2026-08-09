@@ -55,6 +55,11 @@ public class Article implements Serializable {
     private String userDescription;
 
     /**
+     * 上传文档生成的参考摘要（不保存原文件）
+     */
+    private String referenceSummary;
+
+    /**
      * 允许的配图方式列表（JSON格式）
      */
     private String enabledImageMethods;

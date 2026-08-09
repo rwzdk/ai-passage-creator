@@ -59,6 +59,7 @@ public class ArticleAgentOrchestrator {
     private static final String KEY_TASK_ID = "taskId";
     private static final String KEY_TOPIC = "topic";
     private static final String KEY_STYLE = "style";
+    private static final String KEY_REFERENCE_SUMMARY = "referenceSummary";
     private static final String KEY_USER_DESCRIPTION = "userDescription";
     private static final String KEY_MAIN_TITLE = "mainTitle";
     private static final String KEY_SUB_TITLE = "subTitle";
@@ -88,6 +89,7 @@ public class ArticleAgentOrchestrator {
             inputs.put(KEY_TASK_ID, state.getTaskId());
             inputs.put(KEY_TOPIC, state.getTopic());
             inputs.put(KEY_STYLE, state.getStyle());
+            inputs.put(KEY_REFERENCE_SUMMARY, state.getReferenceSummary());
             
             // 构建并执行图
             StateGraph graph = buildPhase1Graph();
@@ -140,6 +142,7 @@ public class ArticleAgentOrchestrator {
             inputs.put(KEY_SUB_TITLE, state.getTitle().getSubTitle());
             inputs.put(KEY_USER_DESCRIPTION, state.getUserDescription());
             inputs.put(KEY_STYLE, state.getStyle());
+            inputs.put(KEY_REFERENCE_SUMMARY, state.getReferenceSummary());
             
             // 构建并执行图
             StateGraph graph = buildPhase2Graph();
@@ -199,6 +202,7 @@ public class ArticleAgentOrchestrator {
             inputs.put(KEY_SUB_TITLE, state.getTitle().getSubTitle());
             inputs.put(KEY_OUTLINE, state.getOutline());
             inputs.put(KEY_STYLE, state.getStyle());
+            inputs.put(KEY_REFERENCE_SUMMARY, state.getReferenceSummary());
             inputs.put(KEY_ENABLED_IMAGE_METHODS, state.getEnabledImageMethods());
             
             // 构建并执行图
@@ -334,6 +338,7 @@ public class ArticleAgentOrchestrator {
             strategies.put(KEY_TASK_ID, new ReplaceStrategy());
             strategies.put(KEY_TOPIC, new ReplaceStrategy());
             strategies.put(KEY_STYLE, new ReplaceStrategy());
+            strategies.put(KEY_REFERENCE_SUMMARY, new ReplaceStrategy());
             strategies.put(KEY_USER_DESCRIPTION, new ReplaceStrategy());
             strategies.put(KEY_MAIN_TITLE, new ReplaceStrategy());
             strategies.put(KEY_SUB_TITLE, new ReplaceStrategy());

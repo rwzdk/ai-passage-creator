@@ -53,9 +53,10 @@ public class ArticleAsyncService {
      * @param taskId 任务ID
      * @param topic  选题
      * @param style  文章风格（可为空）
+     * @param referenceSummary 上传文档生成的参考摘要（可为空）
      */
     @Async("articleExecutor")
-    public void executePhase1(String taskId, String topic, String style) {
+    public void executePhase1(String taskId, String topic, String style, String referenceSummary) {
         boolean useOrchestrator = agentConfig.isOrchestratorEnabled();
         log.info("阶段1异步任务开始, taskId={}, topic={}, style={}, 使用多智能体编排={}", 
                 taskId, topic, style, useOrchestrator);
@@ -70,6 +71,7 @@ public class ArticleAsyncService {
             state.setTaskId(taskId);
             state.setTopic(topic);
             state.setStyle(style);
+            state.setReferenceSummary(referenceSummary);
             
             // 执行阶段1：生成标题方案（根据配置选择执行方式）
             if (useOrchestrator) {
@@ -130,6 +132,7 @@ public class ArticleAsyncService {
             state.setTaskId(taskId);
             state.setStyle(article.getStyle());
             state.setUserDescription(article.getUserDescription());
+            state.setReferenceSummary(article.getReferenceSummary());
             
             // 设置标题
             ArticleState.TitleResult title = new ArticleState.TitleResult();
@@ -197,6 +200,7 @@ public class ArticleAsyncService {
             ArticleState state = new ArticleState();
             state.setTaskId(taskId);
             state.setStyle(article.getStyle());
+            state.setReferenceSummary(article.getReferenceSummary());
             
             // 从数据库获取允许的配图方式
             List<String> enabledMethods = null;

@@ -76,6 +76,17 @@ export async function createArticle(
   })
 }
 
+/** 上传并总结文章参考文档 POST /article/reference/parse */
+export async function parseArticleReference(file: File, options?: { [key: string]: any }) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request<API.BaseResponseDocumentReference>('/article/reference/parse', {
+    method: 'POST',
+    data: formData,
+    ...(options || {}),
+  })
+}
+
 /** 删除文章 POST /article/delete */
 export async function deleteArticle(body: API.DeleteRequest, options?: { [key: string]: any }) {
   return request<API.BaseResponseBoolean>('/article/delete', {

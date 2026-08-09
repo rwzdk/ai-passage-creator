@@ -29,6 +29,11 @@ public class ArticleState implements Serializable {
     private String userDescription;
 
     /**
+     * 上传文档生成的参考摘要
+     */
+    private String referenceSummary;
+
+    /**
      * 文章风格
      */
     private String style;

@@ -59,6 +59,50 @@
                 class="topic-textarea"
               />
 
+              <div class="reference-upload">
+                <div class="reference-upload-header">
+                  <div>
+                    <div class="section-title">参考文档</div>
+                    <div class="section-tip">上传 PDF、Word、TXT 或 Markdown，AI 会提炼重点作为创作参考</div>
+                  </div>
+                  <a-button
+                    type="default"
+                    :loading="isReferenceParsing"
+                    :disabled="isReferenceParsing"
+                    @click="openReferencePicker"
+                  >
+                    <template #icon><UploadOutlined /></template>
+                    {{ referenceSummary ? '替换文件' : '上传文件' }}
+                  </a-button>
+                  <input
+                    ref="referenceFileInput"
+                    class="reference-file-input"
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt,.md"
+                    @change="handleReferenceFileChange"
+                  />
+                </div>
+                <div v-if="isReferenceParsing" class="reference-status is-loading">
+                  <a-spin size="small" />
+                  <span>正在提取并总结文档内容...</span>
+                </div>
+                <div v-else-if="referenceSummary" class="reference-summary">
+                  <div class="reference-summary-meta">
+                    <span class="reference-file-name"><FileTextOutlined /> {{ referenceFileName }}</span>
+                    <span>{{ referenceCharacterCount.toLocaleString() }} 字符已纳入参考</span>
+                    <a-button type="text" danger size="small" aria-label="移除参考文档" @click="clearReference">
+                      <template #icon><DeleteOutlined /></template>
+                    </a-button>
+                  </div>
+                  <p>{{ referenceSummary }}</p>
+                </div>
+                <div v-else class="reference-empty">
+                  <FileTextOutlined />
+                  <span>未上传参考文档</span>
+                </div>
+                <div v-if="referenceError" class="reference-error">{{ referenceError }}</div>
+              </div>
+
               <!-- 文章风格选择 -->
               <div class="style-section">
                 <div class="section-header">
@@ -583,9 +627,11 @@ import {
   WarningOutlined,
   CrownOutlined,
   FileTextOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  UploadOutlined,
+  DeleteOutlined
 } from '@ant-design/icons-vue'
-import { createArticle, confirmTitle, confirmOutline } from '@/api/articleController'
+import { createArticle, confirmTitle, confirmOutline, parseArticleReference } from '@/api/articleController'
 import { getHotTopics } from '@/api/hotTopicController'
 import { connectSSE, closeSSE, type SSEMessage } from '@/utils/sse'
 import { isAdmin as checkIsAdmin, isVip as checkIsVip, hasQuota as checkHasQuota } from '@/utils/permission'
@@ -633,6 +679,12 @@ const currentPhase = ref<string>('INPUT')  // INPUT, TITLE_SELECTING, OUTLINE_ED
 
 // 状态
 const topic = ref('')
+const referenceFileInput = ref<HTMLInputElement | null>(null)
+const referenceFileName = ref('')
+const referenceSummary = ref('')
+const referenceCharacterCount = ref(0)
+const isReferenceParsing = ref(false)
+const referenceError = ref('')
 const selectedStyle = ref('')  // 选中的文章风格（空字符串表示默认）
 const selectedImageMethods = ref<string[]>([])  // 选中的配图方式（空数组表示全部）
 const isCreating = ref(false)
@@ -766,7 +818,8 @@ const startCreate = async () => {
     const res = await createArticle({
       topic: topic.value,
       style: selectedStyle.value || undefined,
-      enabledImageMethods: selectedImageMethods.value.length > 0 ? selectedImageMethods.value : undefined
+      enabledImageMethods: selectedImageMethods.value.length > 0 ? selectedImageMethods.value : undefined,
+      referenceSummary: referenceSummary.value || undefined
     })
     const newTaskId = res.data.data
     if (!newTaskId) {
@@ -992,6 +1045,7 @@ const viewArticle = () => {
 const resetCreate = () => {
   currentPhase.value = 'INPUT'
   topic.value = ''
+  clearReference()
   selectedStyle.value = ''
   titleOptions.value = []
   outline.value = []
@@ -1011,6 +1065,47 @@ const resetCreate = () => {
     content: '',
     fullContent: '',
     images: [],
+  }
+}
+
+const openReferencePicker = () => {
+  referenceFileInput.value?.click()
+}
+
+const handleReferenceFileChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  referenceError.value = ''
+  isReferenceParsing.value = true
+  referenceFileName.value = file.name
+  try {
+    const response = await parseArticleReference(file)
+    const reference = response.data.data
+    if (!reference?.summary) {
+      throw new Error(response.data.message || '文档摘要为空')
+    }
+    referenceSummary.value = reference.summary
+    referenceCharacterCount.value = reference.characterCount || 0
+    message.success('参考文档已解析完成')
+  } catch (error) {
+    referenceSummary.value = ''
+    referenceCharacterCount.value = 0
+    referenceError.value = (error as Error).message || '文档解析失败，请重试'
+    input.value = ''
+  } finally {
+    isReferenceParsing.value = false
+  }
+}
+
+const clearReference = () => {
+  referenceFileName.value = ''
+  referenceSummary.value = ''
+  referenceCharacterCount.value = 0
+  referenceError.value = ''
+  if (referenceFileInput.value) {
+    referenceFileInput.value.value = ''
   }
 }
 
@@ -1261,6 +1356,80 @@ onBeforeUnmount(() => {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
   }
+}
+
+.reference-upload {
+  padding: 16px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.reference-upload-header,
+.reference-summary-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reference-upload-header .section-tip {
+  display: block;
+  margin-top: 4px;
+}
+
+.reference-file-input {
+  display: none;
+}
+
+.reference-status,
+.reference-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.reference-summary {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.reference-summary-meta {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.reference-file-name {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.reference-file-name :deep(svg) {
+  flex: 0 0 auto;
+}
+
+.reference-summary p {
+  margin: 10px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.reference-error {
+  margin-top: 10px;
+  color: #d4380d;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .create-btn.ant-btn {
@@ -2410,6 +2579,16 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
+  .reference-upload-header,
+  .reference-summary-meta {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .reference-upload-header > div:first-child {
+    flex: 1 1 100%;
+  }
+
   .article-create-page { background-attachment: scroll; background-position: 64% center; }
 }
 </style>
