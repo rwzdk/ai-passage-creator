@@ -800,14 +800,14 @@ onMounted(() => {
 /* 作品列表沿江背景 */
 .article-list-page {
   background-image:
-    linear-gradient(180deg, rgba(247, 250, 246, .56), rgba(247, 245, 238, .88) 76%),
+    linear-gradient(180deg, rgba(247, 250, 246, .26), rgba(247, 245, 238, .58) 76%),
     url('@/assets/scenes/article-list-river.png');
   background-position: center top;
   background-size: cover;
   background-attachment: fixed;
 }
 
-.article-list-page .page-header { background: linear-gradient(135deg, rgba(224, 236, 229, .78), rgba(247, 245, 238, .62)); }
+.article-list-page .page-header { background: linear-gradient(135deg, rgba(224, 236, 229, .62), rgba(247, 245, 238, .46)); }
 
 @media (max-width: 768px) {
   .article-list-page { background-attachment: scroll; background-position: 56% top; }

@@ -425,8 +425,8 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 84% 5%, rgba(199, 168, 120, .15), transparent 25%),
-    linear-gradient(150deg, rgba(231, 240, 234, .78) 0%, rgba(247, 245, 238, .76) 42%, rgba(243, 247, 243, .82) 100%),
+    radial-gradient(circle at 84% 5%, rgba(199, 168, 120, .12), transparent 25%),
+    linear-gradient(150deg, rgba(231, 240, 234, .34) 0%, rgba(247, 245, 238, .38) 42%, rgba(243, 247, 243, .46) 100%),
     url('@/assets/scenes/admin-users.png');
   background-position: center top;
   background-size: cover;

@@ -974,7 +974,7 @@ onUnmounted(() => {
 
 .statistics-page {
   background-image:
-    linear-gradient(155deg, rgba(231, 240, 234, .74), rgba(247, 245, 238, .9)),
+    linear-gradient(155deg, rgba(231, 240, 234, .34), rgba(247, 245, 238, .52)),
     url('@/assets/scenes/admin-statistics.png');
   background-position: center top;
   background-size: cover;

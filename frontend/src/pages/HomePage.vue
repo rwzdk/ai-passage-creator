@@ -632,7 +632,7 @@ onBeforeUnmount(() => {
 /* 新生成的沅水场景背景 */
 .home-hero {
   background-image:
-    linear-gradient(180deg, rgba(247, 250, 246, .42) 0%, rgba(247, 245, 238, .82) 92%),
+    linear-gradient(180deg, rgba(247, 250, 246, .18) 0%, rgba(247, 245, 238, .54) 92%),
     url('@/assets/scenes/home-river.png');
   background-position: center;
   background-size: cover;
@@ -643,7 +643,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: linear-gradient(90deg, rgba(247, 250, 246, .56), rgba(247, 250, 246, .12) 58%, rgba(32, 59, 56, .12));
+  background: linear-gradient(90deg, rgba(247, 250, 246, .2), rgba(247, 250, 246, .04) 58%, rgba(32, 59, 56, .16));
   content: '';
   pointer-events: none;
 }
@@ -661,7 +661,7 @@ onBeforeUnmount(() => {
 /* 首页每个分段使用独立场景，避免滚动后画面重复 */
 .method-section {
   background-image:
-    linear-gradient(180deg, rgba(247, 245, 238, .9), rgba(247, 250, 246, .82)),
+    linear-gradient(180deg, rgba(247, 245, 238, .58), rgba(247, 250, 246, .54)),
     url('@/assets/scenes/home-method.png');
   background-position: 20% 44%;
   background-size: cover;
@@ -677,7 +677,7 @@ onBeforeUnmount(() => {
 
 .recent-section {
   background-image:
-    linear-gradient(180deg, rgba(247, 245, 238, .84), rgba(247, 245, 238, .94)),
+    linear-gradient(180deg, rgba(247, 245, 238, .54), rgba(247, 245, 238, .68)),
     url('@/assets/scenes/home-works.png');
   background-position: 88% 78%;
   background-size: cover;

@@ -2397,7 +2397,7 @@ onBeforeUnmount(() => {
 /* 临水书桌背景：保留中间工作台阅读区域 */
 .article-create-page {
   background-image:
-    linear-gradient(90deg, rgba(243, 247, 243, .74) 0%, rgba(247, 245, 238, .54) 52%, rgba(247, 245, 238, .18) 100%),
+    linear-gradient(90deg, rgba(243, 247, 243, .42) 0%, rgba(247, 245, 238, .26) 52%, rgba(247, 245, 238, .08) 100%),
     url('@/assets/scenes/create-desk-new.png');
   background-position: center;
   background-size: cover;
@@ -2405,8 +2405,8 @@ onBeforeUnmount(() => {
 }
 
 .article-create-page::before {
-  opacity: .16;
-  background: linear-gradient(180deg, rgba(247, 250, 246, .2), rgba(69, 111, 100, .1));
+  opacity: .08;
+  background: linear-gradient(180deg, rgba(247, 250, 246, .12), rgba(69, 111, 100, .08));
 }
 
 @media (max-width: 768px) {
