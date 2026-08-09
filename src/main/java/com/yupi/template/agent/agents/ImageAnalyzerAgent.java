@@ -154,7 +154,7 @@ public class ImageAnalyzerAgent implements NodeAction {
     private String buildMethodUsageGuide(List<String> enabledMethods) {
         // 如果没有限制，返回所有方式的使用指南
         List<String> methodsToInclude = (enabledMethods == null || enabledMethods.isEmpty())
-                ? List.of("PEXELS", "NANO_BANANA", "MERMAID", "ICONIFY", "EMOJI_PACK", "SVG_DIAGRAM")
+                ? List.of("PEXELS", "NANO_BANANA", "NANO_BANANA_APICLAUDE", "IMAGE_2", "MERMAID", "ICONIFY", "EMOJI_PACK", "SVG_DIAGRAM")
                 : enabledMethods;
 
         StringBuilder sb = new StringBuilder();
@@ -178,6 +178,11 @@ public class ImageAnalyzerAgent implements NodeAction {
                     - PEXELS: 提供英文搜索关键词(keywords)，要准确、具体。prompt 留空。""";
             case "NANO_BANANA" -> """
                     - NANO_BANANA: 提供详细的英文生图提示词(prompt)，描述场景、风格、细节。keywords 留空。""";
+            case "IMAGE_2" -> """
+                    - IMAGE_2: Provide a detailed English image-generation prompt; keep keywords empty and do not send images.
+                    """;
+            case "NANO_BANANA_APICLAUDE" -> """
+                    - NANO_BANANA_APICLAUDE: 提供详细英文生图提示词(prompt)，通过 apiclaude 接入 Nano Banana，keywords 留空。""";
             case "MERMAID" -> """
                     - MERMAID: 在 prompt 字段生成完整的 Mermaid 代码（如流程图、架构图）。keywords 留空。""";
             case "ICONIFY" -> """

@@ -15,6 +15,7 @@ import com.yupi.template.model.entity.User;
 import com.yupi.template.model.enums.ArticlePhaseEnum;
 import com.yupi.template.model.enums.ArticleStatusEnum;
 import com.yupi.template.model.vo.ArticleVO;
+import com.yupi.template.model.vo.UserArticleStatsVO;
 import com.yupi.template.service.ArticleAgentService;
 import com.yupi.template.service.ArticleService;
 import com.yupi.template.service.QuotaService;
@@ -132,6 +133,32 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         // 转换为 VO
         return convertToVOPage(articlePage);
+    }
+
+    @Override
+    public UserArticleStatsVO getUserArticleStats(User loginUser) {
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId() == null, ErrorCode.NOT_LOGIN_ERROR);
+        List<Article> articles = this.list(QueryWrapper.create()
+                .eq("userId", loginUser.getId())
+                .eq("isDelete", 0)
+                .orderBy("createTime", false));
+
+        long completedWorks = articles.stream()
+                .filter(article -> ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()))
+                .count();
+        long totalCharacters = articles.stream()
+                .map(article -> article.getFullContent() != null && !article.getFullContent().isBlank()
+                        ? article.getFullContent() : article.getContent())
+                .filter(content -> content != null && !content.isBlank())
+                .mapToLong(String::length)
+                .sum();
+
+        UserArticleStatsVO stats = new UserArticleStatsVO();
+        stats.setTotalWorks((long) articles.size());
+        stats.setCompletedWorks(completedWorks);
+        stats.setTotalCharacters(totalCharacters);
+        stats.setLatestWorkTime(articles.isEmpty() ? null : articles.get(0).getCreateTime());
+        return stats;
     }
 
     @Override
@@ -376,7 +403,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         // 普通用户限制
         for (String method : enabledImageMethods) {
-            if (ImageMethodEnum.NANO_BANANA.getValue().equals(method) || 
+            if (ImageMethodEnum.NANO_BANANA.getValue().equals(method) ||
+                ImageMethodEnum.NANO_BANANA_APICLAUDE.getValue().equals(method) ||
+                ImageMethodEnum.IMAGE_2.getValue().equals(method) ||
                 ImageMethodEnum.SVG_DIAGRAM.getValue().equals(method)) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR, 
                         "高级配图功能（AI 生图、SVG 图表）仅限 VIP 会员使用");

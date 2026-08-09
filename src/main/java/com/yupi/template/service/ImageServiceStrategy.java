@@ -149,6 +149,8 @@ public class ImageServiceStrategy {
         return switch (method) {
             case PEXELS -> "pexels";
             case NANO_BANANA -> "nano-banana";
+            case NANO_BANANA_APICLAUDE -> "nano-banana-apiclaude";
+            case IMAGE_2 -> "image-2";
             case MERMAID -> "mermaid";
             case ICONIFY -> "iconify";
             case EMOJI_PACK -> "emoji-pack";

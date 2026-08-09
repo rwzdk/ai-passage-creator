@@ -91,6 +91,37 @@
               </div>
             </div>
           </div>
+          <div class="workflow-strip">
+            <div class="workflow-intro">
+              <span class="workflow-kicker">FROM IDEA TO ARTICLE</span>
+              <strong>让每一步创作都更顺手</strong>
+            </div>
+            <div class="workflow-steps" aria-label="会员创作流程">
+              <div class="workflow-step">
+                <span class="workflow-index">01</span>
+                <div>
+                  <strong>AI 大纲规划</strong>
+                  <p>先梳理结构，再开始写作</p>
+                </div>
+              </div>
+              <span class="workflow-line" aria-hidden="true"></span>
+              <div class="workflow-step">
+                <span class="workflow-index">02</span>
+                <div>
+                  <strong>文章智能创作</strong>
+                  <p>围绕主题生成完整内容</p>
+                </div>
+              </div>
+              <span class="workflow-line" aria-hidden="true"></span>
+              <div class="workflow-step">
+                <span class="workflow-index">03</span>
+                <div>
+                  <strong>配图与图表合成</strong>
+                  <p>补齐视觉表达，完成文章</p>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="feature-footnote"><span></span> 会员能力会持续跟随产品更新</div>
         </div>
       </div>
@@ -713,8 +744,8 @@ const handlePurchase = async () => {
 .benefits-header { justify-content: space-between; align-items: end; margin-bottom: 24px; }
 .section-title { margin: 8px 0 0; color: var(--ink-deep); font-size: 24px; font-weight: 600; letter-spacing: -.04em; }
 .section-count { color: var(--ink-muted); font-size: 12px; }
-.features-grid { flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-content: center; }
-.feature-card { padding: 20px 18px; border: 1px solid rgba(255, 255, 255, .62); border-radius: 16px; background: rgba(255, 255, 255, .48); transition: transform var(--transition-normal), border-color var(--transition-normal), background var(--transition-normal); }
+.features-grid { flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(112px, 1fr)); gap: 14px; align-content: stretch; }
+.feature-card { align-items: center; min-height: 0; padding: 20px 18px; border: 1px solid rgba(255, 255, 255, .62); border-radius: 16px; background: rgba(255, 255, 255, .48); transition: transform var(--transition-normal), border-color var(--transition-normal), background var(--transition-normal); }
 .feature-card:hover { border-color: rgba(69, 111, 100, .2); background: rgba(255, 255, 255, .82); transform: translateY(-3px); }
 .feature-icon-wrapper { width: 36px; height: 36px; border-radius: 10px; background: rgba(143, 184, 164, .2); }
 .feature-icon, .features-title .anticon { color: var(--mountain-green); }
@@ -722,6 +753,16 @@ const handlePurchase = async () => {
 .feature-desc { color: var(--ink-muted); }
 .feature-footnote { margin-top: 20px; color: var(--ink-muted); font-size: 12px; }
 .feature-footnote span { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent-gold); box-shadow: 0 0 0 5px rgba(199, 168, 120, .12); }
+.workflow-strip { display: flex; align-items: center; gap: 24px; margin-top: 24px; padding: 18px 0 4px; border-top: 1px solid var(--line-soft); }
+.workflow-intro { display: flex; flex: 0 0 145px; flex-direction: column; gap: 5px; color: var(--ink-deep); }
+.workflow-kicker { color: var(--mountain-green); font-size: 9px; font-weight: 700; letter-spacing: .16em; }
+.workflow-intro strong { font-size: 13px; font-weight: 600; line-height: 1.45; }
+.workflow-steps { display: flex; flex: 1; align-items: center; gap: 12px; min-width: 0; }
+.workflow-step { display: flex; flex: 1; align-items: flex-start; gap: 9px; min-width: 0; }
+.workflow-index { flex-shrink: 0; color: var(--accent-gold); font-size: 11px; font-weight: 700; line-height: 1.5; }
+.workflow-step strong { display: block; color: var(--ink-deep); font-size: 12px; font-weight: 600; line-height: 1.45; }
+.workflow-step p { margin: 3px 0 0; color: var(--ink-muted); font-size: 11px; line-height: 1.45; }
+.workflow-line { flex: 0 0 20px; height: 1px; margin-top: 8px; background: rgba(69, 111, 100, .24); }
 
 .faq-section { padding: 28px 32px; border-radius: 20px; }
 .faq-section .section-header { justify-content: space-between; align-items: end; margin-bottom: 22px; }
@@ -739,6 +780,7 @@ const handlePurchase = async () => {
   .header-note { text-align: left; }
   .main-section { grid-template-columns: 1fr; }
   .pricing-card { position: relative; top: auto; max-width: 520px; width: 100%; margin: 0 auto; }
+  .features-grid { flex: none; grid-template-rows: none; }
 }
 
 @media (max-width: 680px) {
@@ -748,6 +790,11 @@ const handlePurchase = async () => {
   .page-subtitle { font-size: 14px; }
   .pricing-card, .features-section, .faq-section { padding: 24px 20px; border-radius: 16px; }
   .features-grid, .faq-grid { grid-template-columns: 1fr; }
+  .features-grid { grid-template-rows: none; }
+  .workflow-strip { align-items: flex-start; flex-direction: column; gap: 14px; }
+  .workflow-intro { flex-basis: auto; }
+  .workflow-steps { width: 100%; align-items: stretch; flex-direction: column; gap: 12px; }
+  .workflow-line { display: none; }
   .price { font-size: 46px; }
   .checkout-steps { gap: 4px; }
 }

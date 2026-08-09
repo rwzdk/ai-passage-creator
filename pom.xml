@@ -12,7 +12,7 @@
     <artifactId>ai-passage-creator</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>ai-passage-creator</name>
-    <description>AI 爆款文章创作器 by 编程导航</description>
+    <description>AI 爆款文章创作器</description>
     <properties>
         <java.version>21</java.version>
     </properties>

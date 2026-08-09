@@ -45,11 +45,15 @@
             </a-space>
             <template #overlay>
               <a-menu class="dropdown-menu">
-                <a-menu-item v-if="isVip" key="vip-info" class="vip-info-item" @click="router.push('/vip')">
+              <a-menu-item v-if="isVip" key="vip-info" class="vip-info-item" @click="router.push('/vip')">
                   <CrownOutlined />
                   <span>永久会员权益</span>
+              </a-menu-item>
+              <a-menu-divider v-if="isVip" />
+                <a-menu-item key="profile" class="dropdown-item" @click="router.push('/profile')">
+                  <UserOutlined />
+                  <span>个人资料</span>
                 </a-menu-item>
-                <a-menu-divider v-if="isVip" />
                 <a-menu-item @click="doLogout" class="dropdown-item">
                   <LogoutOutlined />
                   <span>退出登录</span>
@@ -79,7 +83,8 @@ import {
   UnorderedListOutlined,
   SettingOutlined,
   CrownOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  UserOutlined
 } from '@ant-design/icons-vue'
 import { isVip as checkIsVip } from '@/utils/permission'
 

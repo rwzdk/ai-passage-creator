@@ -7,15 +7,20 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.yupi.template.exception.BusinessException;
 import com.yupi.template.exception.ErrorCode;
+import com.yupi.template.exception.ThrowUtils;
 import com.yupi.template.model.dto.user.UserQueryRequest;
+import com.yupi.template.model.dto.user.UserProfileUpdateRequest;
+import com.yupi.template.model.dto.user.UserRegisterRequest;
 import com.yupi.template.model.entity.User;
 import com.yupi.template.mapper.UserMapper;
 import com.yupi.template.model.enums.UserRoleEnum;
 import com.yupi.template.model.vo.LoginUserVO;
 import com.yupi.template.model.vo.UserVO;
 import com.yupi.template.service.UserService;
+import com.yupi.template.service.UserProfileValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -33,6 +38,40 @@ import static com.yupi.template.constant.UserConstant.USER_LOGIN_STATE;
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+
+    @Override
+    @Transactional
+    public long userRegister(UserRegisterRequest request) {
+        if (request == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "注册参数为空");
+        }
+        UserProfileUpdateRequest profile = new UserProfileUpdateRequest();
+        profile.setUserName(request.getUserName());
+        profile.setUserEmail(request.getUserEmail());
+        profile.setUserPhone(request.getUserPhone());
+        try {
+            UserProfileValidator.validate(profile);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, e.getMessage());
+        }
+
+        long userId = userRegister(request.getUserAccount(), request.getUserPassword(), request.getCheckPassword());
+        User user = new User();
+        user.setId(userId);
+        if (StrUtil.isNotBlank(request.getUserName())) {
+            user.setUserName(request.getUserName().trim());
+        }
+        if (StrUtil.isNotBlank(request.getUserEmail())) {
+            user.setUserEmail(request.getUserEmail().trim());
+        }
+        if (StrUtil.isNotBlank(request.getUserPhone())) {
+            user.setUserPhone(request.getUserPhone().trim());
+        }
+        if (user.getUserName() != null || user.getUserEmail() != null || user.getUserPhone() != null) {
+            ThrowUtils.throwIf(!this.updateById(user), ErrorCode.OPERATION_ERROR, "注册资料保存失败");
+        }
+        return userId;
+    }
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -80,6 +119,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LoginUserVO loginUserVO = new LoginUserVO();
         BeanUtil.copyProperties(user, loginUserVO);
         return loginUserVO;
+    }
+
+    @Override
+    public LoginUserVO updateCurrentProfile(UserProfileUpdateRequest request, User currentUser) {
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        try {
+            UserProfileValidator.validate(request);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, e.getMessage());
+        }
+        User updateUser = new User();
+        updateUser.setId(currentUser.getId());
+        BeanUtil.copyProperties(request, updateUser);
+        ThrowUtils.throwIf(!this.updateById(updateUser), ErrorCode.OPERATION_ERROR, "资料保存失败");
+        return getLoginUserVO(this.getById(currentUser.getId()));
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.yupi.template.model.vo.StatisticsVO;
 import com.yupi.template.service.AgentLogService;
 import com.yupi.template.service.StatisticsService;
 import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;

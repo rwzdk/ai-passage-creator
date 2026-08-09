@@ -88,6 +88,18 @@
                       <CrownOutlined v-if="!isVip" class="vip-icon" />
                     </a-checkbox>
                   </a-tooltip>
+                  <a-tooltip :title="isVip ? '' : '仅限 VIP 会员'">
+                    <a-checkbox value="NANO_BANANA_APICLAUDE" :disabled="!isVip">
+                      Nano Banana（apiclaude）
+                      <CrownOutlined v-if="!isVip" class="vip-icon" />
+                    </a-checkbox>
+                  </a-tooltip>
+                  <a-tooltip :title="isVip ? '' : '仅限 VIP 会员'">
+                    <a-checkbox value="IMAGE_2" :disabled="!isVip">
+                      GPT Image 2
+                      <CrownOutlined v-if="!isVip" class="vip-icon" />
+                    </a-checkbox>
+                  </a-tooltip>
                   <a-checkbox value="MERMAID">Mermaid</a-checkbox>
                   <a-checkbox value="ICONIFY">Iconify</a-checkbox>
                   <a-checkbox value="EMOJI_PACK">表情包</a-checkbox>

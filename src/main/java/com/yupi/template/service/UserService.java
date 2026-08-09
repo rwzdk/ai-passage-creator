@@ -3,6 +3,8 @@ package com.yupi.template.service;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.yupi.template.model.dto.user.UserQueryRequest;
+import com.yupi.template.model.dto.user.UserProfileUpdateRequest;
+import com.yupi.template.model.dto.user.UserRegisterRequest;
 import com.yupi.template.model.entity.User;
 import com.yupi.template.model.vo.LoginUserVO;
 import com.yupi.template.model.vo.UserVO;
@@ -26,6 +28,12 @@ public interface UserService extends IService<User> {
      * @return 新用户 id
      */
     long userRegister(String userAccount, String userPassword, String checkPassword);
+
+    /** 使用注册资料创建用户。 */
+    long userRegister(UserRegisterRequest request);
+
+    /** 更新当前登录用户资料并返回最新脱敏信息。 */
+    LoginUserVO updateCurrentProfile(UserProfileUpdateRequest request, User currentUser);
 
     /**
      * 获取脱敏的已登录用户信息

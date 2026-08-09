@@ -114,6 +114,14 @@ export async function listArticle(body: API.ArticleQueryRequest, options?: { [ke
   })
 }
 
+/** 获取当前用户创作统计 GET /article/profile/stats */
+export async function getUserArticleStats(options?: { [key: string]: any }) {
+  return request<API.BaseResponseUserArticleStatsVO>('/article/profile/stats', {
+    method: 'GET',
+    ...(options || {}),
+  })
+}
+
 /** 获取文章生成进度(SSE) GET /article/progress/${param0} */
 export async function getProgress(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)

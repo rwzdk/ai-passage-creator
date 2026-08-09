@@ -20,7 +20,9 @@ import com.yupi.template.model.enums.PaymentStatusEnum;
 import com.yupi.template.model.enums.ProductTypeEnum;
 import com.yupi.template.service.PaymentService;
 import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private static final String CURRENCY_USD = "usd";
     private static final long CENTS_MULTIPLIER = 100L;
+    private static final String STATISTICS_CACHE_KEY = "statistics:overview";
 
     @Resource
     private StripeConfig stripeConfig;
@@ -48,6 +51,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Resource
     private PaymentRecordMapper paymentRecordMapper;
+
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public String createVipPaymentSession(Long userId) throws StripeException {
@@ -153,7 +159,8 @@ public class PaymentServiceImpl implements PaymentService {
      * 验证用户是 VIP
      */
     private void validateIsVip(User user) {
-        if (!UserConstant.VIP_ROLE.equals(user.getUserRole())) {
+        if (!UserConstant.VIP_ROLE.equals(user.getUserRole())
+                && !UserConstant.ADMIN_ROLE.equals(user.getUserRole())) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "您不是会员，无法退款");
         }
     }
@@ -250,11 +257,15 @@ public class PaymentServiceImpl implements PaymentService {
      * 升级用户为 VIP
      */
     private void upgradeUserToVip(Long userId) {
+        User currentUser = getUserOrThrow(userId);
         User user = new User();
         user.setId(userId);
         user.setVipTime(LocalDateTime.now());
-        user.setUserRole(UserConstant.VIP_ROLE);
+        if (!UserConstant.ADMIN_ROLE.equals(currentUser.getUserRole())) {
+            user.setUserRole(UserConstant.VIP_ROLE);
+        }
         userMapper.update(user);
+        invalidateStatisticsCache();
     }
 
     /**
@@ -284,11 +295,20 @@ public class PaymentServiceImpl implements PaymentService {
      * 撤销用户 VIP 身份
      */
     private void revokeVipStatus(Long userId) {
+        User currentUser = getUserOrThrow(userId);
         User updateUser = new User();
         updateUser.setId(userId);
         updateUser.setVipTime(null);
-        updateUser.setUserRole(UserConstant.DEFAULT_ROLE);
-        updateUser.setQuota(UserConstant.DEFAULT_QUOTA);
+        if (!UserConstant.ADMIN_ROLE.equals(currentUser.getUserRole())) {
+            updateUser.setUserRole(UserConstant.DEFAULT_ROLE);
+            updateUser.setQuota(UserConstant.DEFAULT_QUOTA);
+        }
         userMapper.update(updateUser);
+        invalidateStatisticsCache();
+    }
+
+    /** 用户会员状态变化后，立即刷新管理端统计数据。 */
+    private void invalidateStatisticsCache() {
+        redisTemplate.delete(STATISTICS_CACHE_KEY);
     }
 }

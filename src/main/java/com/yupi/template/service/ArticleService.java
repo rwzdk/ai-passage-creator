@@ -9,6 +9,7 @@ import com.yupi.template.model.entity.User;
 import com.yupi.template.model.enums.ArticlePhaseEnum;
 import com.yupi.template.model.enums.ArticleStatusEnum;
 import com.yupi.template.model.vo.ArticleVO;
+import com.yupi.template.model.vo.UserArticleStatsVO;
 
 import java.util.List;
 
@@ -67,6 +68,9 @@ public interface ArticleService extends IService<Article> {
      * @return 分页结果
      */
     Page<ArticleVO> listArticleByPage(ArticleQueryRequest request, User loginUser);
+
+    /** 获取当前用户的创作统计。 */
+    UserArticleStatsVO getUserArticleStats(User loginUser);
 
     /**
      * 删除文章（带权限校验）

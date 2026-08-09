@@ -60,6 +60,18 @@ public class User implements Serializable {
      */
     private String userProfile;
 
+    /** QQ 邮箱 */
+    private String userEmail;
+
+    /** 联系电话 */
+    private String userPhone;
+
+    /** 个人博客地址 */
+    private String userBlog;
+
+    /** GitHub 地址 */
+    private String userGithub;
+
     /**
      * 用户角色：user/admin
      */

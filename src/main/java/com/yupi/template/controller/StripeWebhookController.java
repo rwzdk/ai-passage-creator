@@ -3,6 +3,8 @@ package com.yupi.template.controller;
 import com.stripe.model.Event;
 import com.stripe.model.checkout.Session;
 import com.yupi.template.service.PaymentService;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -40,17 +42,19 @@ public class StripeWebhookController {
             switch (event.getType()) {
                 case "checkout.session.completed":
                     // 支付成功
-                    Session session = (Session) event.getDataObjectDeserializer()
-                            .getObject()
-                            .orElseThrow(() -> new RuntimeException("无法解析 Session 对象"));
+                    JsonObject sessionJson = JsonParser.parseString(
+                            event.getDataObjectDeserializer().getRawJson()).getAsJsonObject();
+                    String sessionId = sessionJson.get("id").getAsString();
+                    Session session = Session.retrieve(sessionId);
                     paymentService.handlePaymentSuccess(session);
                     break;
                     
                 case "checkout.session.async_payment_succeeded":
                     // 异步支付成功
-                    Session asyncSession = (Session) event.getDataObjectDeserializer()
-                            .getObject()
-                            .orElseThrow(() -> new RuntimeException("无法解析 Session 对象"));
+                    JsonObject asyncSessionJson = JsonParser.parseString(
+                            event.getDataObjectDeserializer().getRawJson()).getAsJsonObject();
+                    String asyncSessionId = asyncSessionJson.get("id").getAsString();
+                    Session asyncSession = Session.retrieve(asyncSessionId);
                     paymentService.handlePaymentSuccess(asyncSession);
                     break;
                     

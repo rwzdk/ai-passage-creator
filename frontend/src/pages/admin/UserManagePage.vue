@@ -39,12 +39,13 @@
           :columns="columns"
           :data-source="data"
           :pagination="pagination"
+          :scroll="{ x: 1560 }"
           @change="doTableChange"
           class="user-table"
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.dataIndex === 'userAvatar'">
-              <a-avatar :src="record.userAvatar" :size="48" class="user-avatar" />
+              <a-avatar :src="record.userAvatar" :size="40" class="user-avatar" />
             </template>
             <template v-else-if="column.dataIndex === 'userRole'">
               <a-tag v-if="record.userRole === 'admin'" color="purple" class="role-tag">
@@ -87,50 +88,69 @@ const columns = [
   {
     title: 'id',
     dataIndex: 'id',
+    width: 64,
   },
   {
     title: '账号',
     dataIndex: 'userAccount',
+    width: 110,
+    ellipsis: true,
   },
   {
     title: '用户名',
     dataIndex: 'userName',
+    width: 120,
+    ellipsis: true,
   },
   {
     title: '头像',
     dataIndex: 'userAvatar',
+    width: 92,
   },
   {
     title: '简介',
     dataIndex: 'userProfile',
+    width: 150,
+    ellipsis: true,
   },
   {
     title: 'QQ 邮箱',
     dataIndex: 'userEmail',
+    width: 180,
+    ellipsis: true,
   },
   {
     title: '电话',
     dataIndex: 'userPhone',
+    width: 130,
+    ellipsis: true,
   },
   {
     title: '博客',
     dataIndex: 'userBlog',
+    width: 170,
+    ellipsis: true,
   },
   {
     title: 'GitHub',
     dataIndex: 'userGithub',
+    width: 170,
+    ellipsis: true,
   },
   {
     title: '用户角色',
     dataIndex: 'userRole',
+    width: 120,
   },
   {
     title: '创建时间',
     dataIndex: 'createTime',
+    width: 170,
   },
   {
     title: '操作',
     key: 'action',
+    width: 84,
   },
 ]
 
@@ -245,9 +265,9 @@ onMounted(() => {
   }
 
   .container {
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 16px;
   }
 
   .content-card {
@@ -257,7 +277,7 @@ onMounted(() => {
     background: white;
 
     :deep(.ant-card-body) {
-      padding: 24px;
+      padding: 18px;
     }
   }
 
@@ -321,17 +341,21 @@ onMounted(() => {
   }
 
   .user-table {
+    :deep(.ant-table-cell) {
+      white-space: nowrap;
+    }
+
     :deep(.ant-table-thead > tr > th) {
       background: var(--color-background-secondary);
       font-weight: 600;
       font-size: 13px;
       color: var(--color-text-secondary);
       border-bottom: 1px solid var(--color-border);
-      padding: 14px 16px;
+      padding: 10px 12px;
     }
 
     :deep(.ant-table-tbody > tr > td) {
-      padding: 16px;
+      padding: 8px 12px;
       border-bottom: 1px solid var(--color-border-light);
     }
 
@@ -340,7 +364,7 @@ onMounted(() => {
     }
 
     :deep(.ant-table-pagination) {
-      margin: 16px 0 0;
+      margin: 12px 0 0;
     }
   }
 

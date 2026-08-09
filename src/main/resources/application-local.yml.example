@@ -19,6 +19,23 @@ nano-banana:
   aspect-ratio: "16:9"  # 可选，支持 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
   image-size: "1K"  # 可选（仅 gemini-3-pro 支持），支持 1K, 2K, 4K
   output-mime-type: image/png  # 可选，支持 image/jpeg, image/png
+
+# Nano Banana（apiclaude Gemini 兼容接口）
+nano-banana-apiclaude:
+  api-key: ${NANO_BANANA_APICLAUDE_API_KEY:}
+  base-url: ${NANO_BANANA_APICLAUDE_BASE_URL:https://apiclaude.cc}
+  model: ${NANO_BANANA_APICLAUDE_MODEL:gemini-3-pro-image-preview}
+  aspect-ratio: ${NANO_BANANA_APICLAUDE_ASPECT_RATIO:16:9}
+  image-size: ${NANO_BANANA_APICLAUDE_IMAGE_SIZE:1K}
+
+# GPT Image 2（apiclaude OpenAI 兼容接口）
+image-2:
+  api-key: ${IMAGE_2_API_KEY:}
+  base-url: ${IMAGE_2_BASE_URL:https://apiclaude.cc}
+  model: ${IMAGE_2_MODEL:gpt-image-2}
+  size: ${IMAGE_2_SIZE:1024x1024}
+  n: ${IMAGE_2_N:1}
+
 # Mermaid 图表生成配置
 mermaid:
   cli-command: mmdc  # CLI 命令（Windows 下会自动使用 mmdc.cmd）

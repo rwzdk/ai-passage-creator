@@ -20,10 +20,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import com.yupi.template.model.entity.User;
+import com.yupi.template.service.CosService;
 import com.yupi.template.service.UserService;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.io.IOException;
 
 /**
  * 用户控制层
@@ -37,6 +42,9 @@ public class UserController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private CosService cosService;
+
     /**
      * 用户注册
      *
@@ -49,8 +57,40 @@ public class UserController {
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        long result = userService.userRegister(userAccount, userPassword, checkPassword);
+        long result = userService.userRegister(userRegisterRequest);
         return ResultUtils.success(result);
+    }
+
+    /** 更新当前登录用户资料。 */
+    @PostMapping("/profile/update")
+    public BaseResponse<LoginUserVO> updateProfile(
+            @RequestBody UserProfileUpdateRequest profileUpdateRequest,
+            HttpServletRequest request) {
+        ThrowUtils.throwIf(profileUpdateRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(userService.updateCurrentProfile(profileUpdateRequest, loginUser));
+    }
+
+    /** 上传当前用户头像并保存头像地址。 */
+    @PostMapping(value = "/avatar/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<LoginUserVO> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest request) throws IOException {
+        ThrowUtils.throwIf(file == null || file.isEmpty(), ErrorCode.PARAMS_ERROR, "请选择头像文件");
+        ThrowUtils.throwIf(file.getSize() > 5 * 1024 * 1024L, ErrorCode.PARAMS_ERROR, "头像不能超过 5MB");
+        String contentType = file.getContentType();
+        ThrowUtils.throwIf(contentType == null || !contentType.startsWith("image/"),
+                ErrorCode.PARAMS_ERROR, "头像必须是图片文件");
+
+        User loginUser = userService.getLoginUser(request);
+        String avatarUrl = cosService.uploadBytes(file.getBytes(), contentType, "avatars");
+        ThrowUtils.throwIf(avatarUrl == null || avatarUrl.isBlank(), ErrorCode.OPERATION_ERROR, "头像上传失败，请检查 COS 配置");
+
+        User updateUser = new User();
+        updateUser.setId(loginUser.getId());
+        updateUser.setUserAvatar(avatarUrl);
+        ThrowUtils.throwIf(!userService.updateById(updateUser), ErrorCode.OPERATION_ERROR, "头像保存失败");
+        return ResultUtils.success(userService.getLoginUserVO(userService.getById(loginUser.getId())));
     }
 
     /**

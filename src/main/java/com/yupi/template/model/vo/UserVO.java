@@ -36,6 +36,14 @@ public class UserVO implements Serializable {
      */
     private String userProfile;
 
+    private String userEmail;
+
+    private String userPhone;
+
+    private String userBlog;
+
+    private String userGithub;
+
     /**
      * 用户角色：user/admin
      */

@@ -45,6 +45,7 @@ declare namespace API {
   type ArticleCreateRequest = {
     topic?: string
     style?: string
+    /** PEXELS, NANO_BANANA, NANO_BANANA_APICLAUDE, IMAGE_2, MERMAID, ICONIFY, EMOJI_PACK, SVG_DIAGRAM */
     enabledImageMethods?: string[]
   }
 

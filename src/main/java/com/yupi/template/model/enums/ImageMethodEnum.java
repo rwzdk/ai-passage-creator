@@ -24,6 +24,13 @@ public enum ImageMethodEnum {
      */
     NANO_BANANA("NANO_BANANA", "Nano Banana AI 生图", true, false),
 
+    NANO_BANANA_APICLAUDE("NANO_BANANA_APICLAUDE", "Nano Banana（apiclaude）", true, false),
+
+    /**
+     * GPT Image 2 AI 生图
+     */
+    IMAGE_2("IMAGE_2", "GPT Image 2 AI 生图", true, false),
+
     /**
      * Mermaid 流程图生成
      */
