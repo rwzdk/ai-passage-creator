@@ -10,9 +10,6 @@
         :style="{ backgroundImage: `url(${section.background})` }"
       ></span>
     </div>
-    <div class="profile-progress" aria-hidden="true">
-      <span class="profile-progress-fill" :style="{ width: `${(activeSectionIndex / sections.length) * 100}%` }"></span>
-    </div>
     <div class="section-telemetry" aria-hidden="true">
       <strong>{{ String(activeSectionIndex).padStart(2, '0') }}</strong>
       <span>/ {{ String(sections.length).padStart(2, '0') }}</span>
@@ -260,18 +257,23 @@
             <button type="button" @click="router.push('/create')">开始创作</button>
             </div>
             <div v-else class="article-stream">
-            <article v-for="(article, index) in articles" :key="article.taskId || article.id" class="article-record">
+            <article v-for="(article, index) in articles" :key="getArticleKey(article)" class="article-record">
               <div class="article-index">{{ String(index + 1).padStart(2, '0') }}</div>
               <div class="article-meta">
                 <span>{{ formatDate(article.createTime) }}</span>
                 <span class="article-status">{{ getStatusText(article.status) }}</span>
               </div>
-              <button type="button" class="article-title" @click="openArticle(article)">
+              <button
+                type="button"
+                class="article-title"
+                :aria-expanded="isArticleExpanded(article)"
+                @click="toggleArticleExpanded(article)"
+              >
                 {{ article.mainTitle || article.topic || '未命名作品' }}
-                <ArrowUpOutlined />
+                <ArrowUpOutlined :class="{ 'article-title-icon-collapsed': !isArticleExpanded(article) }" />
               </button>
               <p v-if="article.subTitle" class="article-subtitle">{{ article.subTitle }}</p>
-              <div class="article-body" v-html="renderArticle(article)"></div>
+              <div v-if="isArticleExpanded(article)" class="article-body" v-html="renderArticle(article)"></div>
             </article>
             <div ref="worksSentinel" class="works-sentinel">
               <span v-if="worksLoading">正在加载下一段作品…</span>
@@ -389,6 +391,7 @@ const stats = reactive({
 })
 const animatedStats = reactive({ totalWorks: 0, completedWorks: 0, totalCharacters: 0 })
 const statsLoaded = ref(false)
+let statsPromise: Promise<void> | null = null
 
 const displayStats = computed(() => [
   { key: 'totalWorks', label: '累计作品', value: animatedStats.totalWorks, unit: '篇' },
@@ -423,6 +426,7 @@ const avatarInput = ref<HTMLInputElement | null>(null)
 const uploadingAvatar = ref(false)
 
 const articles = ref<API.ArticleVO[]>([])
+const expandedArticleKeys = ref(new Set<string>())
 const worksPage = ref(1)
 const worksTotalPage = ref(1)
 const worksLoaded = ref(false)
@@ -504,18 +508,29 @@ const animateNumber = (key: 'totalWorks' | 'completedWorks' | 'totalCharacters',
 }
 
 const loadStats = async () => {
+  if (statsLoaded.value) return
+  if (statsPromise) return statsPromise
+
+  statsPromise = (async () => {
+    try {
+      const res = await getUserArticleStats()
+      const data = res.data.data
+      if (res.data.code !== 0 || !data) throw new Error(res.data.message || '创作统计加载失败')
+      stats.totalWorks = data.totalWorks || 0
+      stats.completedWorks = data.completedWorks || 0
+      stats.totalCharacters = data.totalCharacters || 0
+      stats.latestWorkTime = data.latestWorkTime || ''
+    } catch (error) {
+      console.error(error)
+    } finally {
+      statsLoaded.value = true
+    }
+  })()
+
   try {
-    const res = await getUserArticleStats()
-    const data = res.data.data
-    if (res.data.code !== 0 || !data) throw new Error(res.data.message || '创作统计加载失败')
-    stats.totalWorks = data.totalWorks || 0
-    stats.completedWorks = data.completedWorks || 0
-    stats.totalCharacters = data.totalCharacters || 0
-    stats.latestWorkTime = data.latestWorkTime || ''
-    statsLoaded.value = true
-  } catch (error) {
-    console.error(error)
-    statsLoaded.value = true
+    await statsPromise
+  } finally {
+    statsPromise = null
   }
 }
 
@@ -534,9 +549,9 @@ const beginSectionVisit = async (id: string) => {
   const visit = (sectionVisit[id] || 0) + 1
   sectionVisit[id] = visit
   activeBackgroundSection.value = id
-  sections.forEach((section) => {
-    if (section.id !== id) resetSectionState(section.id)
-  })
+
+  if (isVisible(id) && !isSectionLoading(id)) return
+
   resetSectionState(id, false)
   updateSet(visibleSections, id, true)
   updateSet(sectionLoading, id, true)
@@ -548,7 +563,7 @@ const beginSectionVisit = async (id: string) => {
     animatedStats.totalCharacters = 0
   }
 
-  const loadTask = id === 'profile-overview' || id === 'creation-stats'
+  const loadTask = (id === 'profile-overview' || id === 'creation-stats') && !statsLoaded.value
     ? loadStats()
     : id === 'my-works'
       ? loadWorks(true)
@@ -564,7 +579,7 @@ const beginSectionVisit = async (id: string) => {
   })
 
   await nextTick()
-  await waitForReveal(prefersReducedMotion ? 0 : 160)
+  await waitForReveal(prefersReducedMotion ? 0 : 80)
 
   if (sectionVisit[id] !== visit || activeSection.value !== id) return
   updateSet(sectionLoading, id, false)
@@ -602,15 +617,23 @@ const renderArticle = (article: API.ArticleVO) => {
   return marked.parse(source) as string
 }
 
+const getArticleKey = (article: API.ArticleVO) => String(article.taskId || article.id || '')
+
+const isArticleExpanded = (article: API.ArticleVO) => expandedArticleKeys.value.has(getArticleKey(article))
+
+const toggleArticleExpanded = (article: API.ArticleVO) => {
+  const key = getArticleKey(article)
+  const next = new Set(expandedArticleKeys.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  expandedArticleKeys.value = next
+}
+
 const formatDate = (value?: string) => (value ? dayjs(value).format('YYYY.MM.DD HH:mm') : '尚未开始')
 
 const getStatusText = (status?: string) => {
   const labels: Record<string, string> = { COMPLETED: '已完成', PROCESSING: '生成中', PENDING: '等待中', FAILED: '失败' }
   return labels[status || ''] || '创作记录'
-}
-
-const openArticle = (article: API.ArticleVO) => {
-  if (article.taskId) router.push(`/article/${article.taskId}`)
 }
 
 const openAvatarPicker = () => avatarInput.value?.click()
@@ -746,26 +769,6 @@ onBeforeUnmount(() => {
 .stage-my-works::after { background: linear-gradient(120deg, rgba(222, 239, 225, .3), rgba(245, 252, 246, .1)); }
 .stage-edit-profile::after { background: linear-gradient(120deg, rgba(255, 255, 252, .52), rgba(222, 244, 230, .1)); }
 
-.profile-progress {
-  position: fixed;
-  top: 64px;
-  right: 0;
-  left: 0;
-  z-index: 25;
-  height: 2px;
-  overflow: hidden;
-  background: rgba(22, 53, 42, .08);
-  pointer-events: none;
-}
-
-.profile-progress-fill {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, #82d19b, #1d9e52 70%, #b9e8c5);
-  box-shadow: 0 0 16px rgba(29, 158, 82, .4);
-  transition: width .5s cubic-bezier(.22, 1, .36, 1);
-}
-
 .section-telemetry {
   position: fixed;
   right: 28px;
@@ -865,9 +868,8 @@ onBeforeUnmount(() => {
   padding: 64px 0;
   border-bottom: 1px solid var(--profile-line);
   opacity: 0;
-  transform: translateY(34px);
-  filter: blur(8px);
-  transition: opacity .8s ease, transform .8s ease, filter .8s ease;
+  transform: translateY(22px);
+  transition: opacity .48s ease, transform .48s ease;
   scroll-margin-top: 88px;
   isolation: isolate;
   overflow: hidden;
@@ -878,7 +880,6 @@ onBeforeUnmount(() => {
   z-index: -1;
   border-radius: 42%;
   opacity: .34;
-  filter: blur(24px);
   content: '';
   pointer-events: none;
   transition: opacity .45s ease;
@@ -897,12 +898,12 @@ onBeforeUnmount(() => {
 .edit-section::after { background: radial-gradient(circle at 78% 32%, rgba(255, 255, 255, .38) 0 1px, transparent 2px), radial-gradient(circle at 28% 68%, rgba(220, 255, 229, .3) 0 1px, transparent 2px); background-size: 180px 180px, 230px 230px; }
 .profile-section > :not(.section-loading) { position: relative; z-index: 1; transition: opacity .35s ease, transform .35s ease; }
 .profile-section.is-loading > :not(.section-loading) { opacity: 1; transform: none; pointer-events: auto; }
-.section-content { position: relative; z-index: 1; transition: opacity .45s ease, transform .65s ease, filter .65s ease; }
-.section-content.content-hidden { visibility: hidden; opacity: 0; transform: translateY(20px); filter: blur(7px); pointer-events: none; }
+.section-content { position: relative; z-index: 1; transition: opacity .3s ease, transform .42s ease; }
+.section-content.content-hidden { visibility: hidden; opacity: 0; transform: translateY(14px); pointer-events: none; }
 .section-loading { position: absolute; top: 24px; right: 0; z-index: 3; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; min-height: 32px; padding: 7px 12px; border: 1px solid rgba(255, 255, 255, .76); border-radius: 999px; color: #527563; font-size: 12px; letter-spacing: .04em; white-space: nowrap; background: rgba(249, 253, 250, .76); box-shadow: 0 10px 24px rgba(31, 92, 58, .08); backdrop-filter: blur(14px) saturate(115%); -webkit-backdrop-filter: blur(14px) saturate(115%); pointer-events: none; }
 .loading-orbit { width: 18px; height: 18px; border: 2px solid rgba(67, 167, 100, .18); border-top-color: #2ba35a; border-right-color: #8bd09e; border-radius: 50%; animation: loading-orbit 1s linear infinite; }
 @keyframes loading-orbit { to { transform: rotate(360deg); } }
-.profile-section.revealed { opacity: 1; transform: translateY(0); filter: blur(0); }
+.profile-section.revealed { opacity: 1; transform: translateY(0); }
 .hero-section { padding-top: 24px; min-height: var(--profile-scene-height); }
 .stats-section { min-height: var(--profile-scene-height); }
 .history-section { min-height: var(--profile-scene-height); }
@@ -988,6 +989,8 @@ h2 { margin: 12px 0 10px; font-size: clamp(30px, 4vw, 50px); line-height: 1.05; 
 .article-status { color: #239254; }
 .article-title { display: flex; align-items: center; gap: 8px; margin: 15px 0 7px; padding: 0; border: 0; color: var(--profile-ink); background: transparent; font-size: 26px; font-weight: 700; letter-spacing: -.04em; cursor: pointer; text-align: left; }
 .article-title:hover { color: #1d9e52; }
+.article-title .article-title-icon-collapsed { transform: rotate(180deg); }
+.article-title > .anticon { transition: transform .2s ease; }
 .article-subtitle { color: #6e8b79; font-size: 14px; }
 .article-body { color: #4d6657; font-size: 15px; line-height: 1.95; }
 .article-body :deep(h1), .article-body :deep(h2), .article-body :deep(h3) { margin: 26px 0 10px; font-size: 22px; letter-spacing: -.03em; }
@@ -1046,13 +1049,12 @@ h2 { margin: 12px 0 10px; font-size: clamp(30px, 4vw, 50px); line-height: 1.05; 
   .form-grid { grid-template-columns: 1fr; }
   .full-field { grid-column: auto; }
   .form-footer { align-items: flex-start; flex-direction: column; }
-  .profile-progress { top: 56px; }
   .section-telemetry { right: 16px; bottom: 16px; }
   .section-telemetry strong { font-size: 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .profile-section, .profile-section::before, .profile-section > :not(.section-loading), .profile-stage, .stage-layer, .avatar-overlay, .menu-item, .primary-action, .ghost-action, .outline-action, .profile-progress-fill, .stat-card, .section-telemetry strong { transition: none; }
+  .profile-section, .profile-section::before, .profile-section > :not(.section-loading), .profile-stage, .stage-layer, .avatar-overlay, .menu-item, .primary-action, .ghost-action, .outline-action, .stat-card, .section-telemetry strong { transition: none; }
   .article-skeleton, .loading-orbit, .stat-card:hover::after { animation: none; }
 }
 </style>
