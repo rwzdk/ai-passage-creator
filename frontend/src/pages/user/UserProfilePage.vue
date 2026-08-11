@@ -904,7 +904,11 @@ onBeforeUnmount(() => {
 .loading-orbit { width: 18px; height: 18px; border: 2px solid rgba(67, 167, 100, .18); border-top-color: #2ba35a; border-right-color: #8bd09e; border-radius: 50%; animation: loading-orbit 1s linear infinite; }
 @keyframes loading-orbit { to { transform: rotate(360deg); } }
 .profile-section.revealed { opacity: 1; transform: translateY(0); }
-.hero-section { padding-top: 24px; min-height: var(--profile-scene-height); }
+.hero-section {
+  box-sizing: border-box;
+  min-height: 100svh;
+  padding-top: 64px;
+}
 .stats-section { min-height: var(--profile-scene-height); }
 .history-section { min-height: var(--profile-scene-height); }
 .works-section { min-height: var(--profile-scene-height); }
