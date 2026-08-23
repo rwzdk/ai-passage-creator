@@ -57,6 +57,28 @@
         </div>
       </div>
 
+      <div v-if="selectedRowKeys.length" class="batch-toolbar">
+        <span class="selected-count">已选 {{ selectedRowKeys.length }} 篇文章</span>
+        <div class="batch-actions">
+          <a-button :loading="exporting" @click="exportSelectedArticles">
+            <DownloadOutlined />
+            批量导出 ZIP
+          </a-button>
+          <a-popconfirm
+            :title="`确定删除选中的 ${selectedRowKeys.length} 篇文章吗？`"
+            ok-text="删除"
+            cancel-text="取消"
+            @confirm="deleteSelectedArticles"
+          >
+            <a-button danger :loading="deleting">
+              <DeleteOutlined />
+              批量删除
+            </a-button>
+          </a-popconfirm>
+          <a-button type="link" @click="clearSelection">取消选择</a-button>
+        </div>
+      </div>
+
       <!-- 表格卡片 -->
       <a-card :bordered="false" class="table-card">
         <a-table
@@ -64,8 +86,9 @@
           :data-source="dataSource"
           :loading="loading"
           :pagination="pagination"
+          :row-selection="rowSelection"
           @change="handleTableChange"
-          row-key="id"
+          :row-key="getArticleRowKey"
           class="article-table"
         >
           <template #bodyCell="{ column, record }">
@@ -147,8 +170,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
   PlusOutlined,
@@ -159,16 +182,51 @@ import {
   FileTextOutlined,
   RedoOutlined
 } from '@ant-design/icons-vue'
-import { listArticle, deleteArticle as deleteArticleApi, getArticle } from '@/api/articleController'
+import { batchDeleteArticles, listArticle, deleteArticle as deleteArticleApi, getArticle } from '@/api/articleController'
 import dayjs, { type Dayjs } from 'dayjs'
 import WorkspacePageHeader from '@/components/WorkspacePageHeader.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 // 搜索筛选
 const searchKeyword = ref('')
 const dateRange = ref<[Dayjs, Dayjs] | null>(null)
 const statusFilter = ref<string>('')
+
+const getQueryValue = (value: unknown) => Array.isArray(value) ? String(value[0] || '') : String(value || '')
+
+const syncListQuery = () => {
+  const query: Record<string, string | string[]> = { ...route.query }
+  delete query.keyword
+  delete query.status
+  delete query.start
+  delete query.end
+  delete query.page
+  delete query.pageSize
+  if (searchKeyword.value.trim()) query.keyword = searchKeyword.value.trim()
+  if (statusFilter.value) query.status = statusFilter.value
+  if (dateRange.value) {
+    query.start = dateRange.value[0].format('YYYY-MM-DD')
+    query.end = dateRange.value[1].format('YYYY-MM-DD')
+  }
+  if (pagination.value.current !== 1) query.page = String(pagination.value.current)
+  if (pagination.value.pageSize !== 10) query.pageSize = String(pagination.value.pageSize)
+  void router.replace({ query })
+}
+
+const restoreListState = () => {
+  searchKeyword.value = getQueryValue(route.query.keyword)
+  statusFilter.value = getQueryValue(route.query.status)
+  const start = dayjs(getQueryValue(route.query.start))
+  const end = dayjs(getQueryValue(route.query.end))
+  dateRange.value = start.isValid() && end.isValid() ? [start, end] : null
+
+  const page = Number(getQueryValue(route.query.page))
+  const pageSize = Number(getQueryValue(route.query.pageSize))
+  if (Number.isInteger(page) && page > 0) pagination.value.current = page
+  if ([10, 20, 50, 100].includes(pageSize)) pagination.value.pageSize = pageSize
+}
 
 const columns = [
   {
@@ -202,6 +260,18 @@ const columns = [
 
 const loading = ref(false)
 const dataSource = ref<API.ArticleVO[]>([])
+type TableRowKey = string | number
+
+const selectedRowKeys = ref<TableRowKey[]>([])
+const exporting = ref(false)
+const deleting = ref(false)
+const rowSelection = computed(() => ({
+  selectedRowKeys: selectedRowKeys.value,
+  onChange: (keys: TableRowKey[]) => {
+    selectedRowKeys.value = keys
+  },
+}))
+const getArticleRowKey = (article: API.ArticleVO): TableRowKey => article.id ?? article.taskId ?? ''
 const pagination = ref({
   current: 1,
   pageSize: 10,
@@ -249,6 +319,7 @@ const loadData = async () => {
 
     dataSource.value = records
     pagination.value.total = pageData?.totalRow || 0
+    selectedRowKeys.value = []
   } catch (error: any) {
     message.error(error.message || '加载失败')
   } finally {
@@ -259,10 +330,12 @@ const loadData = async () => {
 // 搜索处理
 const handleSearch = () => {
   pagination.value.current = 1
+  syncListQuery()
   loadData()
 }
 
 const handleSearchChange = () => {
+  syncListQuery()
   // 如果搜索框清空，也触发搜索
   if (!searchKeyword.value) {
     handleSearch()
@@ -271,11 +344,13 @@ const handleSearchChange = () => {
 
 const handleDateChange = () => {
   pagination.value.current = 1
+  syncListQuery()
   loadData()
 }
 
 const handleStatusChange = () => {
   pagination.value.current = 1
+  syncListQuery()
   loadData()
 }
 
@@ -283,6 +358,7 @@ const handleStatusChange = () => {
 const handleTableChange = (pag: any) => {
   pagination.value.current = pag.current
   pagination.value.pageSize = pag.pageSize
+  syncListQuery()
   loadData()
 }
 
@@ -301,14 +377,7 @@ const exportArticle = async (record: API.ArticleVO) => {
       return
     }
 
-    let markdown = `# ${article.mainTitle}\n\n`
-    markdown += `> ${article.subTitle}\n\n`
-
-    if (article.fullContent) {
-      markdown += article.fullContent
-    } else {
-      markdown += article.content || ''
-    }
+    const markdown = toMarkdown(article)
 
     const blob = new Blob([markdown], { type: 'text/markdown' })
     const url = URL.createObjectURL(blob)
@@ -324,6 +393,50 @@ const exportArticle = async (record: API.ArticleVO) => {
   }
 }
 
+const toMarkdown = (article: API.ArticleVO) => {
+  const subtitle = article.subTitle ? `> ${article.subTitle}\n\n` : ''
+  return `# ${article.mainTitle || article.topic || '未命名文章'}\n\n${subtitle}${article.fullContent || article.content || ''}`
+}
+
+const getSafeFileName = (name: string) => name.replace(/[\\/:*?"<>|]/g, '_').slice(0, 80) || '未命名文章'
+
+const exportSelectedArticles = async () => {
+  const selectedArticles = dataSource.value.filter((article) => selectedRowKeys.value.includes(getArticleRowKey(article)))
+  const completedArticles = selectedArticles.filter((article) => article.status === 'COMPLETED' && article.taskId)
+  if (!completedArticles.length) {
+    message.warning('请选择已完成的文章进行导出')
+    return
+  }
+
+  exporting.value = true
+  try {
+    const { default: JSZip } = await import('jszip')
+    const zip = new JSZip()
+    const results = await Promise.allSettled(completedArticles.map((article) => getArticle({ taskId: article.taskId! })))
+    let exportedCount = 0
+    results.forEach((result, index) => {
+      if (result.status !== 'fulfilled' || !result.value.data.data) return
+      const article = result.value.data.data
+      zip.file(`${String(index + 1).padStart(2, '0')}-${getSafeFileName(article.mainTitle || article.topic || '')}.md`, toMarkdown(article))
+      exportedCount++
+    })
+    if (!exportedCount) throw new Error('未能获取可导出的文章内容')
+    const blob = await zip.generateAsync({ type: 'blob' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `文章导出-${dayjs().format('YYYYMMDD-HHmmss')}.zip`
+    link.click()
+    URL.revokeObjectURL(url)
+    const skippedCount = selectedArticles.length - exportedCount
+    message.success(skippedCount ? `已导出 ${exportedCount} 篇，跳过 ${skippedCount} 篇未完成或获取失败的文章` : `已导出 ${exportedCount} 篇文章`)
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '批量导出失败')
+  } finally {
+    exporting.value = false
+  }
+}
+
 // 删除文章
 const deleteArticle = async (record: API.ArticleVO) => {
   try {
@@ -332,6 +445,24 @@ const deleteArticle = async (record: API.ArticleVO) => {
     loadData()
   } catch (error) {
     message.error((error as Error).message || '删除失败')
+  }
+}
+
+const clearSelection = () => {
+  selectedRowKeys.value = []
+}
+
+const deleteSelectedArticles = async () => {
+  deleting.value = true
+  try {
+    const res = await batchDeleteArticles({ ids: selectedRowKeys.value.map(Number) })
+    const deletedCount = res.data.data ?? 0
+    message.success(`已删除 ${deletedCount} 篇文章`)
+    await loadData()
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '批量删除失败')
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -376,6 +507,7 @@ const getStatusText = (status: string) => {
 }
 
 onMounted(() => {
+  restoreListState()
   loadData()
 })
 </script>
@@ -385,38 +517,6 @@ onMounted(() => {
   background: var(--color-background-secondary);
   min-height: 100vh;
   padding-bottom: 60px;
-
-  .page-header {
-    background: var(--gradient-hero);
-    padding: 32px 20px;
-    margin-bottom: 24px;
-  }
-
-  .header-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .header-content {
-    color: var(--color-text);
-  }
-
-  .page-title {
-    font-size: 28px;
-    font-weight: 700;
-    margin: 0 0 6px;
-    letter-spacing: -0.5px;
-    color: var(--color-text);
-  }
-
-  .page-subtitle {
-    font-size: 14px;
-    color: var(--color-text-secondary);
-    margin: 0;
-  }
 
   .create-btn {
     height: 44px;
@@ -469,6 +569,30 @@ onMounted(() => {
     gap: 12px;
   }
 
+  .batch-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: -4px 0 16px;
+    padding: 12px 16px;
+    border: 1px solid rgba(69, 111, 100, 0.2);
+    border-radius: var(--radius-lg);
+    background: rgba(231, 240, 234, 0.82);
+  }
+
+  .selected-count {
+    color: var(--ink-deep);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .batch-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .search-input {
     :deep(.ant-input-affix-wrapper) {
       border-top-left-radius: var(--radius-md);
@@ -518,6 +642,19 @@ onMounted(() => {
   }
 
   .article-table {
+    :deep(.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner) {
+      border-color: var(--mountain-green);
+      background: var(--mountain-green);
+    }
+
+    :deep(.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner::after) {
+      border-color: #fff;
+    }
+
+    :deep(.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner::after) {
+      background: var(--mountain-green);
+    }
+
     :deep(.ant-table-thead > tr > th) {
       background: var(--color-background-secondary);
       font-weight: 600;
@@ -717,6 +854,11 @@ onMounted(() => {
       flex-wrap: wrap;
     }
 
+    .batch-toolbar {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
     .filter-right {
       text-align: right;
     }
@@ -725,20 +867,6 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .article-list-page {
-    .page-header {
-      padding: 24px 20px;
-    }
-
-    .header-container {
-      flex-direction: column;
-      gap: 16px;
-      text-align: center;
-    }
-
-    .page-title {
-      font-size: 22px;
-    }
-
     .create-btn {
       width: 100%;
     }
@@ -762,28 +890,7 @@ onMounted(() => {
     var(--paper-warm);
 }
 
-.article-list-page .page-header {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, rgba(224, 236, 229, 0.9), rgba(247, 245, 238, 0.95));
-  border-bottom: 1px solid var(--line-soft);
-}
-
-.article-list-page .page-header::after {
-  position: absolute;
-  right: 8%;
-  bottom: -46px;
-  width: 220px;
-  height: 140px;
-  border: 1px solid rgba(69, 111, 100, 0.18);
-  border-radius: 50% 50% 0 0;
-  content: '';
-  transform: rotate(-8deg);
-}
-
-.article-list-page .header-container,
 .article-list-page .container { position: relative; z-index: 1; }
-.article-list-page .page-title { color: var(--ink-deep); font-family: 'Outfit', 'Microsoft YaHei', sans-serif; font-weight: 500; }
 .article-list-page .filter-bar,
 .article-list-page .table-card { border-color: var(--line-soft); background: rgba(255, 255, 255, 0.7); box-shadow: var(--shadow-card); backdrop-filter: blur(12px); }
 .article-list-page :deep(.ant-table-wrapper) { animation: list-settle 520ms var(--ease-out) both; }
@@ -795,15 +902,13 @@ onMounted(() => {
 @keyframes list-settle { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 /* 作品列表沿江背景 */
 .article-list-page {
-  background-image:
-    linear-gradient(180deg, rgba(247, 250, 246, .26), rgba(247, 245, 238, .58) 76%),
-    url('@/assets/scenes/article-list-river.png');
+  background:
+    linear-gradient(150deg, rgba(231, 240, 234, .34) 0%, rgba(247, 245, 238, .38) 42%, rgba(243, 247, 243, .46) 100%),
+    url('@/assets/scenes/article-list-river.webp');
   background-position: center top;
   background-size: cover;
   background-attachment: fixed;
 }
-
-.article-list-page .page-header { background: linear-gradient(135deg, rgba(224, 236, 229, .62), rgba(247, 245, 238, .46)); }
 
 @media (max-width: 768px) {
   .article-list-page { background-attachment: scroll; background-position: 56% top; }
