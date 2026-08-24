@@ -27,6 +27,65 @@ export const getStatusColor = (status: string): string => {
   return STATUS_COLOR_MAP[status] || '#999'
 }
 
+export interface ArticleImageMarkdown {
+  url?: string
+  description?: string
+  sectionTitle?: string
+  position?: number
+  placeholderId?: string
+}
+
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** 将配图补回正文，兼容占位符、章节标题和旧数据。 */
+export const mergeArticleImages = (markdown: string, images?: ArticleImageMarkdown[]): string => {
+  let result = markdown || ''
+  if (!images?.length) return result
+
+  const placeholderCandidates = (placeholderId?: string) => {
+    if (!placeholderId?.trim()) return []
+    const token = placeholderId.trim().replace(/^\{+|\}+$/g, '')
+    return [placeholderId.trim(), `{{${token}}}`, `{{{{${token}}}}}`]
+  }
+
+  images
+    .filter((image) => image.position !== 1 && image.url)
+    .forEach((image) => {
+      const url = image.url as string
+      if (result.includes(`](${url})`)) return
+
+      const imageMarkdown = `![${image.description || image.sectionTitle || '文章配图'}](${url})`
+      const candidates = placeholderCandidates(image.placeholderId)
+      if (candidates.length) {
+        const matchedPlaceholder = candidates.find((candidate) => result.includes(candidate))
+        if (matchedPlaceholder) {
+          result = result.split(matchedPlaceholder).join(imageMarkdown)
+          return
+        }
+      }
+
+      const sectionTitle = image.sectionTitle?.trim()
+      if (sectionTitle) {
+        const headingPattern = new RegExp(
+          `(^|\\n)(#{1,6})\\s*${escapeRegExp(sectionTitle)}\\s*(?=\\n|$)`,
+          'i',
+        )
+        const headingMatch = headingPattern.exec(result)
+        if (headingMatch && headingMatch.index !== undefined) {
+          const insertAt = headingMatch.index + headingMatch[0].length
+          result = `${result.slice(0, insertAt)}\n\n${imageMarkdown}${result.slice(insertAt)}`
+          return
+        }
+      }
+
+      result = image.position === 1
+        ? `${imageMarkdown}\n\n${result}`
+        : `${result.trimEnd()}\n\n${imageMarkdown}`
+    })
+
+  return result
+}
+
 /**
  * 导出文章为 Markdown 文件
  * @param title 文章标题
@@ -42,7 +101,7 @@ export interface ExportArticleOptions {
   content?: string
   fullContent?: string
   outline?: Array<{ section: number; title: string }>
-  images?: Array<{ description: string; url: string }>
+  images?: ArticleImageMarkdown[]
 }
 
 export const exportAsMarkdown = (options: ExportArticleOptions): void => {
@@ -55,7 +114,7 @@ export const exportAsMarkdown = (options: ExportArticleOptions): void => {
 
   // 优先使用完整图文
   if (fullContent) {
-    markdown += fullContent
+    markdown += mergeArticleImages(fullContent, images)
   } else {
     if (outline && outline.length > 0) {
       markdown += `## 目录\n\n`
@@ -67,10 +126,11 @@ export const exportAsMarkdown = (options: ExportArticleOptions): void => {
 
     markdown += content || ''
 
-    if (images && images.length > 0) {
+    const bodyImages = images?.filter((image) => image.position !== 1 && image.url)
+    if (bodyImages && bodyImages.length > 0) {
       markdown += `\n\n## 配图\n\n`
-      images.forEach((image) => {
-        markdown += `![${image.description}](${image.url})\n\n`
+      bodyImages.forEach((image) => {
+        markdown += `![${image.description || image.sectionTitle || '文章配图'}](${image.url})\n\n`
       })
     }
   }
