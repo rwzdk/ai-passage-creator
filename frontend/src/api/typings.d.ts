@@ -50,6 +50,25 @@ declare namespace API {
     enabledImageMethods?: string[]
   }
 
+  type ArticleUpdateContentRequest = {
+    taskId?: string
+    mainTitle?: string
+    subTitle?: string
+    content?: string
+  }
+
+  type ArticleAiEditRequest = {
+    taskId?: string
+    content?: string
+    instruction?: string
+  }
+
+  type ArticleRegenerateImageRequest = {
+    taskId?: string
+    position?: number
+    prompt?: string
+  }
+
   type DocumentReference = {
     fileName?: string
     summary?: string
@@ -134,6 +153,16 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseInteger = {
+    code?: number
+    data?: number
+    message?: string
+  }
+
+  type BatchDeleteRequest = {
+    ids?: number[]
+  }
+
   type BaseResponsePageArticleVO = {
     code?: number
     data?: PageArticleVO
@@ -149,6 +178,12 @@ declare namespace API {
   type BaseResponseStatisticsVO = {
     code?: number
     data?: StatisticsVO
+    message?: string
+  }
+
+  type BaseResponseListUserVO = {
+    code?: number
+    data?: UserVO[]
     message?: string
   }
 
@@ -213,6 +248,18 @@ declare namespace API {
     keywords?: string
     sectionTitle?: string
     description?: string
+    placeholderId?: string
+    selectedVersionId?: string
+    versions?: ImageVersion[]
+    failed?: boolean
+    error?: string
+  }
+
+  type ImageVersion = {
+    id?: string
+    url?: string
+    prompt?: string
+    createdTime?: string
   }
 
   type LoginUserVO = {
@@ -296,6 +343,7 @@ declare namespace API {
     activeUserCount?: number
     totalUserCount?: number
     vipUserCount?: number
+    normalUserCount?: number
     quotaUsed?: number
   }
 
@@ -378,7 +426,7 @@ declare namespace API {
     checkPassword?: string
     userName?: string
     userEmail?: string
-    userPhone?: string
+    verificationCode?: string
   }
 
   type UserUpdateRequest = {
@@ -404,6 +452,7 @@ declare namespace API {
     userBlog?: string
     userGithub?: string
     userRole?: string
+    quota?: number
     createTime?: string
   }
 

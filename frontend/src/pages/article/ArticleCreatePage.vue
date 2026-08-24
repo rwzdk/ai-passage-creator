@@ -441,10 +441,16 @@
                 <div class="image-editor-heading">配图</div>
                 <div class="image-editor-grid">
                   <div v-for="image in article.images" :key="image.position" class="image-editor-item">
-                    <img :src="image.url" :alt="image.description || image.sectionTitle || '文章配图'" />
+                    <div v-if="image.failed || !image.url" class="image-editor-placeholder" role="img" :aria-label="`第 ${image.position} 张配图生成失败`">
+                      <PictureOutlined />
+                      <span>图片生成失败</span>
+                    </div>
+                    <img v-else :src="image.url" :alt="image.description || image.sectionTitle || '文章配图'" />
                     <div class="image-editor-meta">
-                      <span>{{ getImageDisplayName(image) }}</span>
-                      <a-button size="small" @click="openImageEditor(image)">
+                      <span :class="{ 'image-editor-failed-label': image.failed || !image.url }">
+                        {{ getImageDisplayName(image) }}{{ image.failed || !image.url ? ' · 生成失败' : '' }}
+                      </span>
+                      <a-button v-if="!image.failed && image.url" size="small" @click="openImageEditor(image)">
                         <template #icon><SwapOutlined /></template>
                         替换图片
                       </a-button>
@@ -1556,6 +1562,8 @@ const isArticleRunning = (status?: string) => status === 'PENDING' || status ===
 const getExecutionProgress = () => {
   const logs = executionLogRecords.value
   const hasAgent = (agentName: string) => logs.some((log) => log.agentName === agentName)
+  const hasSuccessfulAgent = (agentName: string) =>
+    logs.some((log) => log.agentName === agentName && log.status === 'SUCCESS')
   const imageAnalyzerLog = [...logs].reverse().find((log) => log.agentName === 'agent4_analyze_image_requirements')
   let analyzedImageCount = 0
   if (imageAnalyzerLog?.outputData) {
@@ -1569,11 +1577,15 @@ const getExecutionProgress = () => {
   if (hasAgent('agent6_merge_content') || hasAgent('content_merger')) {
     return { step: 5, statusText: '正在将配图插入正文', totalImages: analyzedImageCount }
   }
-  if (hasAgent('agent5_generate_images')) {
+  // agent5 日志在任务开始时就会写入 RUNNING，此时应进入独立的生成配图步骤。
+  if (hasSuccessfulAgent('agent5_generate_images')) {
     return { step: 5, statusText: '配图生成完成，正在合成图文', totalImages: analyzedImageCount }
   }
-  if (hasAgent('agent4_analyze_image_requirements')) {
+  if (hasAgent('agent5_generate_images')) {
     return { step: 4, statusText: '正在生成配图', totalImages: analyzedImageCount }
+  }
+  if (hasAgent('agent4_analyze_image_requirements')) {
+    return { step: 3, statusText: '正在分析配图需求', totalImages: analyzedImageCount }
   }
   if (hasAgent('agent3_generate_content')) {
     return { step: 3, statusText: '正文生成完成，正在准备分析配图', totalImages: analyzedImageCount }
@@ -1974,7 +1986,7 @@ const handleSSEMessage = (msg: SSEMessage) => {
     case 'AGENT4_START':
       currentStep.value = 3
       currentStepStatus.value = 'working'
-      currentStepStatusText.value = '正在生成配图'
+      currentStepStatusText.value = '正在分析配图需求'
       addLog('开始分析配图需求与插入位置', 'info')
       break
 
@@ -2059,6 +2071,11 @@ const handleSSEMessage = (msg: SSEMessage) => {
     case 'MERGE_COMPLETE':
       // 图文合成完成
       article.value.fullContent = msg.fullContent
+      pendingStreamingMarkdown = getArticleBodyContent(
+        msg.fullContent || article.value.content || '',
+        article.value.images,
+        article.value.mainTitle,
+      )
       flushStreamingMarkdown()
       currentStepStatus.value = 'working'
       currentStepStatusText.value = '图文合成完成'
@@ -3429,6 +3446,22 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
+.image-editor-placeholder {
+  display: flex;
+  height: 120px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.image-editor-placeholder .anticon {
+  font-size: 26px;
+}
+
 .image-editor-meta {
   display: flex;
   align-items: center;
@@ -3442,6 +3475,10 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.image-editor-failed-label {
+  color: var(--color-danger, #c2413b);
 }
 
 .image-version-picker-title {
