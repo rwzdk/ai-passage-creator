@@ -1319,6 +1319,7 @@ const currentStepStatusText = ref('')
 const completedStepCount = computed(() => Math.min(currentStep.value, agentSteps.length))
 const currentStepLabel = computed(() => {
   const title = agentSteps[currentStep.value]?.title || '创作完成'
+  if (currentPhase.value === 'COMPLETED') return currentStepStatusText.value || title
   return currentStepStatusText.value ? `${title} · ${currentStepStatusText.value}` : title
 })
 
@@ -1418,7 +1419,7 @@ const getHistoryLogMessage = (log: API.AgentLog, imageCompletionSequence?: numbe
       const method = String(image.method || image.imageSource || '')
       const methodLabel = getImageMethodLabel(method)
       const imageSuffix = methodLabel ? ` · ${methodLabel}` : ''
-      if (type === 'AGENT1_COMPLETE') return '智能体1：标题方案生成完成'
+      if (type === 'AGENT1_COMPLETE') return '标题方案生成完成'
       if (type === 'TITLES_GENERATED') return `生成了 ${Array.isArray(data.titleOptions) ? data.titleOptions.length : 0} 个标题方案`
       if (type === 'OUTLINE_GENERATED') return '大纲生成完成，等待确认'
       if (type === 'AGENT3_COMPLETE') return '正文生成完成'
@@ -1440,7 +1441,7 @@ const getHistoryLogMessage = (log: API.AgentLog, imageCompletionSequence?: numbe
         return `开始图文合成：选取 ${bodyImages} 张正文配图${coverImages > 0 ? `（封面 ${coverImages} 张不参与正文合成）` : ''}`
       }
       if (type === 'MERGE_COMPLETE') return '图文合成完成'
-      if (type === 'ALL_COMPLETE') return '文章创作完成！'
+      if (type === 'ALL_COMPLETE') return ''
       if (type === 'ERROR') return `创作失败: ${String(data.message || '未知错误')}`
       // 未映射的内部事件仅用于流程回放，不直接展示原始事件名。
       return ''
@@ -1488,7 +1489,12 @@ const loadExecutionLogs = async (existingTaskId: string) => {
     const response = await getExecutionLogs({ taskId: existingTaskId })
     const stats = response.data.data
     const historyLogs = (stats?.logs || [])
-      .filter((log) => !log.agentName?.includes('AGENT2_STREAMING') && !log.agentName?.includes('AGENT3_STREAMING'))
+      .filter(
+        (log) =>
+          !log.agentName?.includes('AGENT2_STREAMING') &&
+          !log.agentName?.includes('AGENT3_STREAMING') &&
+          log.agentName !== '__event_ALL_COMPLETE',
+      )
       .sort((a, b) => {
         const aTime = new Date(a.startTime || a.createTime || '').getTime()
         const bTime = new Date(b.startTime || b.createTime || '').getTime()
@@ -1857,7 +1863,7 @@ const handleSSEMessage = (msg: SSEMessage) => {
       // 智能体1完成，进入标题生成阶段（显示加载）
       currentPhase.value = 'TITLE_GENERATING'
       currentStep.value = 1
-      addLog('智能体1：标题方案生成完成', 'success')
+      addLog('标题方案生成完成', 'success')
       break
 
     case 'TITLES_GENERATED':
@@ -1922,7 +1928,7 @@ const handleSSEMessage = (msg: SSEMessage) => {
     case 'AGENT4_START':
       currentStep.value = 3
       currentStepStatus.value = 'working'
-      currentStepStatusText.value = '正在分析文章配图'
+      currentStepStatusText.value = '正在生成配图'
       addLog('开始分析配图需求与插入位置', 'info')
       break
 
@@ -2019,11 +2025,10 @@ const handleSSEMessage = (msg: SSEMessage) => {
       currentPhase.value = 'COMPLETED'
       currentStep.value = 6
       currentStepStatus.value = 'working'
-      currentStepStatusText.value = '文章创作完成'
+      currentStepStatusText.value = '文章创作完成后即可'
       isCompleted.value = true
       void syncCompletedArticle()
       message.success('文章创作完成!')
-      addLog('✨ 文章创作完成！', 'success')
       break
 
     case 'ERROR':
@@ -2085,7 +2090,7 @@ const restoreArticleForEditing = async (existingTaskId: string) => {
       currentPhase.value = 'COMPLETED'
       isCompleted.value = true
       currentStep.value = agentSteps.length
-      currentStepStatusText.value = '文章创作完成'
+      currentStepStatusText.value = '文章创作完成后即可'
     } else if (existingArticle.phase === 'PENDING' || existingArticle.phase === 'TITLE_GENERATING') {
       currentPhase.value = 'TITLE_GENERATING'
       currentStep.value = 0
