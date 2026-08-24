@@ -2206,6 +2206,25 @@ const handleSSEComplete = () => {
   // SSE 在 ALL_COMPLETE 或 ERROR 后由连接工具主动关闭。
 }
 
+const copyTextWithFallback = (text: string) => {
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'fixed'
+  textarea.style.left = '-9999px'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.select()
+
+  try {
+    if (!document.execCommand('copy')) {
+      throw new Error('Fallback copy command failed')
+    }
+  } finally {
+    document.body.removeChild(textarea)
+  }
+}
+
 // 复制全文
 const copyContent = async () => {
   const content = mergeArticleImages(
@@ -2213,7 +2232,16 @@ const copyContent = async () => {
     article.value.images,
   )
   try {
-    await navigator.clipboard.writeText(content)
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(content)
+      } catch {
+        // HTTP 页面或浏览器权限限制下，继续使用兼容方案。
+        copyTextWithFallback(content)
+      }
+    } else {
+      copyTextWithFallback(content)
+    }
     message.success('已复制到剪贴板')
   } catch {
     message.error('复制失败')
