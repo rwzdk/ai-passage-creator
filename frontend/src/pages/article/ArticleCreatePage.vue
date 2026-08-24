@@ -2232,7 +2232,7 @@ const copyContent = async () => {
     article.value.images,
   )
   try {
-    if (navigator.clipboard?.writeText) {
+    if (window.isSecureContext && navigator.clipboard?.writeText) {
       try {
         await navigator.clipboard.writeText(content)
       } catch {
