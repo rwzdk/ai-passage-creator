@@ -38,9 +38,25 @@ export interface ArticleImageMarkdown {
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 /** 将配图补回正文，兼容占位符、章节标题和旧数据。 */
-export const mergeArticleImages = (markdown: string, images?: ArticleImageMarkdown[]): string => {
+export const mergeArticleImages = (
+  markdown: string,
+  images?: ArticleImageMarkdown[],
+  includeCover = true,
+): string => {
   let result = markdown || ''
   if (!images?.length) return result
+
+  if (!includeCover) {
+    images
+      .filter((image) => image.position === 1 && image.url)
+      .forEach((image) => {
+        const imagePattern = new RegExp(
+          `!\\[[^\\]]*\\]\\(${escapeRegExp(image.url as string)}\\)\\s*`,
+          'g',
+        )
+        result = result.replace(imagePattern, '')
+      })
+  }
 
   const placeholderCandidates = (placeholderId?: string) => {
     if (!placeholderId?.trim()) return []
@@ -49,13 +65,19 @@ export const mergeArticleImages = (markdown: string, images?: ArticleImageMarkdo
   }
 
   images
-    .filter((image) => image.position !== 1 && image.url)
+    .filter((image) => image.url && (includeCover || image.position !== 1))
     .forEach((image) => {
       const url = image.url as string
       if (result.includes(`](${url})`)) return
 
       const imageMarkdown = `![${image.description || image.sectionTitle || '文章配图'}](${url})`
-      const candidates = placeholderCandidates(image.placeholderId)
+      const positionPlaceholder = image.position && image.position > 1
+        ? `{{IMAGE_PLACEHOLDER_${image.position - 1}}}`
+        : undefined
+      const candidates = [
+        ...placeholderCandidates(image.placeholderId),
+        ...placeholderCandidates(positionPlaceholder),
+      ]
       if (candidates.length) {
         const matchedPlaceholder = candidates.find((candidate) => result.includes(candidate))
         if (matchedPlaceholder) {

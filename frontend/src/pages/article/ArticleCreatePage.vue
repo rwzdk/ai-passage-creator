@@ -253,7 +253,31 @@
               <h3>正在生成标题方案</h3>
               <p>先梳理选题，再为你准备多个可选方向</p>
             </div>
-            <AnimatedSkeleton :lines="3" />
+            <div class="title-streaming-preview">
+              <div class="section-label">
+                <StarOutlined />
+                <span>标题方案实时生成</span>
+                <span class="typing-cursor">|</span>
+              </div>
+              <div v-if="titleStreamingOptions.length" class="title-streaming-list">
+                <article
+                  v-for="(option, index) in titleStreamingOptions"
+                  :key="index"
+                  class="title-streaming-item fade-in"
+                >
+                  <span class="title-streaming-index">{{ String(index + 1).padStart(2, '0') }}</span>
+                  <div class="title-streaming-copy">
+                    <strong>{{ option.mainTitle }}</strong>
+                    <span>{{ option.subTitle }}</span>
+                  </div>
+                </article>
+              </div>
+              <div v-else class="title-streaming-loading">
+                <LoadingOutlined class="spin-icon" />
+                <span>正在逐步生成候选标题...</span>
+                <AnimatedSkeleton :lines="2" />
+              </div>
+            </div>
           </div>
 
           <!-- 标题选择阶段 -->
@@ -1164,6 +1188,85 @@ const editActivityLogs = ref<EditActivityLog[]>([])
 
 // 标题方案
 const titleOptions = ref<Array<{ mainTitle: string; subTitle: string }>>([])
+const titleStreamingRaw = ref('')
+const titleStreamingPreviewRaw = ref('')
+let titleStreamingPreviewTimer: number | undefined
+
+const flushTitleStreamingPreview = () => {
+  if (titleStreamingPreviewTimer !== undefined) {
+    window.clearTimeout(titleStreamingPreviewTimer)
+    titleStreamingPreviewTimer = undefined
+  }
+  titleStreamingPreviewRaw.value = titleStreamingRaw.value
+}
+
+const scheduleTitleStreamingPreview = () => {
+  if (titleStreamingPreviewTimer !== undefined) return
+  titleStreamingPreviewTimer = window.setTimeout(() => {
+    titleStreamingPreviewTimer = undefined
+    titleStreamingPreviewRaw.value = titleStreamingRaw.value
+  }, 80)
+}
+
+const parseStreamingTitleOptions = (raw: string) => {
+  const source = raw.trim()
+  if (!source) return []
+
+  try {
+    const parsed = JSON.parse(source)
+    if (Array.isArray(parsed)) return parsed
+  } catch {
+    // The stream is incomplete; recover every fully closed JSON object below.
+  }
+
+  const options: Array<{ mainTitle?: string; subTitle?: string }> = []
+  let objectStart = -1
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index]
+    if (inString) {
+      if (escaped) {
+        escaped = false
+      } else if (char === '\\') {
+        escaped = true
+      } else if (char === '"') {
+        inString = false
+      }
+      continue
+    }
+    if (char === '"') {
+      inString = true
+    } else if (char === '{') {
+      if (depth === 0) objectStart = index
+      depth += 1
+    } else if (char === '}' && depth > 0) {
+      depth -= 1
+      if (depth === 0 && objectStart >= 0) {
+        try {
+          const option = JSON.parse(source.slice(objectStart, index + 1))
+          if (option && typeof option === 'object') options.push(option)
+        } catch {
+          // Ignore a malformed partial object and keep the valid objects.
+        }
+        objectStart = -1
+      }
+    }
+  }
+
+  return options
+    .filter((option) => option.mainTitle || option.subTitle)
+    .map((option) => ({
+      mainTitle: String(option.mainTitle || ''),
+      subTitle: String(option.subTitle || ''),
+    }))
+}
+
+const titleStreamingOptions = computed(() =>
+  parseStreamingTitleOptions(titleStreamingPreviewRaw.value),
+)
 
 // 大纲数据
 const outline = ref<Array<{ section: number; title: string; points: string[] }>>([])
@@ -1320,6 +1423,7 @@ const imageProgress = ref(0)
 const imageFailedCount = ref(0)
 const imageGenerationStarted = ref(false)
 const completedImagePositions = ref(new Set<number>())
+let pendingAgent5Complete: SSEMessage | null = null
 const currentStepStatus = ref<'working' | 'failed'>('working')
 const currentStepStatusText = ref('')
 const completedStepCount = computed(() => Math.min(currentStep.value, agentSteps.length))
@@ -1420,6 +1524,16 @@ const getLogLevel = (status?: string) => {
   return 'info'
 }
 
+const getExecutionEventType = (log: API.AgentLog) => {
+  if (!log.agentName?.startsWith('__event_')) return ''
+  try {
+    const data = log.outputData ? (JSON.parse(log.outputData) as Record<string, unknown>) : {}
+    return String(data.type || log.agentName.slice('__event_'.length))
+  } catch {
+    return log.agentName.slice('__event_'.length)
+  }
+}
+
 const getAgentDisplayName = (agentName: string) => {
   const nameMap: Record<string, string> = {
     agent1_generate_titles: '生成标题',
@@ -1433,11 +1547,15 @@ const getAgentDisplayName = (agentName: string) => {
   return nameMap[agentName] || agentName
 }
 
-const getHistoryLogMessage = (log: API.AgentLog, imageCompletionSequence?: number) => {
+const getHistoryLogMessage = (
+  log: API.AgentLog,
+  imageCompletionSequence?: number,
+  totalImages?: number,
+) => {
   if (log.agentName?.startsWith('__event_')) {
     try {
       const data = log.outputData ? (JSON.parse(log.outputData) as Record<string, unknown>) : {}
-      const type = String(data.type || log.agentName.slice('__event_'.length))
+      const type = getExecutionEventType(log)
       const image = (data.image || {}) as Record<string, unknown>
       const position = Number(image.position) || 0
       const method = String(image.method || image.imageSource || '')
@@ -1451,7 +1569,11 @@ const getHistoryLogMessage = (log: API.AgentLog, imageCompletionSequence?: numbe
       if (type === 'AGENT4_COMPLETE') {
         return `配图需求分析完成，共 ${Array.isArray(data.imageRequirements) ? data.imageRequirements.length : 0} 张`
       }
-      if (type === 'IMAGE_START') return '已开启异步任务，正在并行生成配图'
+      if (type === 'IMAGE_START') {
+        return totalImages && totalImages > 0
+          ? `已开启异步任务，正在并行生成 ${totalImages} 张配图`
+          : '已开启异步任务，正在并行生成配图'
+      }
       if (type === 'IMAGE_COMPLETE') {
         const displayPosition = imageCompletionSequence || position || '?'
         return `已生成第 ${displayPosition} 张配图${imageSuffix}`
@@ -1498,37 +1620,79 @@ const getHistoryLogMessage = (log: API.AgentLog, imageCompletionSequence?: numbe
   return completionMessages[agentName] || `${displayName}完成`
 }
 
-const toHistoryLog = (log: API.AgentLog, imageCompletionSequence?: number): RealtimeLog => {
+const getHistoryImageTotal = (logs: API.AgentLog[]) => {
+  const analysisLog = logs.find((log) => getExecutionEventType(log) === 'AGENT4_COMPLETE')
+  if (!analysisLog?.outputData) return 0
+  try {
+    const data = JSON.parse(analysisLog.outputData) as { imageRequirements?: unknown[] }
+    return Array.isArray(data.imageRequirements) ? data.imageRequirements.length : 0
+  } catch {
+    return 0
+  }
+}
+
+const toHistoryLog = (
+  log: API.AgentLog,
+  imageCompletionSequence?: number,
+  totalImages?: number,
+): RealtimeLog => {
   const timestampValue = log.endTime || log.updateTime || log.startTime || log.createTime
   const timestamp = timestampValue ? new Date(timestampValue).getTime() : Date.now()
   return {
     timestamp: Number.isNaN(timestamp) ? Date.now() : timestamp,
     level: getLogLevel(log.status),
-    message: getHistoryLogMessage(log, imageCompletionSequence),
+    message: getHistoryLogMessage(log, imageCompletionSequence, totalImages),
     source: 'history',
   }
+}
+
+const compareExecutionLogs = (a: API.AgentLog, b: API.AgentLog) => {
+  const aTime = new Date(a.startTime || a.createTime || '').getTime()
+  const bTime = new Date(b.startTime || b.createTime || '').getTime()
+  if (aTime !== bTime) return aTime - bTime
+  return (a.id || 0) - (b.id || 0)
+}
+
+const getCanonicalHistoryLogs = (logs: API.AgentLog[]) => {
+  const filteredLogs = logs
+    .filter(
+      (log) =>
+        !log.agentName?.includes('AGENT2_STREAMING') &&
+        !log.agentName?.includes('AGENT3_STREAMING'),
+    )
+  const eventTypes = new Set(filteredLogs.map(getExecutionEventType).filter(Boolean))
+
+  return filteredLogs
+    .filter((log) => {
+      // 阶段 4/5 的阶段日志与 SSE 事件表达同一事实，保留带数量或结果的事件日志。
+      if (
+        log.agentName === 'agent4_analyze_image_requirements' &&
+        (eventTypes.has('AGENT4_START') || eventTypes.has('AGENT4_COMPLETE'))
+      ) {
+        return false
+      }
+      if (
+        log.agentName === 'agent5_generate_images' &&
+        (eventTypes.has('IMAGE_START') || eventTypes.has('AGENT5_COMPLETE'))
+      ) {
+        return false
+      }
+      return true
+    })
+    .sort(compareExecutionLogs)
 }
 
 const loadExecutionLogs = async (existingTaskId: string) => {
   try {
     const response = await getExecutionLogs({ taskId: existingTaskId })
     const stats = response.data.data
-    const historyLogs = (stats?.logs || [])
-      .filter(
-        (log) =>
-          !log.agentName?.includes('AGENT2_STREAMING') &&
-          !log.agentName?.includes('AGENT3_STREAMING'),
-      )
-      .sort((a, b) => {
-        const aTime = new Date(a.startTime || a.createTime || '').getTime()
-        const bTime = new Date(b.startTime || b.createTime || '').getTime()
-        return aTime - bTime
-      })
+    const historyLogs = getCanonicalHistoryLogs(stats?.logs || [])
+    const totalImages = getHistoryImageTotal(historyLogs)
     let imageStartShown = false
     let imageCompletionSequence = 0
     executionLogRecords.value = historyLogs
-    const realtimeOnlyLogs = realtimeLogs.value.filter((log) => log.source === 'realtime')
-    const mergedLogs = [...historyLogs
+    const historyMessages = new Set<string>()
+    const historyDisplayLogs = historyLogs
       .filter((log) => {
         if (log.agentName !== '__event_IMAGE_START') return true
         if (imageStartShown) return false
@@ -1538,20 +1702,35 @@ const loadExecutionLogs = async (existingTaskId: string) => {
       .map((log) => {
         if (log.agentName === '__event_IMAGE_COMPLETE') {
           imageCompletionSequence += 1
-          return toHistoryLog(log, imageCompletionSequence)
+          return toHistoryLog(log, imageCompletionSequence, totalImages)
         }
-        return toHistoryLog(log)
+        return toHistoryLog(log, undefined, totalImages)
       })
       .filter((log) => log.message)
-      .map((log) => log as unknown as RealtimeLog), ...realtimeOnlyLogs]
-      .sort((a, b) => a.timestamp - b.timestamp)
+      .map((log) => log as unknown as RealtimeLog)
+    historyDisplayLogs.forEach((log) => historyMessages.add(log.message.trim()))
+
+    // 连接提示只服务于实时阶段，轮询后移除，保证刷新/历史编辑与创作中的日志一致。
+    const transientRealtimeMessages = new Set([
+      '开始创建文章任务...',
+      '任务创建成功',
+      '已建立实时连接，开始生成...',
+      '正在撰写正文',
+      '已开启异步任务，正在并行生成配图',
+    ])
+    const realtimeOnlyLogs = realtimeLogs.value.filter(
+      (log) =>
+        log.source === 'realtime' &&
+        !transientRealtimeMessages.has(log.message.trim()) &&
+        !historyMessages.has(log.message.trim()),
+    )
     const seenMessages = new Set<string>()
-    realtimeLogs.value = mergedLogs.filter((log) => {
+    realtimeLogs.value = [...historyDisplayLogs, ...realtimeOnlyLogs].filter((log) => {
       const messageKey = log.message.trim()
       if (!messageKey || seenMessages.has(messageKey)) return false
       seenMessages.add(messageKey)
       return true
-    })
+    }).sort((a, b) => a.timestamp - b.timestamp)
   } catch (error) {
     console.warn('加载执行日志失败:', error)
   }
@@ -1598,13 +1777,17 @@ const syncTaskSnapshot = (snapshot: API.ArticleVO | undefined) => {
 
   const previousContent = article.value.content || ''
   const snapshotContent = mergeStreamingText(previousContent, snapshot.content)
-  article.value = { ...article.value, ...snapshot, content: snapshotContent }
+  const snapshotImages = snapshot.images?.length ? snapshot.images : article.value.images
+  article.value = { ...article.value, ...snapshot, content: snapshotContent, images: snapshotImages }
 
-  if (snapshotContent !== previousContent) {
-    scheduleStreamingMarkdown(snapshotContent)
-  }
   if (snapshot.fullContent) article.value.fullContent = snapshot.fullContent
   if (snapshot.images?.length) article.value.images = snapshot.images
+  const previewSource = snapshot.fullContent || snapshotContent
+  if (previewSource && (snapshotContent !== previousContent || snapshot.fullContent || snapshot.images?.length)) {
+    scheduleStreamingMarkdown(
+      getArticleBodyContent(previewSource, article.value.images, article.value.mainTitle),
+    )
+  }
 
   // The server keeps titleOptions on the article after title confirmation.
   // Prefer the persisted phase so polling cannot move the UI back to title selection.
@@ -1626,9 +1809,11 @@ const syncTaskSnapshot = (snapshot: API.ArticleVO | undefined) => {
       totalImages.value = progress.totalImages
     }
     isCreating.value = true
-    if (snapshotContent) {
+    if (previewSource) {
       isStreaming.value = true
-      scheduleStreamingMarkdown(snapshotContent)
+      scheduleStreamingMarkdown(
+        getArticleBodyContent(previewSource, article.value.images, article.value.mainTitle),
+      )
     }
   } else if (snapshot.phase === 'TITLE_SELECTING' && snapshot.titleOptions?.length) {
     if (currentPhase.value !== 'TITLE_SELECTING') {
@@ -1719,7 +1904,9 @@ const appendStreamingContent = (chunk: unknown) => {
   const mergedContent = mergeStreamingText(currentContent, chunk)
   if (mergedContent === currentContent) return
   article.value.content = mergedContent
-  scheduleStreamingMarkdown(mergedContent)
+  scheduleStreamingMarkdown(
+    getArticleBodyContent(mergedContent, article.value.images, article.value.mainTitle),
+  )
 }
 
 const getArticleBodyContent = (
@@ -1730,6 +1917,7 @@ const getArticleBodyContent = (
   return mergeArticleImages(
     stripGeneratedArticleHeading(markdown, mainTitle),
     images,
+    false,
   )
 }
 
@@ -1854,6 +2042,7 @@ const startCreate = async () => {
   imageProgress.value = 0
   imageGenerationStarted.value = false
   completedImagePositions.value.clear()
+  pendingAgent5Complete = null
   realtimeLogs.value = []
   executionLogRecords.value = []
   addLog('开始创建文章任务...', 'info')
@@ -1909,6 +2098,49 @@ const addLog = (message: string, level: string = 'info') => {
   }
 }
 
+const upsertArticleImage = (rawImage: Record<string, unknown> | undefined, failed = false) => {
+  if (!rawImage) return
+  const position = Number(rawImage.position)
+  if (!position) return
+  const image: API.ImageItem = {
+    ...(rawImage as API.ImageItem),
+    position,
+    failed: failed || Boolean(rawImage.failed),
+  }
+  const images = article.value.images || []
+  article.value.images = [
+    ...images.filter((item) => item.position !== position),
+    image,
+  ].sort((a, b) => (a.position || 0) - (b.position || 0))
+}
+
+const applyAgent5Complete = (msg: SSEMessage) => {
+  currentStep.value = 5
+  if (msg.images?.length) article.value.images = msg.images as API.ImageItem[]
+  currentStepStatus.value = 'working'
+  currentStepStatusText.value = '正在将配图插入正文'
+  pendingStreamingMarkdown = getArticleBodyContent(
+    article.value.content || '',
+    article.value.images,
+    article.value.mainTitle,
+  )
+  flushStreamingMarkdown()
+  addLog('所有配图生成完成', 'success')
+}
+
+const flushPendingAgent5Complete = () => {
+  if (!pendingAgent5Complete) return
+  if (
+    totalImages.value > 0 &&
+    imageCount.value + imageFailedCount.value < totalImages.value
+  ) {
+    return
+  }
+  const completeMessage = pendingAgent5Complete
+  pendingAgent5Complete = null
+  applyAgent5Complete(completeMessage)
+}
+
 // 格式化日志时间
 const formatLogTime = (timestamp: number) => {
   const date = new Date(timestamp)
@@ -1918,6 +2150,15 @@ const formatLogTime = (timestamp: number) => {
 // 处理 SSE 消息
 const handleSSEMessage = (msg: SSEMessage) => {
   switch (msg.type) {
+    case 'AGENT1_STREAMING':
+      currentPhase.value = 'TITLE_GENERATING'
+      currentStep.value = 0
+      isCreating.value = true
+      titleStreamingRaw.value += msg.content || ''
+      scheduleTitleStreamingPreview()
+      scrollToBottom()
+      break
+
     case 'AGENT1_COMPLETE':
       // 智能体1完成，进入标题生成阶段（显示加载）
       currentPhase.value = 'TITLE_GENERATING'
@@ -1929,6 +2170,8 @@ const handleSSEMessage = (msg: SSEMessage) => {
       // 标题方案生成完成，切换到选择标题阶段
       currentPhase.value = 'TITLE_SELECTING'
       titleOptions.value = msg.titleOptions || []
+      titleStreamingRaw.value = ''
+      flushTitleStreamingPreview()
       isCreating.value = false
       addLog(`生成了 ${msg.titleOptions?.length || 0} 个标题方案`, 'success')
       break
@@ -2023,12 +2266,20 @@ const handleSSEMessage = (msg: SSEMessage) => {
           completedImagePositions.value.add(position)
           imageCount.value = completedImagePositions.value.size
         }
+        upsertArticleImage(msg.image as Record<string, unknown> | undefined)
         imageProgress.value = totalImages.value > 0
           ? Math.min(100, Math.round((imageCount.value / totalImages.value) * 100))
           : 0
         currentStepStatus.value = 'working'
         currentStepStatusText.value = `已生成 ${imageCount.value}/${totalImages.value} 张配图`
         addLog(`已生成第 ${imageCount.value} 张配图${methodLabel ? ` · ${methodLabel}` : ''}`, 'success')
+        pendingStreamingMarkdown = getArticleBodyContent(
+          article.value.content || '',
+          article.value.images,
+          article.value.mainTitle,
+        )
+        scheduleStreamingMarkdown(pendingStreamingMarkdown)
+        flushPendingAgent5Complete()
       }
       break
 
@@ -2037,7 +2288,9 @@ const handleSSEMessage = (msg: SSEMessage) => {
       const { position, methodLabel } = getImageEventDetails(msg.image)
       currentStepStatus.value = 'failed'
       currentStepStatusText.value = `第 ${position}/${totalImages.value} 张配图生成失败`
+      upsertArticleImage(msg.image as Record<string, unknown> | undefined, true)
       addLog(`第 ${position}/${totalImages.value} 张配图生成失败${methodLabel ? ` · ${methodLabel}` : ''}`, 'error')
+      flushPendingAgent5Complete()
       break
     }
 
@@ -2046,12 +2299,9 @@ const handleSSEMessage = (msg: SSEMessage) => {
       break
 
     case 'AGENT5_COMPLETE':
-      // 所有配图完成，进入图文合成步骤
-      currentStep.value = 5
-      article.value.images = msg.images
-      currentStepStatus.value = 'working'
-      currentStepStatusText.value = '正在将配图插入正文'
-      addLog('所有配图生成完成', 'success')
+      // 后端可能在同一秒内先发送完成事件，再落库最后一张失败事件，等所有结果到齐后再展示。
+      pendingAgent5Complete = msg
+      flushPendingAgent5Complete()
       break
 
     case 'MERGE_START':
@@ -2146,7 +2396,11 @@ const restoreArticleForEditing = async (existingTaskId: string) => {
     outlineRaw.value = outline.value.length ? JSON.stringify({ sections: outline.value }) : ''
     flushOutlinePreview()
     article.value = { ...article.value, ...existingArticle }
-    pendingStreamingMarkdown = existingArticle.content || ''
+    pendingStreamingMarkdown = getArticleBodyContent(
+      existingArticle.fullContent || existingArticle.content || '',
+      existingArticle.images,
+      existingArticle.mainTitle,
+    )
     flushStreamingMarkdown()
 
     if (existingArticle.status === 'COMPLETED' || existingArticle.phase === 'COMPLETED') {
@@ -2533,6 +2787,8 @@ const resetCreate = () => {
   clearReference()
   selectedStyle.value = ''
   titleOptions.value = []
+  titleStreamingRaw.value = ''
+  flushTitleStreamingPreview()
   outline.value = []
   isCreating.value = false
   isCompleted.value = false
@@ -2707,6 +2963,7 @@ onBeforeUnmount(() => {
   stopExecutionLogsPolling()
   stopHotTopicLoop()
   if (outlinePreviewTimer !== undefined) window.clearTimeout(outlinePreviewTimer)
+  if (titleStreamingPreviewTimer !== undefined) window.clearTimeout(titleStreamingPreviewTimer)
   if (streamingMarkdownTimer !== undefined) window.clearTimeout(streamingMarkdownTimer)
   if (scrollFrame !== undefined) window.cancelAnimationFrame(scrollFrame)
   stageTimeline?.kill()
@@ -4406,6 +4663,76 @@ onBeforeUnmount(() => {
 .loading-stage > .animated-skeleton {
   width: min(100%, 360px);
   margin-top: 8px;
+}
+
+.title-streaming-preview {
+  width: min(100%, 520px);
+  margin-top: 4px;
+  padding: 18px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.62);
+  text-align: left;
+}
+
+.title-streaming-preview .section-label {
+  margin-bottom: 14px;
+}
+
+.title-streaming-list {
+  display: grid;
+  gap: 10px;
+}
+
+.title-streaming-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: rgba(247, 250, 246, 0.72);
+}
+
+.title-streaming-index {
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.title-streaming-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title-streaming-copy strong {
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.title-streaming-copy span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.title-streaming-loading {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px 10px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.title-streaming-loading .animated-skeleton {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-top: 4px;
 }
 
 /* 大纲生成中状态 */
