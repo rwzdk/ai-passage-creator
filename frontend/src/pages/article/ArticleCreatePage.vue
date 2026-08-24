@@ -2267,7 +2267,7 @@ const copyContent = async () => {
   )
   try {
     let copied = false
-    if (navigator.clipboard?.writeText) {
+    if (window.isSecureContext && navigator.clipboard?.writeText) {
       try {
         await navigator.clipboard.writeText(content)
         copied = true
