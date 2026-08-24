@@ -1319,8 +1319,7 @@ const currentStepStatusText = ref('')
 const completedStepCount = computed(() => Math.min(currentStep.value, agentSteps.length))
 const currentStepLabel = computed(() => {
   const title = agentSteps[currentStep.value]?.title || '创作完成'
-  if (currentPhase.value === 'COMPLETED') return currentStepStatusText.value || title
-  return currentStepStatusText.value ? `${title} · ${currentStepStatusText.value}` : title
+  return currentPhase.value === 'COMPLETED' ? currentStepStatusText.value || title : title
 })
 
 const getImageMethodLabel = (method: unknown) => {
