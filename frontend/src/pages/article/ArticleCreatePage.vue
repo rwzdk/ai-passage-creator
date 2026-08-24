@@ -1459,7 +1459,7 @@ const getHistoryLogMessage = (log: API.AgentLog, imageCompletionSequence?: numbe
         return `开始图文合成：选取 ${bodyImages} 张正文配图${coverImages > 0 ? `（封面 ${coverImages} 张不参与正文合成）` : ''}`
       }
       if (type === 'MERGE_COMPLETE') return '图文合成完成'
-      if (type === 'ALL_COMPLETE') return ''
+      if (type === 'ALL_COMPLETE') return '✨ 文章创作完成'
       if (type === 'ERROR') return `创作失败: ${String(data.message || '未知错误')}`
       // 未映射的内部事件仅用于流程回放，不直接展示原始事件名。
       return ''
@@ -1493,7 +1493,8 @@ const getHistoryLogMessage = (log: API.AgentLog, imageCompletionSequence?: numbe
 }
 
 const toHistoryLog = (log: API.AgentLog, imageCompletionSequence?: number): RealtimeLog => {
-  const timestamp = log.startTime ? new Date(log.startTime).getTime() : Date.now()
+  const timestampValue = log.endTime || log.updateTime || log.startTime || log.createTime
+  const timestamp = timestampValue ? new Date(timestampValue).getTime() : Date.now()
   return {
     timestamp: Number.isNaN(timestamp) ? Date.now() : timestamp,
     level: getLogLevel(log.status),
@@ -1510,8 +1511,7 @@ const loadExecutionLogs = async (existingTaskId: string) => {
       .filter(
         (log) =>
           !log.agentName?.includes('AGENT2_STREAMING') &&
-          !log.agentName?.includes('AGENT3_STREAMING') &&
-          log.agentName !== '__event_ALL_COMPLETE',
+          !log.agentName?.includes('AGENT3_STREAMING'),
       )
       .sort((a, b) => {
         const aTime = new Date(a.startTime || a.createTime || '').getTime()
@@ -1522,7 +1522,7 @@ const loadExecutionLogs = async (existingTaskId: string) => {
     let imageCompletionSequence = 0
     executionLogRecords.value = historyLogs
     const realtimeOnlyLogs = realtimeLogs.value.filter((log) => log.source === 'realtime')
-    realtimeLogs.value = [...historyLogs
+    const mergedLogs = [...historyLogs
       .filter((log) => {
         if (log.agentName !== '__event_IMAGE_START') return true
         if (imageStartShown) return false
@@ -1539,6 +1539,13 @@ const loadExecutionLogs = async (existingTaskId: string) => {
       .filter((log) => log.message)
       .map((log) => log as unknown as RealtimeLog), ...realtimeOnlyLogs]
       .sort((a, b) => a.timestamp - b.timestamp)
+    const seenMessages = new Set<string>()
+    realtimeLogs.value = mergedLogs.filter((log) => {
+      const messageKey = log.message.trim()
+      if (!messageKey || seenMessages.has(messageKey)) return false
+      seenMessages.add(messageKey)
+      return true
+    })
   } catch (error) {
     console.warn('加载执行日志失败:', error)
   }
@@ -1577,11 +1584,12 @@ const getExecutionProgress = () => {
 const syncTaskSnapshot = (snapshot: API.ArticleVO | undefined) => {
   if (!snapshot || (snapshot.taskId && snapshot.taskId !== taskId.value)) return
 
-  const previousContent = article.value.content
-  article.value = { ...article.value, ...snapshot }
+  const previousContent = article.value.content || ''
+  const snapshotContent = mergeStreamingText(previousContent, snapshot.content)
+  article.value = { ...article.value, ...snapshot, content: snapshotContent }
 
-  if (snapshot.content && snapshot.content !== previousContent) {
-    scheduleStreamingMarkdown(snapshot.content)
+  if (snapshotContent !== previousContent) {
+    scheduleStreamingMarkdown(snapshotContent)
   }
   if (snapshot.fullContent) article.value.fullContent = snapshot.fullContent
   if (snapshot.images?.length) article.value.images = snapshot.images
@@ -1606,9 +1614,9 @@ const syncTaskSnapshot = (snapshot: API.ArticleVO | undefined) => {
       totalImages.value = progress.totalImages
     }
     isCreating.value = true
-    if (snapshot.content) {
+    if (snapshotContent) {
       isStreaming.value = true
-      scheduleStreamingMarkdown(snapshot.content)
+      scheduleStreamingMarkdown(snapshotContent)
     }
   } else if (snapshot.phase === 'TITLE_SELECTING' && snapshot.titleOptions?.length) {
     if (currentPhase.value !== 'TITLE_SELECTING') {
@@ -1685,15 +1693,21 @@ const scheduleStreamingMarkdown = (markdown: string) => {
   }, 80)
 }
 
-const appendStreamingContent = (chunk: unknown) => {
-  const nextChunk = String(chunk ?? '').replace(/^null(?=\S)/, '')
-  if (!nextChunk || nextChunk === 'null' || nextChunk === 'undefined') return
+const mergeStreamingText = (current: string, incoming: unknown) => {
+  const next = String(incoming ?? '').replace(/^null(?=\S)/, '')
+  if (!next || next === 'null' || next === 'undefined') return current
+  if (!current) return next
+  if (next.startsWith(current)) return next
+  if (current.startsWith(next)) return current
+  return current + next
+}
 
+const appendStreamingContent = (chunk: unknown) => {
   const currentContent = article.value.content || ''
-  article.value.content = nextChunk.startsWith(currentContent)
-    ? nextChunk
-    : currentContent + nextChunk
-  scheduleStreamingMarkdown(article.value.content)
+  const mergedContent = mergeStreamingText(currentContent, chunk)
+  if (mergedContent === currentContent) return
+  article.value.content = mergedContent
+  scheduleStreamingMarkdown(mergedContent)
 }
 
 const getArticleBodyContent = (
@@ -1849,7 +1863,7 @@ const startCreate = async () => {
     }
     taskId.value = newTaskId
     await router.replace({ path: '/create', query: { taskId: newTaskId } })
-    addLog(`任务创建成功，ID: ${newTaskId}`, 'success')
+    addLog('任务创建成功', 'success')
 
     // 刷新用户信息（更新配额）
     await loginUserStore.fetchLoginUser()
