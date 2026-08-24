@@ -503,7 +503,7 @@
                 <span class="article-reading-note">全文阅读</span>
               </div>
               <div
-                v-html="markdownToHtml(getArticleBodyContent(article.fullContent || article.content || '', article.images))"
+                v-html="markdownToHtml(getArticleBodyContent(article.fullContent || article.content || '', article.images, article.mainTitle))"
                 class="markdown-body"
               ></div>
             </div>
@@ -1356,11 +1356,30 @@ const getImageVersions = (image: API.ImageItem): API.ImageVersion[] => {
   return image.url ? [{ url: image.url, prompt: image.keywords }] : []
 }
 
+const stripGeneratedArticleHeading = (markdown: string, mainTitle?: string) => {
+  let content = markdown || ''
+
+  // 生成服务偶尔会把标题元数据一起写入正文，展示时只保留独立标题区。
+  content = content
+    .replace(/^\s*主标题\s*[:：][^\r\n]*(?:\r?\n|$)/, '')
+    .replace(/^\s*正文\s*[:：]\s*/, '')
+
+  const normalizedTitle = mainTitle?.trim()
+  if (normalizedTitle) {
+    const escapedTitle = normalizedTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    content = content.replace(
+      new RegExp(`^\\s*(?:#\\s*)?${escapedTitle}\\s*(?:\\r?\\n|$)`),
+      '',
+    )
+  }
+
+  return content.trim()
+}
+
 const getEditableArticleContent = (articleData: Partial<API.ArticleVO>) => {
   const source = articleData.fullContent || articleData.content || ''
-  return source
+  return stripGeneratedArticleHeading(source, articleData.mainTitle)
     .replace(/!\[[^\]]*\]\([^\)\r\n]*\)\s*/g, '')
-    .replace(/^\s*主标题\s*[:：][^\r\n]*?\s*正文\s*[:：]\s*/, '')
 }
 
 const isEditingArticle = ref(false)
@@ -1667,15 +1686,30 @@ const scheduleStreamingMarkdown = (markdown: string) => {
   }, 80)
 }
 
-const getArticleBodyContent = (markdown: string, images?: API.ImageItem[]) => {
+const appendStreamingContent = (chunk: unknown) => {
+  const nextChunk = String(chunk ?? '').replace(/^null(?=\S)/, '')
+  if (!nextChunk || nextChunk === 'null' || nextChunk === 'undefined') return
+
+  const currentContent = article.value.content || ''
+  article.value.content = nextChunk.startsWith(currentContent)
+    ? nextChunk
+    : currentContent + nextChunk
+  scheduleStreamingMarkdown(article.value.content)
+}
+
+const getArticleBodyContent = (
+  markdown: string,
+  images?: API.ImageItem[],
+  mainTitle?: string,
+) => {
   return mergeArticleImages(
-    markdown.replace(/^\s*主标题\s*[:：][^\r\n]*?\s*正文\s*[:：]\s*/, ''),
+    stripGeneratedArticleHeading(markdown, mainTitle),
     images,
   )
 }
 
 const getSummaryText = (markdown: string) => {
-  return getArticleBodyContent(markdown)
+  return getArticleBodyContent(markdown, undefined, article.value.mainTitle)
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/^\s*[-*+]\s+/gm, '')
     .replace(/`{1,3}/g, '')
@@ -1910,8 +1944,7 @@ const handleSSEMessage = (msg: SSEMessage) => {
         addLog('正在撰写正文', 'info')
       }
       isStreaming.value = true
-      article.value.content += msg.content || ''
-      scheduleStreamingMarkdown(article.value.content || '')
+      appendStreamingContent(msg.content)
       scrollToBottom()
       break
 
@@ -2211,15 +2244,16 @@ const copyTextWithFallback = (text: string) => {
   textarea.value = text
   textarea.setAttribute('readonly', '')
   textarea.style.position = 'fixed'
+  textarea.style.top = '0'
   textarea.style.left = '-9999px'
   textarea.style.opacity = '0'
   document.body.appendChild(textarea)
-  textarea.select()
 
   try {
-    if (!document.execCommand('copy')) {
-      throw new Error('Fallback copy command failed')
-    }
+    textarea.focus()
+    textarea.select()
+    textarea.setSelectionRange(0, text.length)
+    return document.execCommand('copy')
   } finally {
     document.body.removeChild(textarea)
   }
@@ -2232,16 +2266,17 @@ const copyContent = async () => {
     article.value.images,
   )
   try {
-    if (window.isSecureContext && navigator.clipboard?.writeText) {
+    let copied = false
+    if (navigator.clipboard?.writeText) {
       try {
         await navigator.clipboard.writeText(content)
+        copied = true
       } catch {
-        // HTTP 页面或浏览器权限限制下，继续使用兼容方案。
-        copyTextWithFallback(content)
+        // 浏览器权限限制下，继续使用兼容方案。
       }
-    } else {
-      copyTextWithFallback(content)
     }
+    if (!copied) copied = copyTextWithFallback(content)
+    if (!copied) throw new Error('Copy command failed')
     message.success('已复制到剪贴板')
   } catch {
     message.error('复制失败')
@@ -4686,18 +4721,24 @@ onBeforeUnmount(() => {
 }
 
 .completed-state .markdown-body {
-  max-width: 46rem;
+  max-width: 50rem;
   margin: 0 auto;
   font-size: 16px;
-  line-height: 2;
+  line-height: 2.05;
 
   :deep(p) {
-    margin-bottom: 1.25em;
+    margin: 0 0 1.35em;
   }
 
   :deep(h2) {
-    margin-top: 2.25em;
+    margin: 2.4em 0 1em;
     color: var(--ink-deep);
+  }
+
+  :deep(ul),
+  :deep(ol) {
+    margin: 0 0 1.35em;
+    padding-left: 1.6em;
   }
 }
 
