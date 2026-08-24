@@ -94,6 +94,13 @@ services:
       
       # AI 配置（必需）
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:?请在 .env 中设置 DASHSCOPE_API_KEY}
+      GNEWS_API_KEY: ${GNEWS_API_KEY:-}
+      MAIL_HOST: ${MAIL_HOST:-smtp.qq.com}
+      MAIL_PORT: ${MAIL_PORT:-465}
+      # QQ 邮箱 SMTP 用户名和授权码；反馈建议与注册验证码都依赖邮件服务。
+      # 使用必填插值，避免服务启动成功后提交反馈才暴露配置缺失。
+      MAIL_USERNAME: ${MAIL_USERNAME:?请在 .env 中设置 MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?请在 .env 中设置 MAIL_PASSWORD（QQ 邮箱授权码）}
       
       # Pexels 配置（必需）
       PEXELS_API_KEY: ${PEXELS_API_KEY:?请在 .env 中设置 PEXELS_API_KEY}
