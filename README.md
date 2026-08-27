@@ -195,6 +195,60 @@ docker compose down
 
 请勿把真实密钥、邮箱授权码、Stripe Webhook Secret、COS 密钥或生产数据库密码写入仓库文件。
 
+## 项目架构概览
+
+YuanJian Studio 采用前后端分离和阶段化任务架构：Vue 3 负责交互与创作工作台，Spring Boot 负责业务编排和外部服务接入，MySQL 保存持久化数据，Redis 提供会话、缓存与并发控制。
+
+### 分层职责
+
+- **前端层**：`frontend/src/pages/` 按首页、创作、文章、用户和管理场景组织页面；`components/` 提供创作阶段组件和通用交互；`api/` 统一封装后端请求；`stores/` 管理登录用户与业务状态；`utils/sse.ts` 负责 SSE 连接和事件解析。
+- **接口层**：`controller/` 提供文章、用户、反馈、支付、统计等 HTTP 接口，并通过登录态和角色校验保护需要授权的操作。
+- **业务层**：`service/` 负责文章生命周期、用户配额、会员支付、邮件通知、文章历史和统计；配图业务通过策略方式选择具体图片服务。
+- **智能体层**：`agent/` 负责标题、大纲、正文、配图分析、并行配图和图文合成；`ArticleAgentService` 负责模型调用与提示词组织，`ArticleAsyncService` 负责异步阶段执行和状态推进。
+- **数据层**：`mapper/` 和实体模型负责 MyBatis-Flex 数据访问；`sql/` 保存建表与增量升级脚本。
+- **基础设施层**：`config/` 管理 AI、邮件、COS、支付等外部依赖；`SseEmitterManager` 按 taskId 管理实时连接。
+
+### 一次创作的请求链路
+
+```text
+浏览器
+  │  HTTP 创建任务 / 确认标题 / 确认大纲
+  ▼
+文章 Controller
+  │  创建 Article、初始化 ArticleState
+  ▼
+异步阶段服务 ArticleAsyncService
+  │
+  ├─ 阶段 1：生成标题方案
+  ├─ 阶段 2：生成或调整大纲
+  ├─ 阶段 3：流式生成正文
+  ├─ 阶段 4：分析配图需求
+  ├─ 阶段 5：并行检索或生成配图
+  └─ 阶段 6：合并正文与图片并保存
+       │
+       ├─ MySQL：文章、用户、支付记录、智能体执行日志
+       ├─ Redis：会话、缓存、分布式控制
+       └─ SSE：向前端推送阶段事件、内容和错误
+```
+
+### 阶段化状态与人工干预
+
+每篇文章以 taskId 作为流程关联键，并在标题选择、大纲编辑、正文生成和完成等阶段之间推进。标题和大纲不是一次性黑盒输出：前端可以选择或自定义标题、增删大纲章节和要点，也可以提交修改建议让 AI 优化当前大纲。阶段结果会保存，失败时记录错误状态并通过 SSE 通知前端。
+
+### 智能体与配图策略
+
+正文生成完成后，配图分析器提取文章中的图片需求，再由图片策略选择器根据启用的方法调用 Pexels、Nano Banana、GPT Image 2、Mermaid、Iconify、Emoji Pack 或 SVG Diagram 等服务。多个配图任务可以并行执行；外部服务不可用时可使用 Picsum 作为降级方案，最终由图文合成阶段写回完整内容和图片版本。
+
+### 实时通信与可观测性
+
+前端通过 SSE 订阅指定 taskId 的创作事件，后端使用 `SseEmitterManager` 保存连接并发送阶段开始、阶段完成、流式文本、配图完成、合成完成和错误事件。每个智能体阶段会记录执行日志与耗时，文章详情页可展示用户可理解的步骤和汇总统计。
+
+### 业务数据与部署边界
+
+生产容器由 Docker Compose 编排 MySQL、Redis、Spring Boot 后端和 Nginx 前端。MySQL 与 Redis 默认只在 Docker 网络内提供服务，前端通过 Nginx 暴露页面并代理 API。模型 Key、邮件授权码、Stripe 密钥、COS 密钥和数据库密码只通过环境变量或本地配置注入；`.env`、`application-local.yml` 以及本地 Go、Python 后端目录不属于公开仓库。
+
+完整的模块边界、流程说明和安全约束见 [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)。
+
 ## 项目结构
 
 ```text
