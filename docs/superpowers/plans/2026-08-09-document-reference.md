@@ -21,9 +21,9 @@
 
 **Files:**
 - Modify: `pom.xml`
-- Create: `src/main/java/com/yupi/template/service/DocumentReferenceService.java`
-- Create: `src/main/java/com/yupi/template/model/vo/DocumentReferenceVO.java`
-- Test: `src/test/java/com/yupi/template/service/DocumentReferenceServiceTest.java`
+- Create: `src/main/java/com/qc/template/service/DocumentReferenceService.java`
+- Create: `src/main/java/com/qc/template/model/vo/DocumentReferenceVO.java`
+- Test: `src/test/java/com/qc/template/service/DocumentReferenceServiceTest.java`
 
 **Interfaces:**
 - `DocumentReferenceService.parse(MultipartFile file)` returns `DocumentReferenceVO`.
@@ -39,19 +39,19 @@
 **Files:**
 - Create: `sql/add_reference_summary.sql`
 - Modify: `sql/create_table.sql`
-- Modify: `src/main/java/com/yupi/template/model/entity/Article.java`
-- Modify: `src/main/java/com/yupi/template/model/dto/article/ArticleCreateRequest.java`
-- Modify: `src/main/java/com/yupi/template/model/dto/article/ArticleState.java`
-- Modify: `src/main/java/com/yupi/template/service/ArticleService.java`
-- Modify: `src/main/java/com/yupi/template/service/impl/ArticleServiceImpl.java`
-- Modify: `src/main/java/com/yupi/template/service/ArticleAsyncService.java`
-- Modify: `src/main/java/com/yupi/template/agent/agents/TitleGeneratorAgent.java`
-- Modify: `src/main/java/com/yupi/template/agent/agents/OutlineGeneratorAgent.java`
-- Modify: `src/main/java/com/yupi/template/agent/agents/ContentGeneratorAgent.java`
-- Modify: `src/main/java/com/yupi/template/service/ArticleAgentService.java`
-- Modify: `src/main/java/com/yupi/template/agent/ArticleAgentOrchestrator.java`
-- Modify: `src/main/java/com/yupi/template/constant/PromptConstant.java`
-- Modify: `src/main/java/com/yupi/template/controller/ArticleController.java`
+- Modify: `src/main/java/com/qc/template/model/entity/Article.java`
+- Modify: `src/main/java/com/qc/template/model/dto/article/ArticleCreateRequest.java`
+- Modify: `src/main/java/com/qc/template/model/dto/article/ArticleState.java`
+- Modify: `src/main/java/com/qc/template/service/ArticleService.java`
+- Modify: `src/main/java/com/qc/template/service/impl/ArticleServiceImpl.java`
+- Modify: `src/main/java/com/qc/template/service/ArticleAsyncService.java`
+- Modify: `src/main/java/com/qc/template/agent/agents/TitleGeneratorAgent.java`
+- Modify: `src/main/java/com/qc/template/agent/agents/OutlineGeneratorAgent.java`
+- Modify: `src/main/java/com/qc/template/agent/agents/ContentGeneratorAgent.java`
+- Modify: `src/main/java/com/qc/template/service/ArticleAgentService.java`
+- Modify: `src/main/java/com/qc/template/agent/ArticleAgentOrchestrator.java`
+- Modify: `src/main/java/com/qc/template/constant/PromptConstant.java`
+- Modify: `src/main/java/com/qc/template/controller/ArticleController.java`
 
 **Interfaces:**
 - `ArticleCreateRequest.referenceSummary` is optional.
@@ -66,7 +66,7 @@
 ### Task 3: 上传接口与前端输入交互
 
 **Files:**
-- Modify: `src/main/java/com/yupi/template/controller/ArticleController.java`
+- Modify: `src/main/java/com/qc/template/controller/ArticleController.java`
 - Modify: `frontend/src/api/articleController.ts`
 - Modify: `frontend/src/api/typings.d.ts`
 - Modify: `frontend/src/pages/article/ArticleCreatePage.vue`

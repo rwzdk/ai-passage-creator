@@ -1,30 +1,42 @@
 import { useLoginUserStore } from '@/stores/loginUser'
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import router from '@/router'
 import { USER_ROLE_ADMIN } from '@/constants/user'
 
-// 是否为首次获取登录用户
-let firstFetchLoginUser = true
+let loginUserFetchPromise: Promise<void> | undefined
+let loginUserFetchTimer: number | undefined
+
+const ensureLoginUser = (loginUserStore: ReturnType<typeof useLoginUserStore>) => {
+  if (!loginUserFetchPromise) {
+    loginUserFetchPromise = loginUserStore.fetchLoginUser().catch(() => undefined)
+  }
+  return loginUserFetchPromise
+}
+
+const scheduleLoginUserFetch = (loginUserStore: ReturnType<typeof useLoginUserStore>) => {
+  if (loginUserFetchPromise || loginUserFetchTimer) return
+  loginUserFetchTimer = window.setTimeout(() => {
+    loginUserFetchTimer = undefined
+    void ensureLoginUser(loginUserStore)
+  }, 900)
+}
 
 /**
  * 全局权限校验
  */
 router.beforeEach(async (to, from, next) => {
   const loginUserStore = useLoginUserStore()
-  let loginUser = loginUserStore.loginUser
-  // 确保页面刷新，首次加载时，能够等后端返回用户信息后再校验权限
-  if (firstFetchLoginUser) {
-    await loginUserStore.fetchLoginUser()
-    loginUser = loginUserStore.loginUser
-    firstFetchLoginUser = false
-  }
   const toUrl = to.fullPath
   if (toUrl.startsWith('/admin')) {
+    await ensureLoginUser(loginUserStore)
+    const loginUser = loginUserStore.loginUser
     if (!loginUser || loginUser.userRole !== USER_ROLE_ADMIN) {
       message.error('没有权限')
       next(`/user/login?redirect=${to.fullPath}`)
       return
     }
+  } else {
+    scheduleLoginUserFetch(loginUserStore)
   }
   next()
 })

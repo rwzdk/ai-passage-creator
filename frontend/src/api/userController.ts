@@ -26,6 +26,18 @@ export async function deleteUser(body: API.DeleteRequest, options?: { [key: stri
   })
 }
 
+/** 批量删除用户 POST /user/batch-delete */
+export async function batchDeleteUsers(body: API.BatchDeleteRequest, options?: { [key: string]: any }) {
+  return request<API.BaseResponseInteger>('/user/batch-delete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
 /** 此处后端没有提供注释 GET /user/get */
 export async function getUserById(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
@@ -44,6 +56,14 @@ export async function getUserById(
 /** 此处后端没有提供注释 GET /user/get/login */
 export async function getLoginUser(options?: { [key: string]: any }) {
   return request<API.BaseResponseLoginUserVO>('/user/get/login', {
+    method: 'GET',
+    ...(options || {}),
+  })
+}
+
+/** 获取普通用户配额明细 GET /user/quota/list */
+export async function listNormalUserQuotas(options?: { [key: string]: any }) {
+  return request<API.BaseResponseListUserVO>('/user/quota/list', {
     method: 'GET',
     ...(options || {}),
   })
@@ -105,6 +125,21 @@ export async function userRegister(
   options?: { [key: string]: any }
 ) {
   return request<API.BaseResponseLong>('/user/register', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 发送注册邮箱验证码 POST /user/register/email-code */
+export async function sendRegistrationEmailCode(
+  body: { userEmail: string },
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean>('/user/register/email-code', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

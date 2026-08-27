@@ -1,76 +1,81 @@
-# 本地开发环境配置示例
-# 使用说明：将此文件复制为 application-local.yml，并填写实际的 API Key
-# @author <a href="https://codefather.cn">编程导航学习圈</a>
+# 鏈湴寮€鍙戠幆澧冮厤缃ず渚?
+# 浣跨敤璇存槑锛氬皢姝ゆ枃浠跺鍒朵负 application-local.yml锛屽苟濉啓瀹為檯鐨?API Key
 
 spring:
-  # Spring AI Alibaba 配置
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
+  # Spring AI Alibaba 閰嶇疆
   ai:
     alibaba:
       dashscope:
-        api-key: your-dashscope-api-key  # 请在 https://bailian.console.aliyun.com/?apiKey=1&tab=api#/api 获取
+        api-key: your-dashscope-api-key  # 璇峰湪 https://bailian.console.aliyun.com/?apiKey=1&tab=api#/api 鑾峰彇
 
-# Pexels API 配置
+# Pexels API 閰嶇疆
 pexels:
   api-key: ${PEXELS_API_KEY:xxx}
-# Nano Banana (Gemini 原生图片生成) 配置
+# Nano Banana (Gemini 鍘熺敓鍥剧墖鐢熸垚) 閰嶇疆
 nano-banana:
-  api-key: xxx  # 请在 https://aistudio.google.com/apikey 获取
-  model: gemini-3-pro-image-preview  # 可选: gemini-2.5-flash-image (快速), gemini-3-pro-image-preview (高质量)
-  aspect-ratio: "16:9"  # 可选，支持 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
-  image-size: "1K"  # 可选（仅 gemini-3-pro 支持），支持 1K, 2K, 4K
-  output-mime-type: image/png  # 可选，支持 image/jpeg, image/png
+  api-key: xxx  # 璇峰湪 https://aistudio.google.com/apikey 鑾峰彇
+  model: gemini-3-pro-image-preview  # 鍙€? gemini-2.5-flash-image (蹇€?, gemini-3-pro-image-preview (楂樿川閲?
+  aspect-ratio: "16:9"  # 鍙€夛紝鏀寔 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
+  image-size: "1K"  # 鍙€夛紙浠?gemini-3-pro 鏀寔锛夛紝鏀寔 1K, 2K, 4K
+  output-mime-type: image/png  # 鍙€夛紝鏀寔 image/jpeg, image/png
 
-# Nano Banana（apiclaude Gemini 兼容接口）
-nano-banana-apiclaude:
+# Nano Banana锛坅piclaude Gemini 鍏煎鎺ュ彛锛?nano-banana-apiclaude:
   api-key: ${NANO_BANANA_APICLAUDE_API_KEY:}
   base-url: ${NANO_BANANA_APICLAUDE_BASE_URL:https://apiclaude.cc}
   model: ${NANO_BANANA_APICLAUDE_MODEL:gemini-3-pro-image-preview}
   aspect-ratio: ${NANO_BANANA_APICLAUDE_ASPECT_RATIO:16:9}
   image-size: ${NANO_BANANA_APICLAUDE_IMAGE_SIZE:1K}
 
-# GPT Image 2（apiclaude OpenAI 兼容接口）
-image-2:
+# GPT Image 2锛坅piclaude OpenAI 鍏煎鎺ュ彛锛?image-2:
   api-key: ${IMAGE_2_API_KEY:}
   base-url: ${IMAGE_2_BASE_URL:https://apiclaude.cc}
   model: ${IMAGE_2_MODEL:gpt-image-2}
   size: ${IMAGE_2_SIZE:1024x1024}
   n: ${IMAGE_2_N:1}
 
-# Mermaid 图表生成配置
+# Mermaid 鍥捐〃鐢熸垚閰嶇疆
 mermaid:
-  cli-command: mmdc  # CLI 命令（Windows 下会自动使用 mmdc.cmd）
-  background-color: transparent  # 背景颜色
-  output-format: svg  # 输出格式（svg/png/pdf）
-  width: 1200  # 图片宽度（像素）
-  timeout: 30000  # 命令执行超时时间（毫秒）
+  cli-command: mmdc  # CLI 鍛戒护锛圵indows 涓嬩細鑷姩浣跨敤 mmdc.cmd锛?
+  background-color: transparent  # 鑳屾櫙棰滆壊
+  output-format: svg  # 杈撳嚭鏍煎紡锛坰vg/png/pdf锛?
+  width: 1200  # 鍥剧墖瀹藉害锛堝儚绱狅級
+  timeout: 30000  # 鍛戒护鎵ц瓒呮椂鏃堕棿锛堟绉掞級
 
-# Iconify 图标库配置
+# Iconify 鍥炬爣搴撻厤缃?
 iconify:
   api-url: https://api.iconify.design
   search-limit: 10
   default-height: 64
-  default-color: ""  # 留空使用 currentColor，或设置如 "#000000"
+  default-color: ""  # 鐣欑┖浣跨敤 currentColor锛屾垨璁剧疆濡?"#000000"
 
-# 表情包图片检索配置
+# 琛ㄦ儏鍖呭浘鐗囨绱㈤厤缃?
 emoji-pack:
   search-url: https://cn.bing.com/images/async
-  suffix: 熊猫头表情包
-  timeout: 10000  # 请求超时（毫秒）
+  suffix: 鐔婄尗澶磋〃鎯呭寘
+  timeout: 10000  # 璇锋眰瓒呮椂锛堟绉掞級
 
-# SVG 概念示意图生成配置
+# SVG 姒傚康绀烘剰鍥剧敓鎴愰厤缃?
 svg-diagram:
   default-width: 800
   default-height: 600
-  folder: svg-diagrams  # COS 存储文件夹
+  folder: svg-diagrams  # COS 瀛樺偍鏂囦欢澶?
 
-# Stripe 支付配置（测试模式）
+# Stripe 鏀粯閰嶇疆锛堟祴璇曟ā寮忥級
 stripe:
-  api-key: sk_test_your_stripe_secret_key  # 请在 https://dashboard.stripe.com/test/apikeys 获取
-  webhook-secret: whsec_your_webhook_secret  # Webhook 签名密钥
-  success-url: http://localhost:5173/vip?success=true  # 支付成功回调 URL
-  cancel-url: http://localhost:5173/vip?cancelled=true  # 支付取消回调 URL
+  api-key: sk_test_your_stripe_secret_key  # 璇峰湪 https://dashboard.stripe.com/test/apikeys 鑾峰彇
+  webhook-secret: whsec_your_webhook_secret  # Webhook 绛惧悕瀵嗛挜
+  success-url: http://localhost:5173/vip?success=true  # 鏀粯鎴愬姛鍥炶皟 URL
+  cancel-url: http://localhost:5173/vip?cancelled=true  # 鏀粯鍙栨秷鍥炶皟 URL
 
-# 腾讯云 COS 配置（可选，MVP 阶段可以不配置）
+# 鑵捐浜?COS 閰嶇疆锛堝彲閫夛紝MVP 闃舵鍙互涓嶉厤缃級
 tencent:
   cos:
     secret-id: your-secret-id

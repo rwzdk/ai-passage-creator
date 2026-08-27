@@ -21,9 +21,9 @@
 ### Task 1: 创建 GNews 配置与数据模型
 
 **Files:**
-- Create: `src/main/java/com/yupi/template/config/GNewsConfig.java`
-- Create: `src/main/java/com/yupi/template/model/vo/HotTopicItemVO.java`
-- Create: `src/main/java/com/yupi/template/model/vo/HotTopicsVO.java`
+- Create: `src/main/java/com/qc/template/config/GNewsConfig.java`
+- Create: `src/main/java/com/qc/template/model/vo/HotTopicItemVO.java`
+- Create: `src/main/java/com/qc/template/model/vo/HotTopicsVO.java`
 - Modify: `src/main/resources/application.yml`
 - Modify: `src/main/resources/application-local.yml`
 
@@ -41,10 +41,10 @@
 ### Task 2: 实现后端热门选题服务与接口
 
 **Files:**
-- Create: `src/main/java/com/yupi/template/service/HotTopicService.java`
-- Create: `src/main/java/com/yupi/template/service/impl/HotTopicServiceImpl.java`
-- Modify: `src/main/java/com/yupi/template/controller/ArticleController.java`
-- Test: `src/test/java/com/yupi/template/service/HotTopicServiceTest.java`
+- Create: `src/main/java/com/qc/template/service/HotTopicService.java`
+- Create: `src/main/java/com/qc/template/service/impl/HotTopicServiceImpl.java`
+- Modify: `src/main/java/com/qc/template/controller/ArticleController.java`
+- Test: `src/test/java/com/qc/template/service/HotTopicServiceTest.java`
 
 **Interfaces:**
 - `HotTopicService#getHotTopics()` 返回 `HotTopicsVO`。

@@ -1,11 +1,10 @@
-# 添加阶段相关字段
-# @author <a href="https://codefather.cn">编程导航学习圈</a>
+# 娣诲姞闃舵鐩稿叧瀛楁
 
 use ai_passage_creator;
 
--- 为 article 表添加阶段相关字段
+-- 涓?article 琛ㄦ坊鍔犻樁娈电浉鍏冲瓧娈?
 ALTER TABLE article
-    ADD COLUMN phase VARCHAR(50) DEFAULT 'PENDING' COMMENT '当前阶段：PENDING/TITLE_GENERATING/TITLE_SELECTING/OUTLINE_GENERATING/OUTLINE_EDITING/CONTENT_GENERATING' AFTER status,
-    ADD COLUMN titleOptions JSON NULL COMMENT '标题方案列表（3-5个方案）' AFTER subTitle,
-    ADD COLUMN userDescription TEXT NULL COMMENT '用户补充描述' AFTER topic,
-    ADD COLUMN enabledImageMethods JSON NULL COMMENT '允许的配图方式列表' AFTER userDescription;
+    ADD COLUMN phase VARCHAR(50) DEFAULT 'PENDING' COMMENT '褰撳墠闃舵锛歅ENDING/TITLE_GENERATING/TITLE_SELECTING/OUTLINE_GENERATING/OUTLINE_EDITING/CONTENT_GENERATING' AFTER status,
+    ADD COLUMN titleOptions JSON NULL COMMENT '鏍囬鏂规鍒楄〃锛?-5涓柟妗堬級' AFTER subTitle,
+    ADD COLUMN userDescription TEXT NULL COMMENT '鐢ㄦ埛琛ュ厖鎻忚堪' AFTER topic,
+    ADD COLUMN enabledImageMethods JSON NULL COMMENT '鍏佽鐨勯厤鍥炬柟寮忓垪琛? AFTER userDescription;

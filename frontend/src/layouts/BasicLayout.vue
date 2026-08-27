@@ -1,18 +1,14 @@
 <template>
-  <a-layout class="basic-layout page-shell">
+  <div class="basic-layout page-shell">
     <!-- 顶部导航栏 -->
     <GlobalHeader />
     <!-- 主要内容区域 -->
-    <a-layout-content class="main-content">
-      <router-view v-slot="{ Component }">
-        <Transition name="page" mode="out-in" appear>
-          <component :is="Component" />
-        </Transition>
-      </router-view>
-    </a-layout-content>
+    <main class="main-content">
+      <router-view />
+    </main>
     <!-- 底部版权信息 -->
     <GlobalFooter />
-  </a-layout>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -33,36 +29,21 @@ import GlobalFooter from '@/components/GlobalFooter.vue'
   margin: 0;
 }
 
-.page-enter-active,
-.page-leave-active {
-  transition:
-    opacity 360ms var(--ease-out),
-    transform 360ms var(--ease-out),
-    filter 360ms var(--ease-out);
+:deep(.article-create-page),
+:deep(.article-list-page),
+:deep(.article-detail-page),
+:deep(#userManagePage),
+:deep(.statistics-page) {
+  padding-top: 88px;
 }
 
-.page-enter-from {
-  opacity: 0;
-  transform: translateY(14px);
-  filter: blur(4px);
-}
-
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-  filter: blur(3px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .page-enter-active,
-  .page-leave-active {
-    transition: opacity 120ms linear;
-  }
-
-  .page-enter-from,
-  .page-leave-to {
-    transform: none;
-    filter: none;
+@media (max-width: 768px) {
+  :deep(.article-create-page),
+  :deep(.article-list-page),
+  :deep(.article-detail-page),
+  :deep(#userManagePage),
+  :deep(.statistics-page) {
+    padding-top: 72px;
   }
 }
 </style>

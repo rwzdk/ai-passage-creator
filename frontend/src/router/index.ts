@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '@/pages/HomePage.vue'
-import UserLoginPage from '@/pages/user/UserLoginPage.vue'
-import UserRegisterPage from '@/pages/user/UserRegisterPage.vue'
-import UserManagePage from '@/pages/admin/UserManagePage.vue'
-import UserProfilePage from '@/pages/user/UserProfilePage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(_to, _from, savedPosition) {
+    if (!_from.name) return false
+    return savedPosition ? { ...savedPosition, behavior: 'auto' } : { top: 0, behavior: 'auto' }
+  },
   routes: [
     {
       path: '/',
@@ -31,22 +31,22 @@ const router = createRouter({
     {
       path: '/user/login',
       name: '用户登录',
-      component: UserLoginPage,
+      component: () => import('@/pages/user/UserLoginPage.vue'),
     },
     {
       path: '/user/register',
       name: '用户注册',
-      component: UserRegisterPage,
+      component: () => import('@/pages/user/UserRegisterPage.vue'),
     },
     {
       path: '/profile',
       name: '个人资料',
-      component: UserProfilePage,
+      component: () => import('@/pages/user/UserProfilePage.vue'),
     },
     {
       path: '/admin/userManage',
       name: '用户管理',
-      component: UserManagePage,
+      component: () => import('@/pages/admin/UserManagePage.vue'),
     },
     {
       path: '/admin/statistics',

@@ -47,6 +47,12 @@ frontend/.cache/
 # Log files
 *.log
 logs/
+.runlogs/
+
+# Local tool state
+.codegraph/
+.superpowers/
+.tmp-chrome-profile/
 
 # OS
 Thumbs.db
@@ -70,3 +76,7 @@ frontend/src/config/env.ts
 *~
 
 .claude/**
+
+# Local-only backend implementations
+go-backend/
+python-backend/

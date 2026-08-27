@@ -1,9 +1,8 @@
 /**
- * AI Passage Creator - 沅水青山视觉 Token
+ * YuanJian Studio - 沅水青山视觉 Token
  */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Work+Sans:wght@300;400;500;600;700&display=swap');
-
 :root {
+  --font-display: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
   --ink-deep: #203b38;
   --mountain-green: #456f64;
   --river-green: #8fb8a4;

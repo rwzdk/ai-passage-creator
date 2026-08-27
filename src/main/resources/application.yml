@@ -1,11 +1,28 @@
 spring:
   application:
-    name: ai-passage-creator
+    name: yuanjian-studio
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
   profiles:
     active: local
+  mvc:
+    async:
+      request-timeout: 1800000
   # session 配置
   session:
     store-type: redis
+    redis:
+      namespace: yuanjian:session
     # session 30 天过期
     timeout: 2592000
   # MySQL 数据库配置
@@ -37,7 +54,7 @@ springdoc:
   group-configs:
     - group: 'default'
       paths-to-match: '/**'
-      packages-to-scan: com.yupi.template.controller
+      packages-to-scan: com.qc.template.controller
 # knife4j 接口文档配置
 knife4j:
   enable: true
@@ -54,6 +71,11 @@ gnews:
   base-url: https://gnews.io/api/v4
   cache-minutes: 10
   max-items: 8
+
+feedback:
+  mail:
+    recipient: 235173498@qq.com
+    sender-name: YuanJian Studio
 
 # Nano Banana (Gemini 原生图片生成) 配置
 nano-banana:

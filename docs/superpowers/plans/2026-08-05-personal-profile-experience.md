@@ -15,12 +15,12 @@
 **Files:**
 - Create: `sql/add_user_profile_fields.sql`
 - Modify: `sql/create_table.sql`
-- Modify: `src/main/java/com/yupi/template/model/entity/User.java`
-- Modify: `src/main/java/com/yupi/template/model/dto/user/UserRegisterRequest.java`
-- Modify: `src/main/java/com/yupi/template/model/dto/user/UserAddRequest.java`
-- Modify: `src/main/java/com/yupi/template/model/dto/user/UserUpdateRequest.java`
-- Modify: `src/main/java/com/yupi/template/model/vo/LoginUserVO.java`
-- Modify: `src/main/java/com/yupi/template/model/vo/UserVO.java`
+- Modify: `src/main/java/com/qc/template/model/entity/User.java`
+- Modify: `src/main/java/com/qc/template/model/dto/user/UserRegisterRequest.java`
+- Modify: `src/main/java/com/qc/template/model/dto/user/UserAddRequest.java`
+- Modify: `src/main/java/com/qc/template/model/dto/user/UserUpdateRequest.java`
+- Modify: `src/main/java/com/qc/template/model/vo/LoginUserVO.java`
+- Modify: `src/main/java/com/qc/template/model/vo/UserVO.java`
 
 - [ ] Add nullable `userEmail`, `userPhone`, `userBlog`, and `userGithub` fields with bounded varchar columns.
 - [ ] Add the same optional fields to registration/admin update DTOs and both sanitized VO classes; never expose `userPassword`.
@@ -30,10 +30,10 @@
 ### Task 2: Implement authenticated profile update and avatar upload
 
 **Files:**
-- Create: `src/main/java/com/yupi/template/model/dto/user/UserProfileUpdateRequest.java`
-- Modify: `src/main/java/com/yupi/template/service/UserService.java`
-- Modify: `src/main/java/com/yupi/template/service/impl/UserServiceImpl.java`
-- Modify: `src/main/java/com/yupi/template/controller/UserController.java`
+- Create: `src/main/java/com/qc/template/model/dto/user/UserProfileUpdateRequest.java`
+- Modify: `src/main/java/com/qc/template/service/UserService.java`
+- Modify: `src/main/java/com/qc/template/service/impl/UserServiceImpl.java`
+- Modify: `src/main/java/com/qc/template/controller/UserController.java`
 
 - [ ] Add a dedicated profile update request containing nickname, introduction, email, phone, blog, and GitHub URL.
 - [ ] Validate lengths and basic email/URL/phone formats, preserve omitted values, update only the authenticated user's row, and return refreshed `LoginUserVO` data.
@@ -45,10 +45,10 @@
 ### Task 3: Add per-user article statistics
 
 **Files:**
-- Create: `src/main/java/com/yupi/template/model/vo/UserArticleStatsVO.java`
-- Modify: `src/main/java/com/yupi/template/controller/ArticleController.java`
-- Modify: `src/main/java/com/yupi/template/service/ArticleService.java`
-- Modify: `src/main/java/com/yupi/template/service/impl/ArticleServiceImpl.java`
+- Create: `src/main/java/com/qc/template/model/vo/UserArticleStatsVO.java`
+- Modify: `src/main/java/com/qc/template/controller/ArticleController.java`
+- Modify: `src/main/java/com/qc/template/service/ArticleService.java`
+- Modify: `src/main/java/com/qc/template/service/impl/ArticleServiceImpl.java`
 
 - [ ] Add `GET /article/profile/stats` behind the existing login check.
 - [ ] Return total works, completed works, latest creation time, and total body character count for the authenticated user only.
@@ -90,8 +90,8 @@
 **Files:**
 - Modify: `frontend/src/pages/user/UserRegisterPage.vue`
 - Modify: `frontend/src/pages/admin/UserManagePage.vue`
-- Modify: `src/main/java/com/yupi/template/service/impl/UserServiceImpl.java`
-- Modify: `src/main/java/com/yupi/template/controller/UserController.java`
+- Modify: `src/main/java/com/qc/template/service/impl/UserServiceImpl.java`
+- Modify: `src/main/java/com/qc/template/controller/UserController.java`
 
 - [ ] Add optional nickname, QQ email, and phone fields to registration without making existing account/password flows invalid.
 - [ ] Persist those values during registration using the same validation rules as profile editing.

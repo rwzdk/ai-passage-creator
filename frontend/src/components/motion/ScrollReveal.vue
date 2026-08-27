@@ -1,7 +1,7 @@
 <template>
   <div
     ref="root"
-    :class="['scroll-reveal', { 'is-visible': visible }]"
+    class="scroll-reveal"
     :style="{ '--reveal-delay': `${delay}ms` }"
   >
     <slot />
@@ -9,7 +9,9 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { ref } from 'vue'
+import { gsap } from 'gsap'
+import { useGsapMotion } from '@/composables/useGsapMotion'
 
 const props = withDefaults(
   defineProps<{
@@ -25,43 +27,35 @@ const props = withDefaults(
 )
 
 const root = ref<HTMLElement | null>(null)
-const visible = ref(false)
-let observer: IntersectionObserver | null = null
-
-onMounted(() => {
-  if (!root.value || typeof IntersectionObserver === 'undefined') {
-    visible.value = true
+useGsapMotion(root, (element, reducedMotion) => {
+  if (reducedMotion) {
+    gsap.set(element, { clearProps: 'all' })
     return
   }
 
-  observer = new IntersectionObserver(
-    ([entry]) => {
-      visible.value = entry.isIntersecting
-      if (entry.isIntersecting && props.once) {
-        observer?.disconnect()
-      }
+  gsap.fromTo(
+    element,
+    { autoAlpha: 0, y: 30, scale: 0.985 },
+    {
+      autoAlpha: 1,
+      y: 0,
+      scale: 1,
+      duration: 0.88,
+      delay: props.delay / 1000,
+      ease: 'power3.out',
+      scrollTrigger: {
+        trigger: element,
+        start: `top ${props.rootMargin.includes('-') ? '84%' : '88%'}`,
+        once: props.once,
+        toggleActions: props.once ? 'play none none none' : 'play none none reverse',
+      },
     },
-    { rootMargin: props.rootMargin, threshold: 0.08 },
   )
-  observer.observe(root.value)
 })
-
-onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <style scoped>
 .scroll-reveal {
-  opacity: 0;
-  transform: translate3d(0, 24px, 0);
-  transition:
-    opacity 680ms var(--ease-out),
-    transform 680ms var(--ease-out);
-  transition-delay: var(--reveal-delay);
   will-change: opacity, transform;
-}
-
-.scroll-reveal.is-visible {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
 }
 </style>

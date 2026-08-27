@@ -12,7 +12,6 @@
     </WorkspacePageHeader>
 
     <div class="container">
-      <a-spin :spinning="loading" tip="加载中...">
         <!-- 核心指标卡片 -->
         <div class="stats-grid">
           <div class="stat-card">
@@ -88,20 +87,33 @@
           </a-card>
 
           <a-card :bordered="false" class="chart-card">
-            <h3 class="chart-title">
-              <CrownOutlined />
-              配额使用情况
-            </h3>
+            <div class="quota-card-header">
+              <h3 class="chart-title">
+                <CrownOutlined />
+                用户配额使用情况
+              </h3>
+              <a-select
+                v-model:value="selectedQuotaUserId"
+                class="quota-user-select"
+                :loading="quotaUsersLoading"
+                aria-label="选择普通用户配额统计"
+                @change="renderQuotaChart"
+              >
+                <a-select-option value="all">全部普通用户</a-select-option>
+                <a-select-option v-for="user in normalQuotaUsers" :key="user.id" :value="String(user.id)">
+                  {{ user.userName || user.userAccount }}
+                </a-select-option>
+              </a-select>
+            </div>
             <div ref="quotaChartRef" class="chart-container"></div>
           </a-card>
         </div>
-      </a-spin>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { nextTick, ref, onMounted, onUnmounted } from 'vue'
 import { message } from 'ant-design-vue'
 import {
   FileTextOutlined,
@@ -115,37 +127,42 @@ import {
   ReloadOutlined
 } from '@ant-design/icons-vue'
 import { getStatistics } from '@/api/statisticsController'
-import * as echarts from 'echarts'
-import type { EChartsOption } from 'echarts'
+import { listNormalUserQuotas } from '@/api/userController'
+import type { ECharts, EChartsOption } from 'echarts'
 import WorkspacePageHeader from '@/components/WorkspacePageHeader.vue'
 
 const loading = ref(false)
 const stats = ref<API.StatisticsVO | null>(null)
-
 // ECharts 实例
 const trendChartRef = ref<HTMLElement>()
 const performanceChartRef = ref<HTMLElement>()
 const userChartRef = ref<HTMLElement>()
 const quotaChartRef = ref<HTMLElement>()
-let trendChart: echarts.ECharts | null = null
-let performanceChart: echarts.ECharts | null = null
-let userChart: echarts.ECharts | null = null
-let quotaChart: echarts.ECharts | null = null
+const normalQuotaUsers = ref<API.UserVO[]>([])
+const quotaUsersLoading = ref(false)
+const selectedQuotaUserId = ref('all')
+let echarts: typeof import('echarts') | null = null
+let trendChart: ECharts | null = null
+let performanceChart: ECharts | null = null
+let userChart: ECharts | null = null
+let quotaChart: ECharts | null = null
+
+const loadEcharts = async () => {
+  echarts ??= await import('echarts')
+}
 
 // 加载数据
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await getStatistics()
+    const res = await getStatistics({ params: { refresh: true } })
     stats.value = res.data.data || null
-
-    // 渲染图表
-    setTimeout(() => {
-      renderTrendChart()
-      renderPerformanceChart()
-      renderUserChart()
-      renderQuotaChart()
-    }, 100)
+    await nextTick()
+    await loadEcharts()
+    renderTrendChart()
+    renderPerformanceChart()
+    renderUserChart()
+    loadQuotaUsers()
   } catch (error) {
     message.error((error as Error).message || '加载数据失败')
   } finally {
@@ -153,9 +170,23 @@ const loadData = async () => {
   }
 }
 
+const loadQuotaUsers = async () => {
+  quotaUsersLoading.value = true
+  try {
+    const res = await listNormalUserQuotas()
+    normalQuotaUsers.value = res.data.data ?? []
+    await nextTick()
+    renderQuotaChart()
+  } catch (error) {
+    message.error((error as Error).message || '获取普通用户配额失败')
+  } finally {
+    quotaUsersLoading.value = false
+  }
+}
+
 // 渲染创作趋势图
 const renderTrendChart = () => {
-  if (!trendChartRef.value || !stats.value) return
+  if (!echarts || !trendChartRef.value || !stats.value) return
 
   if (!trendChart) {
     trendChart = echarts.init(trendChartRef.value)
@@ -163,11 +194,7 @@ const renderTrendChart = () => {
 
   const option: EChartsOption = {
     tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'line',
-        lineStyle: { color: 'rgba(69, 111, 100, .35)' }
-      },
+      trigger: 'item',
       backgroundColor: 'rgba(32, 59, 56, .92)',
       borderWidth: 0,
       textStyle: { color: '#f7f5ee' },
@@ -183,7 +210,6 @@ const renderTrendChart = () => {
     xAxis: {
       type: 'category',
       data: ['今日', '本周', '本月', '总计'],
-      boundaryGap: false,
       axisLine: {
         lineStyle: {
           color: 'rgba(69, 111, 100, .16)'
@@ -212,38 +238,22 @@ const renderTrendChart = () => {
     series: [
       {
         name: '创作数量',
-        type: 'line',
-        smooth: true,
-        showSymbol: true,
-        symbol: 'circle',
-        symbolSize: 9,
+        type: 'bar',
         data: [
           stats.value.todayCount ?? 0,
           stats.value.weekCount ?? 0,
           stats.value.monthCount ?? 0,
           stats.value.totalCount ?? 0
         ],
+        barMaxWidth: 44,
         itemStyle: {
-          color: '#456f64',
-          borderColor: '#f7f5ee',
-          borderWidth: 3
-        },
-        lineStyle: {
-          color: '#456f64',
-          width: 3,
-          shadowColor: 'rgba(69, 111, 100, .22)',
-          shadowBlur: 10
-        },
-        areaStyle: {
+          borderRadius: [8, 8, 0, 0],
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(143, 184, 164, .48)' },
-            { offset: 1, color: 'rgba(143, 184, 164, .04)' }
+            { offset: 0, color: '#456f64' },
+            { offset: 1, color: '#8fb8a4' }
           ])
         },
-        emphasis: {
-          scale: true,
-          itemStyle: { color: '#c7a878' }
-        },
+        label: { show: true, position: 'top', color: '#203b38', fontWeight: 700 },
         animationDuration: 1200,
         animationEasing: 'cubicOut'
       }
@@ -255,156 +265,143 @@ const renderTrendChart = () => {
 
 // 渲染性能统计图
 const renderPerformanceChart = () => {
-  if (!performanceChartRef.value || !stats.value) return
+  if (!echarts || !performanceChartRef.value || !stats.value) return
 
   if (!performanceChart) {
     performanceChart = echarts.init(performanceChartRef.value)
   }
 
-  const durationMs = Math.max(0, stats.value.avgDurationMs ?? 0)
-  const totalCount = Math.max(0, stats.value.totalCount ?? 0)
-  const durationMax = Math.max(durationMs * 1.2, 1000)
-  const countMax = Math.max(totalCount * 1.2, 10)
-
-  const axisStyle = {
-    axisLine: { show: false },
-    axisTick: { show: false },
-    splitLine: {
-      lineStyle: {
-        color: 'rgba(69, 111, 100, .1)',
-        type: 'dashed' as const
-      }
+  const successRate = Math.min(100, Math.max(0, stats.value.successRate ?? 0))
+  const averageDurationMs = Math.max(0, stats.value.avgDurationMs ?? 0)
+  performanceChart.setOption({
+    tooltip: {
+      trigger: 'item',
+      formatter: (params: unknown) => {
+        const item = (Array.isArray(params) ? params[0] : params) as { value?: unknown }
+        return `全局成功率<br/><strong>${Number(item.value ?? 0).toFixed(1)}%</strong>`
+      },
+      backgroundColor: 'rgba(32, 59, 56, .92)',
+      borderWidth: 0,
+      textStyle: { color: '#f7f5ee' },
+      padding: [10, 14]
     },
-    axisLabel: { color: '#64766f', fontSize: 11 }
+    graphic: [
+      {
+        type: 'group',
+        left: 'center',
+        top: '78%',
+        children: [
+          {
+            type: 'text',
+            style: {
+              text: '全局平均耗时',
+              textAlign: 'center',
+              fill: '#71817a',
+              font: '12px Microsoft YaHei'
+            }
+          },
+          {
+            type: 'text',
+            top: 20,
+            style: {
+              text: formatDuration(averageDurationMs),
+              textAlign: 'center',
+              fill: '#203b38',
+              font: '700 18px Microsoft YaHei'
+            }
+          }
+        ]
+      }
+    ],
+    series: [{
+      name: '全局成功率',
+      type: 'gauge',
+      center: ['50%', '42%'],
+      radius: '66%',
+      startAngle: 90,
+      endAngle: -270,
+      min: 0,
+      max: 100,
+      progress: { show: true, width: 16, roundCap: true, itemStyle: { color: '#456f64' } },
+      axisLine: { lineStyle: { width: 16, color: [[1, 'rgba(143, 184, 164, .16)']] } },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      axisLabel: { show: false },
+      pointer: { show: false },
+      anchor: { show: false },
+      title: { show: false },
+      detail: {
+        valueAnimation: true,
+        offsetCenter: [0, '3%'],
+        color: '#203b38',
+        fontSize: 30,
+        fontWeight: 700,
+        formatter: (value: number) => `${value.toFixed(1)}%`
+      },
+      data: [{ value: successRate, name: '全局成功率' }]
+    }],
+    animationDuration: 900,
+    animationEasing: 'cubicOut'
+  })
+}
+
+// 渲染用户分析图
+const renderUserChart = () => {
+  if (!echarts || !userChartRef.value || !stats.value) return
+
+  if (!userChart) {
+    userChart = echarts.init(userChartRef.value)
   }
+
+  const totalUserCount = Math.max(0, stats.value.totalUserCount ?? 0)
+  const vipUserCount = Math.min(totalUserCount, Math.max(0, stats.value.vipUserCount ?? 0))
+  const activeUserCount = Math.min(
+    totalUserCount - vipUserCount,
+    Math.max(0, stats.value.activeUserCount ?? 0)
+  )
+  const userTypeData = [
+    {
+      value: vipUserCount,
+      name: 'VIP 会员',
+      itemStyle: { color: '#456f64' }
+    },
+    {
+      value: activeUserCount,
+      name: '活跃用户',
+      itemStyle: { color: '#c7a878' }
+    },
+    {
+      value: totalUserCount - vipUserCount - activeUserCount,
+      name: '其他用户',
+      itemStyle: { color: '#b9c9c2' }
+    }
+  ]
 
   const option: EChartsOption = {
     tooltip: {
       trigger: 'item',
       formatter: (params: unknown) => {
         const item = (Array.isArray(params) ? params[0] : params) as {
-          seriesName?: unknown
+          name?: unknown
           value?: unknown
+          percent?: unknown
         }
-        const value = Number(item.value ?? 0)
-        return `${String(item.seriesName ?? '')}<br/><strong>${item.seriesName === '平均耗时' ? formatDuration(value) : `${value} 次`}</strong>`
+        return `用户身份：${String(item.name ?? '')}<br/><strong>${Number(item.value ?? 0)} 位</strong> · ${Number(item.percent ?? 0)}%`
       },
       backgroundColor: 'rgba(32, 59, 56, .92)',
       borderWidth: 0,
       textStyle: { color: '#f7f5ee' },
-      padding: [10, 14]
-    },
-    grid: [
-      { left: '18%', right: '12%', top: '10%', height: '29%', containLabel: true },
-      { left: '18%', right: '12%', top: '60%', height: '29%', containLabel: true }
-    ],
-    xAxis: [
-      {
-        type: 'value',
-        max: durationMax,
-        gridIndex: 0,
-        axisLabel: {
-          ...axisStyle.axisLabel,
-          formatter: (value: number) => formatDuration(value)
-        },
-        axisLine: axisStyle.axisLine,
-        axisTick: axisStyle.axisTick,
-        splitLine: axisStyle.splitLine
-      },
-      {
-        type: 'value',
-        max: countMax,
-        gridIndex: 1,
-        axisLabel: {
-          ...axisStyle.axisLabel,
-          formatter: (value: number) => `${value}`
-        },
-        axisLine: axisStyle.axisLine,
-        axisTick: axisStyle.axisTick,
-        splitLine: axisStyle.splitLine
+      padding: [10, 14],
+      position: (point, params, _dom, _rect, size) => {
+        const item = Array.isArray(params) ? params[0] : params
+        if (item.dataIndex !== 2) return point
+
+        const [tooltipWidth, tooltipHeight] = size.contentSize
+        return [
+          Math.max(16, point[0] - tooltipWidth - 16),
+          Math.max(16, point[1] - tooltipHeight - 16)
+        ]
       }
-    ],
-    yAxis: [
-      {
-        type: 'category',
-        data: ['平均耗时'],
-        gridIndex: 0,
-        axisLabel: { color: '#64766f', fontSize: 13 },
-        axisLine: axisStyle.axisLine,
-        axisTick: axisStyle.axisTick
-      },
-      {
-        type: 'category',
-        data: ['总创作数'],
-        gridIndex: 1,
-        axisLabel: { color: '#64766f', fontSize: 13 },
-        axisLine: axisStyle.axisLine,
-        axisTick: axisStyle.axisTick
-      }
-    ],
-    series: [
-      {
-        name: '平均耗时',
-        type: 'bar',
-        xAxisIndex: 0,
-        yAxisIndex: 0,
-        data: [durationMs],
-        barWidth: 22,
-        showBackground: true,
-        backgroundStyle: { color: 'rgba(143, 184, 164, .12)', borderRadius: 12 },
-        itemStyle: { color: '#456f64', borderRadius: [0, 12, 12, 0] },
-        label: {
-          show: true,
-          position: 'right',
-          color: '#203b38',
-          fontSize: 14,
-          fontWeight: 700,
-          formatter: () => formatDuration(durationMs)
-        }
-      },
-      {
-        name: '总创作数',
-        type: 'bar',
-        xAxisIndex: 1,
-        yAxisIndex: 1,
-        data: [totalCount],
-        barWidth: 22,
-        showBackground: true,
-        backgroundStyle: { color: 'rgba(199, 168, 120, .14)', borderRadius: 12 },
-        itemStyle: { color: '#c7a878', borderRadius: [0, 12, 12, 0] },
-        label: {
-          show: true,
-          position: 'right',
-          color: '#203b38',
-          fontSize: 14,
-          fontWeight: 700,
-          formatter: () => `${totalCount} 次`
-        }
-      }
-    ],
-    animationDuration: 900,
-    animationEasing: 'cubicOut'
-  }
-
-  performanceChart.setOption(option)
-}
-
-// 渲染用户分析图
-const renderUserChart = () => {
-  if (!userChartRef.value || !stats.value) return
-
-  if (!userChart) {
-    userChart = echarts.init(userChartRef.value)
-  }
-
-  const option: EChartsOption = {
-    tooltip: {
-      trigger: 'item',
-      formatter: '{b}<br/><strong>{c}</strong> 位 · {d}%',
-      backgroundColor: 'rgba(32, 59, 56, .92)',
-      borderWidth: 0,
-      textStyle: { color: '#f7f5ee' },
-      padding: [10, 14]
     },
     legend: {
       orient: 'horizontal',
@@ -416,116 +413,48 @@ const renderUserChart = () => {
         fontSize: 12
       }
     },
-    graphic: [{
-      type: 'text',
-      left: '42%',
-      top: '44%',
-      style: {
-        text: `${stats.value.totalUserCount ?? 0}`,
-        fill: '#203b38',
-        fontSize: 28,
-        fontWeight: 700,
-        textAlign: 'center',
-        textVerticalAlign: 'middle'
-      } as any
-    }, {
-      type: 'text',
-      left: '42%',
-      top: '56%',
-      style: {
-        text: '用户总数',
-        fill: '#71817a',
-        fontSize: 12,
-        textAlign: 'center',
-        textVerticalAlign: 'middle'
-      } as any
-    }],
     series: [
       {
         name: '用户分布',
-      type: 'pie',
-      radius: ['48%', '72%'],
-      center: ['42%', '46%'],
-      avoidLabelOverlap: true,
+        type: 'pie',
+        radius: ['48%', '72%'],
+        center: ['50%', '46%'],
+        avoidLabelOverlap: true,
+        minAngle: 3,
         itemStyle: {
           borderRadius: 10,
           borderColor: 'rgba(247, 250, 246, .92)',
           borderWidth: 3
         },
         label: {
-          show: false,
-          position: 'outside',
-          alignTo: 'labelLine',
-          edgeDistance: 12,
-          distanceToLabelLine: 6,
-          bleedMargin: 8
+          show: true,
+          position: 'center',
+          formatter: `{value|${totalUserCount}}\n{label|用户总数}`,
+          rich: {
+            value: {
+              color: '#203b38',
+              fontSize: 28,
+              fontWeight: 700,
+              lineHeight: 38
+            },
+            label: {
+              color: '#71817a',
+              fontSize: 12,
+              lineHeight: 20
+            }
+          }
         },
         emphasis: {
           label: {
-            show: true,
-            position: 'outside',
-            alignTo: 'labelLine',
-            edgeDistance: 12,
-            distanceToLabelLine: 6,
-            formatter: (params: unknown) => {
-              const item = (Array.isArray(params) ? params[0] : params) as {
-                name?: unknown
-                value?: unknown
-              }
-              return `{name|${String(item.name ?? '')}}\n{count|${String(item.value ?? 0)} 位}`
-            },
-            rich: {
-              name: {
-                color: '#203b38',
-                fontSize: 20,
-                fontWeight: 700,
-                lineHeight: 30
-              },
-              count: {
-                color: '#71817a',
-                fontSize: 14,
-                lineHeight: 22
-              }
-            }
+            show: true
           },
-          labelLine: {
-            show: true,
-            length: 22,
-            length2: 42,
-            smooth: true,
-            lineStyle: {
-              color: 'rgba(69, 111, 100, .38)',
-              width: 1
-            }
-          },
+          labelLine: { show: false },
           scale: false
         },
         labelLine: {
-          show: false,
-          length: 22,
-          length2: 42,
-          lineStyle: {
-            color: 'rgba(69, 111, 100, .34)',
-            width: 1
-          }
+          show: false
         },
-        data: [
-          {
-            value: stats.value.vipUserCount ?? 0,
-            name: 'VIP 会员',
-            itemStyle: { color: '#456f64' }
-          },
-          {
-            value: stats.value.activeUserCount ?? 0,
-            name: '活跃用户',
-            itemStyle: { color: '#c7a878' }
-          },
-          {
-            value: (stats.value.totalUserCount ?? 0) - (stats.value.activeUserCount ?? 0) - (stats.value.vipUserCount ?? 0),
-            name: '其他用户',
-            itemStyle: { color: '#b9c9c2' }
-          }
-        ],
+        data: userTypeData,
         animationDuration: 1100,
         animationEasing: 'cubicOut'
       }
@@ -537,19 +466,23 @@ const renderUserChart = () => {
 
 // 渲染配额使用图
 const renderQuotaChart = () => {
-  if (!quotaChartRef.value || !stats.value) return
+  if (!echarts || !quotaChartRef.value || !stats.value) return
 
   if (!quotaChart) {
     quotaChart = echarts.init(quotaChartRef.value)
   }
 
-  const normalUserCount = Math.max(0, (stats.value.totalUserCount ?? 0) - (stats.value.vipUserCount ?? 0))
-  const totalQuota = normalUserCount * 5
-  const usedQuota = stats.value.quotaUsed ?? 0
-  const remainingQuota = Math.max(0, totalQuota - usedQuota)
-  const hasVipUsers = (stats.value.vipUserCount ?? 0) > 0
-  const quotaCenterValue = hasVipUsers ? '∞' : `${usedQuota}`
-  const quotaCenterLabel = hasVipUsers ? 'VIP 无限配额' : '已使用配额'
+  const selectedUser = selectedQuotaUserId.value === 'all'
+    ? null
+    : normalQuotaUsers.value.find((user) => String(user.id) === selectedQuotaUserId.value)
+  const normalUserCount = Math.max(0, stats.value.normalUserCount ?? normalQuotaUsers.value.length)
+  const totalQuota = selectedUser ? 5 : normalUserCount * 5
+  const remainingQuota = selectedUser
+    ? Math.max(0, selectedUser.quota ?? 0)
+    : normalQuotaUsers.value.reduce((sum, user) => sum + Math.max(0, user.quota ?? 0), 0)
+  const usedQuota = Math.min(totalQuota, Math.max(0, totalQuota - remainingQuota))
+  const quotaCenterValue = `${usedQuota}`
+  const quotaCenterLabel = `已使用 / ${totalQuota}`
   const quotaData = totalQuota > 0
     ? [
         { value: usedQuota, name: '已使用', itemStyle: { color: '#c78b7d' } },
@@ -659,7 +592,7 @@ onUnmounted(() => {
   padding-bottom: 60px;
   background-image:
     linear-gradient(155deg, rgba(231, 240, 234, .74), rgba(247, 245, 238, .9)),
-    url('@/assets/scenes/admin-statistics.png');
+    url('@/assets/scenes/admin-statistics.webp');
   background-position: center top;
   background-size: cover;
   background-attachment: fixed;
@@ -794,6 +727,23 @@ onUnmounted(() => {
         color: var(--color-primary);
         font-size: 18px;
       }
+    }
+
+    .quota-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+
+      .chart-title {
+        margin-bottom: 20px;
+      }
+    }
+
+    .quota-user-select {
+      width: 184px;
+      margin-bottom: 20px;
+      flex: 0 0 184px;
     }
 
     .chart-container {
@@ -967,11 +917,10 @@ onUnmounted(() => {
   font-size: 20px;
 }
 .statistics-page .chart-card :deep(.echarts) { filter: drop-shadow(0 10px 18px rgba(32, 59, 56, .05)); }
-
 .statistics-page {
   background-image:
     linear-gradient(155deg, rgba(231, 240, 234, .34), rgba(247, 245, 238, .52)),
-    url('@/assets/scenes/admin-statistics.png');
+    url('@/assets/scenes/admin-statistics.webp');
   background-position: center top;
   background-size: cover;
   background-attachment: fixed;

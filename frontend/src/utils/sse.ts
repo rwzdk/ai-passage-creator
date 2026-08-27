@@ -1,6 +1,5 @@
 /**
- * SSE 工具函数
- * @author <a href="https://codefather.cn">编程导航学习圈</a>
+ * SSE 宸ュ叿鍑芥暟
  */
 
 export interface SSEMessage {
@@ -16,39 +15,42 @@ export interface SSEOptions {
 }
 
 /**
- * 建立 SSE 连接
+ * 寤虹珛 SSE 杩炴帴
  */
 export const connectSSE = (taskId: string, options: SSEOptions): EventSource => {
   const { onMessage, onError, onComplete } = options
+  let hasReportedError = false
 
   const eventSource = new EventSource(`/api/article/progress/${taskId}`)
 
   eventSource.onmessage = (event) => {
     try {
       const message: SSEMessage = JSON.parse(event.data)
+      hasReportedError = false
       onMessage(message)
       
-      // 检查是否完成
-      if (message.type === 'ALL_COMPLETE' || message.type === 'ERROR') {
+      // 妫€鏌ユ槸鍚﹀畬鎴?      if (message.type === 'ALL_COMPLETE' || message.type === 'ERROR') {
         eventSource.close()
         onComplete?.()
       }
     } catch (error) {
-      console.error('SSE 消息解析失败:', error)
+      console.error('SSE 娑堟伅瑙ｆ瀽澶辫触:', error)
     }
   }
 
   eventSource.onerror = (error) => {
-    console.error('SSE 连接错误:', error)
-    onError?.(error)
-    eventSource.close()
+    console.error('SSE 杩炴帴閿欒:', error)
+    // EventSource 浼氳嚜鍔ㄩ噸杩烇紱鍙姤鍛婄涓€娆℃柇绾匡紝鐢遍〉闈㈠惎鍔ㄧ姸鎬佽疆璇㈠厹搴曘€?    if (!hasReportedError) {
+      hasReportedError = true
+      onError?.(error)
+    }
   }
 
   return eventSource
 }
 
 /**
- * 关闭 SSE 连接
+ * 鍏抽棴 SSE 杩炴帴
  */
 export const closeSSE = (eventSource: EventSource | null) => {
   if (eventSource) {

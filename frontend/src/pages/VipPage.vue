@@ -5,7 +5,6 @@
     </div>
     <div class="vip-container">
       <div class="page-header">
-        <div class="eyebrow">AI PASSAGE CREATOR · MEMBERSHIP</div>
         <div class="header-row">
           <div>
             <div class="header-badge"><CrownOutlined /><span>创作者长期方案</span></div>
@@ -713,8 +712,8 @@ const handlePurchase = async () => {
 .header-row { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-top: 18px; }
 .header-badge { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 14px; padding: 7px 12px; border: 1px solid rgba(69, 111, 100, .2); border-radius: 999px; color: var(--mountain-green); background: rgba(247, 250, 246, .62); font-size: 12px; }
 .page-title { max-width: 760px; margin: 0 0 14px; color: var(--ink-deep); font-size: clamp(36px, 5vw, 62px); font-weight: 600; line-height: 1.08; letter-spacing: -.04em; }
-.page-subtitle { max-width: 600px; margin: 0; color: var(--ink-muted); font-size: 16px; line-height: 1.8; }
-.header-note { display: flex; align-items: center; gap: 12px; padding-bottom: 7px; color: var(--ink-muted); font-size: 12px; line-height: 1.7; text-align: right; white-space: nowrap; }
+.page-subtitle { max-width: 600px; margin: 0; color: var(--ink-deep); font-size: 16px; font-weight: 500; line-height: 1.8; }
+.header-note { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid rgba(69, 111, 100, .16); border-radius: 10px; background: rgba(247, 245, 238, .72); color: var(--ink-deep); font-size: 12px; font-weight: 500; line-height: 1.7; text-align: right; white-space: nowrap; }
 .note-mark { color: var(--accent-gold); font-size: 36px; font-weight: 300; letter-spacing: -.08em; }
 
 .main-section { grid-template-columns: 380px minmax(0, 1fr); gap: 24px; align-items: stretch; margin-bottom: 28px; }
@@ -773,7 +772,7 @@ const handlePurchase = async () => {
 .faq-toggle { color: var(--mountain-green); font-size: 22px; font-weight: 300; transition: transform var(--transition-fast); }
 .faq-card.open .faq-toggle { transform: rotate(45deg); }
 .faq-answer { margin: -4px 26px 16px 0; color: var(--ink-muted); font-size: 13px; line-height: 1.75; }
-.page-footer-note { margin: 28px 0 0; color: var(--ink-muted); font-size: 12px; text-align: center; letter-spacing: .08em; }
+.page-footer-note { margin: 28px 0 0; color: var(--ink-deep); font-size: 12px; font-weight: 500; text-align: center; letter-spacing: .08em; }
 
 @media (max-width: 992px) {
   .header-row { align-items: flex-start; flex-direction: column; gap: 18px; }
@@ -806,7 +805,7 @@ const handlePurchase = async () => {
 .vip-page {
   background-image:
     linear-gradient(160deg, rgba(32, 59, 56, .62), rgba(247, 245, 238, .72) 65%),
-    url('@/assets/scenes/vip-river-dawn.png');
+    url('@/assets/scenes/vip-river-dawn.webp');
   background-position: center;
   background-size: cover;
   background-attachment: fixed;

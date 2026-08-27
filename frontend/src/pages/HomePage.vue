@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/loginUser'
-import { listArticle } from '@/api/articleController'
-import { getHotTopics } from '@/api/hotTopicController'
 import dayjs from 'dayjs'
 import {
   ArrowRightOutlined,
@@ -16,10 +14,6 @@ import {
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons-vue'
-import ScrollReveal from '@/components/motion/ScrollReveal.vue'
-import CountUpNumber from '@/components/motion/CountUpNumber.vue'
-import StaggerList from '@/components/motion/StaggerList.vue'
-import TextReveal from '@/components/motion/TextReveal.vue'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
@@ -33,7 +27,7 @@ const homeHotTopics = ref<API.HotTopicItem[]>([])
 const hotTopicsSource = ref('fallback')
 const hotTopicsRefreshing = ref(false)
 const hotTopicsUpdatedAt = ref('')
-let promptTimer: ReturnType<typeof window.setInterval> | undefined
+let promptTimer: number | undefined
 const promptCards = [
   { type: '工作总结', title: '总结一次项目复盘，提炼可复制的团队协作方法', description: '适合季度总结与项目复盘' },
   { type: '心得体会', title: '写一篇关于长期学习与自我成长的心得体会', description: '适合个人经历与观点表达' },
@@ -55,11 +49,17 @@ const displayPromptCards = computed(() => {
 const loopedPromptCards = computed(() => [...displayPromptCards.value, ...displayPromptCards.value])
 const recentArticles = ref<API.ArticleVO[]>([])
 const loadingArticles = ref(false)
+const homePageRef = ref<HTMLElement | null>(null)
+const homeMotionReady = ref(false)
+const readyBackgrounds = ref<Record<string, boolean>>({})
+let homeDataTimer: number | undefined
+let backgroundObserver: IntersectionObserver | undefined
+let revealObserver: IntersectionObserver | undefined
 
 const metrics = computed(() => [
   { value: recentArticles.value.length, label: '最近作品', note: '已同步到作品库' },
   { value: 4, label: '创作步骤', note: '从选题到成稿' },
-  { value: 1, label: '实时输出', note: '支持流式生成正文' },
+  { value: displayPromptCards.value.length, label: '热门选题', note: '点击即可开始创作' },
 ])
 
 const features = [
@@ -114,6 +114,7 @@ const startPromptRotation = () => {
 const loadHomeHotTopics = async (refresh = false) => {
   if (refresh) hotTopicsRefreshing.value = true
   try {
+    const { getHotTopics } = await import('@/api/hotTopicController')
     const res = await getHotTopics(refresh ? { params: { refresh: true } } : undefined)
     const data = res.data.data
     if (data?.items?.length) {
@@ -144,6 +145,7 @@ const loadRecentArticles = async () => {
   if (!loginUserStore.loginUser.id) return
   loadingArticles.value = true
   try {
+    const { listArticle } = await import('@/api/articleController')
     const res = await listArticle({ pageNum: 1, pageSize: 6 })
     recentArticles.value = res.data.data?.records || []
   } catch (error) {
@@ -160,39 +162,125 @@ const statusText = (status?: string) => {
   return '等待中'
 }
 
+const markBackgroundReady = (name: string) => {
+  readyBackgrounds.value = { ...readyBackgrounds.value, [name]: true }
+}
+
+const observeHomeBackgrounds = () => {
+  const sections = Array.from(
+    homePageRef.value?.querySelectorAll<HTMLElement>('[data-lazy-background]') || [],
+  )
+
+  if (!sections.length) return
+  if (!('IntersectionObserver' in window)) {
+    sections.forEach(section => markBackgroundReady(section.dataset.lazyBackground || ''))
+    return
+  }
+
+  backgroundObserver = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return
+        const section = entry.target as HTMLElement
+        const name = section.dataset.lazyBackground
+        if (name) markBackgroundReady(name)
+        backgroundObserver?.unobserve(section)
+      })
+    },
+    { rootMargin: '240px 0px' },
+  )
+  sections.forEach(section => backgroundObserver?.observe(section))
+}
+
+const observeHomeReveals = () => {
+  revealObserver?.disconnect()
+  const elements = Array.from(
+    homePageRef.value?.querySelectorAll<HTMLElement>('[data-home-reveal]') || [],
+  )
+  if (!elements.length) return
+
+  const showAll = () => elements.forEach(element => element.classList.add('is-home-revealed'))
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+    showAll()
+    return
+  }
+
+  revealObserver = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return
+        entry.target.classList.add('is-home-revealed')
+        revealObserver?.unobserve(entry.target)
+      })
+    },
+    { rootMargin: '0px 0px -10% 0px', threshold: 0.12 },
+  )
+  elements.forEach(element => revealObserver?.observe(element))
+}
+
+watch(recentArticles, async () => {
+  await nextTick()
+  observeHomeReveals()
+})
+
 onMounted(() => {
-  loadRecentArticles()
-  loadHomeHotTopics()
+  observeHomeBackgrounds()
+  requestAnimationFrame(() => {
+    homeMotionReady.value = true
+    observeHomeReveals()
+  })
+  homeDataTimer = window.setTimeout(() => {
+    void loadRecentArticles()
+    void loadHomeHotTopics()
+  }, 900)
   startPromptRotation()
 })
 onBeforeUnmount(() => {
   if (promptTimer) window.clearInterval(promptTimer)
+  if (homeDataTimer) window.clearTimeout(homeDataTimer)
+  backgroundObserver?.disconnect()
+  revealObserver?.disconnect()
 })
 </script>
 
 <template>
-  <main id="homePage" class="home-page">
+  <main id="homePage" ref="homePageRef" class="home-page" :class="{ 'is-home-motion-ready': homeMotionReady }">
     <section class="home-hero">
       <div class="hero-river" aria-hidden="true" />
       <div class="hero-mist hero-mist-one" aria-hidden="true" />
       <div class="hero-mist hero-mist-two" aria-hidden="true" />
       <div class="home-container hero-layout">
-        <ScrollReveal :once="true" class="hero-copy">
-          <div class="eyebrow"><ThunderboltOutlined /> AI 驱动的内容创作平台</div>
-          <h1>让每一次灵感，<br /><em>都留下清晰的回声</em></h1>
+        <div class="hero-copy" data-hero-stage>
+          <div class="eyebrow hero-eyebrow"><ThunderboltOutlined aria-hidden="true" /><span>AI 驱动的内容创作平台</span></div>
+          <h1 class="hero-title">
+            <span class="hero-title-line"><span class="hero-title-content">让每一次灵感</span></span>
+            <span class="hero-title-line is-accent"><span class="hero-title-content">都留下清晰的回声</span></span>
+          </h1>
           <p class="hero-subtitle">从一个选题出发，经过结构、正文与配图，写成属于你的完整作品。</p>
-        </ScrollReveal>
+        </div>
 
-        <ScrollReveal :once="true" :delay="120" class="creation-orbit">
-          <div class="orbit-ring orbit-ring-outer" />
-          <div class="orbit-ring orbit-ring-inner" />
-          <div class="orbit-core"><EditOutlined /></div>
-          <span class="orbit-label orbit-label-top">选题</span>
-          <span class="orbit-label orbit-label-right">结构</span>
-          <span class="orbit-label orbit-label-bottom">正文</span>
-        </ScrollReveal>
+        <div class="creation-journey" data-hero-stage>
+          <div class="journey-heading">
+            <span class="journey-kicker">创作路径</span>
+            <strong>从灵感到成文</strong>
+          </div>
+          <ol class="journey-steps">
+            <li class="journey-step is-active">
+              <span class="journey-icon"><EditOutlined /></span>
+              <div><strong>选题</strong><span>捕捉此刻想表达的内容</span></div>
+            </li>
+            <li class="journey-step">
+              <span class="journey-icon"><OrderedListOutlined /></span>
+              <div><strong>结构</strong><span>梳理观点与叙事的脉络</span></div>
+            </li>
+            <li class="journey-step">
+              <span class="journey-icon"><FileTextOutlined /></span>
+              <div><strong>正文</strong><span>让完整文章自然生长</span></div>
+            </li>
+          </ol>
+        </div>
 
-        <ScrollReveal :once="true" :delay="220" class="topic-composer">
+        <div class="topic-composer" data-hero-stage>
           <div class="composer-label"><span class="signal-dot" /> 今天，想写些什么？</div>
           <div class="composer-row">
             <a-input
@@ -256,64 +344,86 @@ onBeforeUnmount(() => {
             </div>
             <button type="button" class="prompt-arrow prompt-arrow-right" aria-label="下一个主题" @click="nextPrompt(true)">›</button>
           </div>
-        </ScrollReveal>
+        </div>
       </div>
     </section>
 
-    <section class="method-section">
+    <section
+      class="method-section"
+    >
       <div class="home-container">
-        <ScrollReveal class="section-heading">
+        <div class="section-heading" data-home-reveal>
           <div class="eyebrow">A quiet writing room</div>
           <h2>让创作回到<br /><span>自然流动</span>的状态</h2>
-          <p>不必一次想完整，不必从空白开始。AI Passage Creator 把复杂的创作过程拆成四个可以被看见的小步骤。</p>
-        </ScrollReveal>
+          <p>不必一次想完整，不必从空白开始。沅笺把复杂的创作过程拆成四个可以被看见的小步骤。</p>
+        </div>
 
-        <StaggerList class="feature-grid">
+        <div class="feature-grid" data-home-reveal>
           <article v-for="feature in features" :key="feature.index" class="feature-card">
             <div class="feature-topline"><span>{{ feature.index }}</span><component :is="feature.icon" /></div>
             <h3>{{ feature.title }}</h3>
             <p>{{ feature.description }}</p>
             <div class="feature-line" />
           </article>
-        </StaggerList>
+        </div>
       </div>
     </section>
 
-    <section class="metrics-section">
+    <section
+      class="metrics-section"
+      data-lazy-background="metrics"
+      :class="{ 'is-background-ready': readyBackgrounds.metrics }"
+    >
       <div class="home-container metrics-layout">
-        <ScrollReveal class="metrics-copy">
+        <div class="metrics-copy" data-home-reveal>
           <div class="eyebrow">Your creative trace</div>
-          <h2>每一次写下，<br />都会成为你的创作历程。</h2>
+          <h2 class="metrics-title">
+            <span class="metrics-title-lead">每一次写下</span>
+            <span class="metrics-title-main">都会成为你的创作历程</span>
+          </h2>
           <p>登录后，你的作品、创作进度与写作痕迹会被整理在个人空间中，随时可以回望，也可以继续向前。</p>
           <a-button type="link" class="text-link" @click="router.push('/profile')">查看个人空间 <ArrowRightOutlined /></a-button>
-        </ScrollReveal>
+        </div>
 
-        <StaggerList class="metrics-grid" :step="100">
+        <div class="metrics-grid" data-home-reveal>
           <article v-for="metric in metrics" :key="metric.label" class="metric-card">
-            <div class="metric-value"><CountUpNumber :value="metric.value" :replay-on-view="true" /></div>
+            <div class="metric-value">{{ metric.value }}</div>
             <h3>{{ metric.label }}</h3>
             <p>{{ metric.note }}</p>
           </article>
-        </StaggerList>
+        </div>
       </div>
     </section>
 
-    <section v-if="loginUserStore.loginUser.id" class="recent-section">
+    <section
+      v-if="loginUserStore.loginUser.id"
+      class="recent-section"
+      data-lazy-background="recent"
+      :class="{ 'is-background-ready': readyBackgrounds.recent }"
+    >
       <div class="home-container">
-        <ScrollReveal class="section-heading compact-heading">
+      <div class="section-heading compact-heading" data-home-reveal>
           <div class="recent-heading-copy">
             <div class="eyebrow"><span class="signal-dot" /> Recent notes</div>
-            <TextReveal tag="h2" text="最近留下的作品" :step="34" />
-            <TextReveal tag="p" text="从这里继续你的下一段表达。" :step="20" />
+            <h2>最近留下的作品</h2>
+            <p>从这里继续你的下一段表达。</p>
           </div>
           <a-button type="link" class="text-link" @click="goToList">查看全部 <ArrowRightOutlined /></a-button>
-        </ScrollReveal>
+      </div>
 
         <a-spin :spinning="loadingArticles">
-          <StaggerList v-if="recentArticles.length" class="article-grid">
+          <div v-if="recentArticles.length" class="article-grid" data-home-reveal>
             <article v-for="article in recentArticles" :key="article.id" class="article-card" @click="viewArticle(article)">
               <div class="article-cover">
-                <img v-if="article.coverImage" :src="article.coverImage" :alt="article.mainTitle || article.topic" />
+                <img
+                  v-if="article.coverImage"
+                  :src="article.coverImage"
+                  :alt="article.mainTitle || article.topic"
+                  width="640"
+                  height="360"
+                  loading="lazy"
+                  decoding="async"
+                />
                 <FileTextOutlined v-else />
               </div>
               <div class="article-info">
@@ -324,7 +434,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </article>
-          </StaggerList>
+          </div>
           <div v-else-if="!loadingArticles" class="empty-articles">
             <FileTextOutlined />
             <strong>你的作品会从这里开始生长</strong>
@@ -382,8 +492,7 @@ onBeforeUnmount(() => {
   height: 15rem;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.34);
-  filter: blur(22px);
-  animation: mist-drift 10s ease-in-out infinite alternate;
+  filter: blur(12px);
 }
 
 .hero-mist-one { left: -8rem; top: 7rem; }
@@ -412,7 +521,21 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
 }
 
+.hero-eyebrow {
+  position: relative;
+  display: inline-block;
+}
+
+.hero-eyebrow > .anticon {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 8px);
+  transform: translateY(-50%);
+}
+
 .hero-copy h1 {
+  position: relative;
+  overflow: hidden;
   margin: 24px 0 18px;
   color: var(--ink-deep);
   font-size: clamp(3.1rem, 5.6vw, 5.4rem);
@@ -420,9 +543,20 @@ onBeforeUnmount(() => {
   line-height: 0.98;
 }
 
-.hero-copy h1 em {
+.hero-title-line {
+  display: block;
+  overflow: hidden;
+  transform-origin: left bottom;
+}
+
+.hero-title-content {
+  display: inline-block;
+  transform-origin: left bottom;
+  will-change: transform;
+}
+
+.hero-title-line.is-accent .hero-title-content {
   color: var(--mountain-green);
-  font-style: normal;
 }
 
 .hero-subtitle {
@@ -433,52 +567,20 @@ onBeforeUnmount(() => {
   line-height: 1.8;
 }
 
-.creation-orbit {
-  position: relative;
-  width: 250px;
-  height: 250px;
-  position: absolute;
-  top: 132px;
-  right: 4%;
-  opacity: 0.86;
-  transform: scale(0.86);
-  transform-origin: center;
-}
-
-.orbit-ring {
-  position: absolute;
-  inset: 12px;
-  border: 1px solid rgba(69, 111, 100, 0.24);
-  border-radius: 50%;
-  animation: orbit-spin 18s linear infinite;
-}
-
-.orbit-ring-inner { inset: 44px; border-style: dashed; animation-direction: reverse; animation-duration: 12s; }
-.orbit-core {
-  position: absolute;
-  inset: 88px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--gradient-primary);
-  color: white;
-  font-size: 28px;
-  box-shadow: var(--shadow-green);
-}
-
-.orbit-label {
-  position: absolute;
-  padding: 6px 10px;
-  border: 1px solid rgba(69, 111, 100, 0.16);
-  border-radius: 999px;
-  background: rgba(247, 250, 246, 0.78);
-  color: var(--mountain-green);
-  font-size: 12px;
-}
-
-.orbit-label-top { top: 0; left: 50%; transform: translateX(-50%); }
-.orbit-label-right { right: -6px; top: 50%; transform: translateY(-50%); }
-.orbit-label-bottom { bottom: 0; left: 50%; transform: translateX(-50%); }
+.creation-journey { position: absolute; top: 132px; right: -12px; width: 220px; }
+.journey-heading { display: grid; gap: 5px; }
+.journey-kicker { color: var(--mountain-green); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; }
+.journey-heading strong { color: var(--ink-deep); font-size: 18px; font-weight: 600; }
+.journey-steps { display: grid; gap: 0; margin: 18px 0 0; padding: 0; list-style: none; }
+.journey-step { position: relative; display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: center; min-height: 60px; }
+.journey-step:not(:last-child)::after { position: absolute; top: 46px; bottom: -7px; left: 18px; width: 1px; background: rgba(69, 111, 100, 0.24); content: ''; }
+.journey-icon { z-index: 1; display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid rgba(69, 111, 100, 0.42); border-radius: 50%; background: rgba(69, 111, 100, 0.14); color: var(--mountain-green); font-size: 16px; }
+.journey-step div { display: grid; gap: 3px; }
+.journey-step strong { color: var(--ink-deep); font-size: 15px; font-weight: 600; }
+.journey-step div span { color: var(--ink-muted); font-size: 11px; line-height: 1.45; }
+.journey-step.is-active .journey-icon { border-color: var(--mountain-green); background: var(--mountain-green); color: #fff; box-shadow: 0 0 0 6px rgba(69, 111, 100, 0.14); }
+.journey-step.is-active strong { color: var(--mountain-green); }
+.journey-step.is-active div span { color: var(--color-text-secondary); }
 
 .topic-composer {
   position: relative;
@@ -491,7 +593,6 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.7);
   box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(16px);
 }
 
 .topic-composer::before {
@@ -504,7 +605,6 @@ onBeforeUnmount(() => {
   background: linear-gradient(90deg, transparent, rgba(69, 111, 100, .5), transparent);
   content: '';
   opacity: .55;
-  animation: composer-breathe 4.5s ease-in-out infinite;
 }
 
 .composer-label { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--ink-deep); font-size: 13px; font-weight: 600; }
@@ -537,25 +637,43 @@ onBeforeUnmount(() => {
 
 .method-section,
 .recent-section { padding: 112px 0; background: var(--paper-warm); }
+
+.method-section,
+.metrics-section,
+.recent-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 680px;
+}
 .section-heading { max-width: 650px; margin-bottom: 46px; }
 .section-heading h2,
 .metrics-copy h2 { margin: 18px 0 14px; color: var(--ink-deep); font-size: clamp(2.4rem, 5vw, 4.6rem); font-weight: 500; line-height: 1.04; }
 .section-heading h2 span { color: var(--mountain-green); }
 .section-heading p,
 .metrics-copy p { max-width: 520px; margin: 0; color: var(--color-text-secondary); font-size: 16px; line-height: 1.85; }
-.feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-.feature-card { min-height: 245px; padding: 24px; border-top: 1px solid var(--line-soft); background: rgba(255,255,255,0.35); transition: transform var(--transition-normal), background var(--transition-normal), box-shadow var(--transition-normal); }
-.feature-card:hover { transform: translateY(-8px); background: rgba(255,255,255,0.75); box-shadow: var(--shadow-card-hover); }
-.feature-topline { display: flex; justify-content: space-between; color: var(--mountain-green); font-size: 18px; }
-.feature-topline span { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; }
-.feature-card h3 { margin: 42px 0 10px; color: var(--ink-deep); font-size: 20px; font-weight: 600; }
-.feature-card p { min-height: 68px; margin: 0; color: var(--ink-muted); font-size: 14px; line-height: 1.7; }
-.feature-line { width: 42px; height: 2px; margin-top: 28px; background: var(--river-green); }
+.feature-grid { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.feature-grid::before { position: absolute; top: 34px; right: 9%; left: 9%; height: 1px; background: linear-gradient(90deg, transparent, rgba(69,111,100,.42) 12%, rgba(199,168,120,.55) 50%, rgba(69,111,100,.42) 88%, transparent); content: ''; }
+.feature-card { position: relative; z-index: 1; min-height: 276px; padding: 22px 24px 26px; overflow: hidden; border: 1px solid rgba(69,111,100,.12); border-radius: 8px; background: linear-gradient(145deg, rgba(255,255,255,.9), rgba(246,249,244,.76)); box-shadow: 0 12px 28px rgba(32,59,56,.055); transition: transform var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal); }
+.feature-card::before { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--river-green); content: ''; transform: scaleX(.22); transform-origin: left; transition: transform var(--transition-normal); }
+.feature-card::after { position: absolute; right: -30px; bottom: -42px; width: 116px; height: 116px; border: 1px solid rgba(69,111,100,.1); border-radius: 50%; content: ''; }
+.feature-card:nth-child(2) { margin-top: 22px; background: linear-gradient(145deg, rgba(252,250,244,.94), rgba(246,249,244,.78)); }
+.feature-card:nth-child(3) { margin-top: 8px; background: linear-gradient(145deg, rgba(247,251,248,.94), rgba(255,255,255,.76)); }
+.feature-card:nth-child(4) { margin-top: 30px; background: linear-gradient(145deg, rgba(253,251,246,.94), rgba(244,249,245,.8)); }
+.feature-card:hover { transform: translateY(-8px); border-color: rgba(69,111,100,.3); box-shadow: 0 22px 38px rgba(32,59,56,.13); }
+.feature-card:hover::before { transform: scaleX(1); }
+.feature-topline { display: flex; align-items: center; justify-content: space-between; color: var(--mountain-green); font-size: 18px; }
+.feature-topline span { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid rgba(69,111,100,.2); border-radius: 50%; background: rgba(255,255,255,.7); font-size: 12px; font-weight: 700; letter-spacing: .08em; box-shadow: 0 5px 12px rgba(32,59,56,.06); }
+.feature-topline :deep(.anticon) { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: rgba(143,184,164,.14); font-size: 17px; }
+.feature-card h3 { position: relative; z-index: 1; margin: 38px 0 10px; color: var(--ink-deep); font-size: 20px; font-weight: 600; line-height: 1.35; }
+.feature-card p { position: relative; z-index: 1; min-height: 68px; margin: 0; color: var(--ink-muted); font-size: 14px; line-height: 1.75; }
+.feature-line { position: relative; z-index: 1; width: 52px; height: 2px; margin-top: 28px; background: linear-gradient(90deg, var(--river-green), rgba(143,184,164,.18)); }
 
 .metrics-section { padding: 112px 0; background: linear-gradient(135deg, var(--ink-deep), #31574f); color: white; }
 .metrics-layout { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 80px; align-items: center; }
 .metrics-copy .eyebrow { color: var(--river-green); }
 .metrics-copy h2 { color: white; }
+.metrics-copy .metrics-title { display: grid; gap: 4px; font-size: clamp(2.2rem, 3.6vw, 4rem); line-height: 1.08; }
+.metrics-title-lead,
+.metrics-title-main { color: white; font-size: inherit; line-height: inherit; letter-spacing: 0; }
 .metrics-copy p { color: rgba(243,247,243,0.72); }
 .text-link { padding: 0; color: var(--river-green); font-weight: 700; }
 .text-link:hover { color: white; }
@@ -575,7 +693,7 @@ onBeforeUnmount(() => {
 .article-card::after { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 25%, rgba(255,255,255,.28) 48%, transparent 72%); content: ''; pointer-events: none; transform: translateX(-130%); transition: transform 900ms var(--ease-out); }
 .article-card:hover::after { transform: translateX(130%); }
 .article-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-card-hover); }
-.article-cover { display: grid; place-items: center; height: 160px; overflow: hidden; background: var(--color-background-tertiary); color: var(--mountain-green); font-size: 32px; }
+.article-cover { display: grid; aspect-ratio: 16 / 9; place-items: center; overflow: hidden; background: var(--color-background-tertiary); color: var(--mountain-green); font-size: 32px; }
 .article-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-slow); }
 .article-card:hover .article-cover img { transform: scale(1.05); }
 .article-info { padding: 18px; }
@@ -589,18 +707,30 @@ onBeforeUnmount(() => {
 .empty-articles strong { color: var(--ink-deep); }
 .empty-articles span { margin-bottom: 8px; font-size: 13px; }
 
+.home-page [data-home-reveal] {
+  transition: opacity .48s ease, transform .48s ease;
+}
+
+.home-page.is-home-motion-ready [data-home-reveal]:not(.is-home-revealed) {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+}
+
+.home-page [data-home-reveal].is-home-revealed {
+  opacity: 1;
+  transform: none;
+}
+
 @keyframes mist-drift { from { transform: translate3d(-2%, 0, 0) scale(1); } to { transform: translate3d(4%, 10px, 0) scale(1.05); } }
-@keyframes orbit-spin { to { transform: rotate(360deg); } }
 @keyframes composer-breathe { 0%, 100% { opacity: .28; transform: scaleX(.9); } 50% { opacity: .85; transform: scaleX(1); } }
 
 @media (max-width: 900px) {
   .hero-layout { gap: 24px; padding-top: 76px; }
-  .creation-orbit { position: relative; top: auto; right: auto; order: 2; justify-self: center; width: 190px; height: 190px; transform: scale(0.9); }
-  .orbit-core { inset: 66px; }
-  .orbit-ring-inner { inset: 34px; }
-  .orbit-ring-outer { inset: 4px; }
+  .creation-journey { position: relative; top: auto; right: auto; order: 2; justify-self: center; width: min(100%, 300px); }
   .topic-composer { width: 100%; order: 3; justify-self: center; margin-top: 0; }
   .feature-grid { grid-template-columns: repeat(2, 1fr); }
+  .feature-grid::before { right: 20%; left: 20%; }
+  .feature-card:nth-child(2), .feature-card:nth-child(3), .feature-card:nth-child(4) { margin-top: 0; }
   .metrics-layout { grid-template-columns: 1fr; gap: 42px; }
 }
 
@@ -610,6 +740,7 @@ onBeforeUnmount(() => {
   .home-hero .hero-layout { padding: 76px 0 64px; }
   .hero-copy h1 { font-size: clamp(3rem, 15vw, 4.5rem); }
   .hero-subtitle { font-size: 15px; }
+  .metrics-copy .metrics-title { font-size: clamp(1.9rem, 8.5vw, 3rem); }
   .composer-row { flex-direction: column; }
   .topic-composer { padding: 18px; }
   .prompt-carousel { --prompt-card-width: 78%; padding-inline: 30px; }
@@ -619,6 +750,7 @@ onBeforeUnmount(() => {
   .method-section, .metrics-section, .recent-section { padding: 76px 0; }
   .section-heading h2, .metrics-copy h2 { font-size: 2.7rem; }
   .feature-grid, .metrics-grid, .article-grid { grid-template-columns: 1fr; }
+  .feature-grid::before { display: none; }
   .feature-card { min-height: auto; }
   .feature-card h3 { margin-top: 28px; }
   .compact-heading { align-items: start; flex-direction: column; gap: 12px; }
@@ -633,10 +765,9 @@ onBeforeUnmount(() => {
 .home-hero {
   background-image:
     linear-gradient(180deg, rgba(247, 250, 246, .18) 0%, rgba(247, 245, 238, .54) 92%),
-    url('@/assets/scenes/home-river.png');
+    url('@/assets/scenes/home-river.webp');
   background-position: center;
   background-size: cover;
-  background-attachment: fixed;
 }
 
 .home-hero::after {
@@ -655,30 +786,30 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-mist, .orbit-ring, .topic-composer::before { animation: none; }
+  .home-page [data-home-reveal] { transition: none; }
 }
 
 /* 首页每个分段使用独立场景，避免滚动后画面重复 */
 .method-section {
   background-image:
     linear-gradient(180deg, rgba(247, 245, 238, .58), rgba(247, 250, 246, .54)),
-    url('@/assets/scenes/home-method.png');
+    url('@/assets/scenes/home-method.webp');
   background-position: 20% 44%;
   background-size: cover;
 }
 
-.metrics-section {
+.metrics-section.is-background-ready {
   background-image:
     linear-gradient(135deg, rgba(32, 59, 56, .94), rgba(49, 87, 79, .78)),
-    url('@/assets/scenes/home-metrics.png');
+    url('@/assets/scenes/home-metrics.webp');
   background-position: 72% 60%;
   background-size: cover;
 }
 
-.recent-section {
+.recent-section.is-background-ready {
   background-image:
     linear-gradient(180deg, rgba(247, 245, 238, .54), rgba(247, 245, 238, .68)),
-    url('@/assets/scenes/home-works.png');
+    url('@/assets/scenes/home-works.webp');
   background-position: 88% 78%;
   background-size: cover;
 }

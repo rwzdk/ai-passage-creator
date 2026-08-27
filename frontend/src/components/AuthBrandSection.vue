@@ -3,9 +3,9 @@
     <div class="brand-bg"></div>
     <div class="brand-content">
       <div class="brand-logo">
-        <img src="@/assets/logo.png" alt="Logo" class="logo-img" />
+        <img src="@/assets/logo.webp" alt="Logo" class="logo-img" width="64" height="64" />
       </div>
-      <h1 class="brand-title">AI 爆款文章创作器</h1>
+      <h1 class="brand-title">沅笺</h1>
       <p class="brand-subtitle">让每个人都能写出 10万+ 文章</p>
       <div class="brand-features">
         <div class="feature-item">

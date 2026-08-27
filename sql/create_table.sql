@@ -1,92 +1,88 @@
-# 数据库初始化（基础表结构）
-# @author <a href="https://codefather.cn">编程导航学习圈</a>
-# 注意：此文件只包含基础表结构，其他字段由增量 SQL 文件添加
+# 鏁版嵁搴撳垵濮嬪寲锛堝熀纭€琛ㄧ粨鏋勶級
+# 娉ㄦ剰锛氭鏂囦欢鍙寘鍚熀纭€琛ㄧ粨鏋勶紝鍏朵粬瀛楁鐢卞閲?SQL 鏂囦欢娣诲姞
 
--- 设置字符集（解决中文乱码问题）
+-- 璁剧疆瀛楃闆嗭紙瑙ｅ喅涓枃涔辩爜闂锛?
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
--- 创建库
+-- 鍒涘缓搴?
 create database if not exists ai_passage_creator CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- 切换库
+-- 鍒囨崲搴?
 use ai_passage_creator;
 
--- 用户表（基础字段，quota 和 vipTime 由增量脚本添加）
+-- 鐢ㄦ埛琛紙鍩虹瀛楁锛宷uota 鍜?vipTime 鐢卞閲忚剼鏈坊鍔狅級
 create table if not exists user
 (
     id           bigint auto_increment comment 'id' primary key,
-    userAccount  varchar(256)                           not null comment '账号',
-    userPassword varchar(512)                           not null comment '密码',
-    userName     varchar(256)                           null comment '用户昵称',
-    userAvatar   varchar(1024)                          null comment '用户头像',
-    userProfile  varchar(512)                           null comment '用户简介',
-    userEmail    varchar(128)                           null comment 'QQ 邮箱',
-    userPhone    varchar(32)                            null comment '联系电话',
-    userBlog     varchar(255)                           null comment '个人博客',
-    userGithub   varchar(255)                           null comment 'GitHub 地址',
-    userRole     varchar(256) default 'user'            not null comment '用户角色：user/admin',
-    editTime     datetime     default CURRENT_TIMESTAMP not null comment '编辑时间',
-    createTime   datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
-    updateTime   datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    isDelete     tinyint      default 0                 not null comment '是否删除',
+    userAccount  varchar(256)                           not null comment '璐﹀彿',
+    userPassword varchar(512)                           not null comment '瀵嗙爜',
+    userName     varchar(256)                           null comment '鐢ㄦ埛鏄电О',
+    userAvatar   varchar(1024)                          null comment '鐢ㄦ埛澶村儚',
+    userProfile  varchar(512)                           null comment '鐢ㄦ埛绠€浠?,
+    userEmail    varchar(128)                           null comment 'QQ 閭',
+    userPhone    varchar(32)                            null comment '鑱旂郴鐢佃瘽',
+    userBlog     varchar(255)                           null comment '涓汉鍗氬',
+    userGithub   varchar(255)                           null comment 'GitHub 鍦板潃',
+    userRole     varchar(256) default 'user'            not null comment '鐢ㄦ埛瑙掕壊锛歶ser/admin',
+    editTime     datetime     default CURRENT_TIMESTAMP not null comment '缂栬緫鏃堕棿',
+    createTime   datetime     default CURRENT_TIMESTAMP not null comment '鍒涘缓鏃堕棿',
+    updateTime   datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '鏇存柊鏃堕棿',
+    isDelete     tinyint      default 0                 not null comment '鏄惁鍒犻櫎',
     UNIQUE KEY uk_userAccount (userAccount),
     INDEX idx_userName (userName)
-) comment '用户' collate = utf8mb4_unicode_ci;
+) comment '鐢ㄦ埛' collate = utf8mb4_unicode_ci;
 
--- 初始化数据
--- 密码是 12345678（MD5 加密 + 盐值 yupi）
+-- 鍒濆鍖栨暟鎹?
+-- 瀵嗙爜鏄?12345678锛圡D5 鍔犲瘑 + 鐩愬€?qc锛?
 INSERT INTO user (id, userAccount, userPassword, userName, userAvatar, userProfile, userRole) VALUES
-(1, 'admin', '10670d38ec32fa8102be6a37f8cb52bf', '管理员', 'https://www.codefather.cn/logo.png', '系统管理员', 'admin'),
-(2, 'user', '10670d38ec32fa8102be6a37f8cb52bf', '普通用户', 'https://www.codefather.cn/logo.png', '我是一个普通用户', 'user'),
-(3, 'test', '10670d38ec32fa8102be6a37f8cb52bf', '测试账号', 'https://www.codefather.cn/logo.png', '这是一个测试账号', 'user');
 
--- 文章表（基础字段，style/phase/titleOptions/userDescription/enabledImageMethods 由增量脚本添加）
+-- 鏂囩珷琛紙鍩虹瀛楁锛宻tyle/phase/titleOptions/userDescription/enabledImageMethods 鐢卞閲忚剼鏈坊鍔狅級
 create table if not exists article
 (
     id              bigint auto_increment comment 'id' primary key,
-    taskId          varchar(64)                        not null comment '任务ID（UUID）',
-    userId          bigint                             not null comment '用户ID',
-    topic           varchar(500)                       not null comment '选题',
-    mainTitle       varchar(200)                       null comment '主标题',
-    subTitle        varchar(300)                       null comment '副标题',
-    outline         json                               null comment '大纲（JSON格式）',
-    content         text                               null comment '正文（Markdown格式）',
-    fullContent     text                               null comment '完整图文（Markdown格式，含配图）',
-    coverImage      varchar(512)                       null comment '封面图 URL',
-    images          json                               null comment '配图列表（JSON数组，包含封面图 position=1）',
-    status          varchar(20) default 'PENDING'      not null comment '状态：PENDING/PROCESSING/COMPLETED/FAILED',
-    errorMessage    text                               null comment '错误信息',
-    createTime      datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
-    completedTime   datetime                           null comment '完成时间',
-    updateTime      datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    isDelete        tinyint     default 0              not null comment '是否删除',
+    taskId          varchar(64)                        not null comment '浠诲姟ID锛圲UID锛?,
+    userId          bigint                             not null comment '鐢ㄦ埛ID',
+    topic           varchar(500)                       not null comment '閫夐',
+    mainTitle       varchar(200)                       null comment '涓绘爣棰?,
+    subTitle        varchar(300)                       null comment '鍓爣棰?,
+    outline         json                               null comment '澶х翰锛圝SON鏍煎紡锛?,
+    content         text                               null comment '姝ｆ枃锛圡arkdown鏍煎紡锛?,
+    fullContent     text                               null comment '瀹屾暣鍥炬枃锛圡arkdown鏍煎紡锛屽惈閰嶅浘锛?,
+    coverImage      varchar(512)                       null comment '灏侀潰鍥?URL',
+    images          json                               null comment '閰嶅浘鍒楄〃锛圝SON鏁扮粍锛屽寘鍚皝闈㈠浘 position=1锛?,
+    status          varchar(20) default 'PENDING'      not null comment '鐘舵€侊細PENDING/PROCESSING/COMPLETED/FAILED',
+    errorMessage    text                               null comment '閿欒淇℃伅',
+    createTime      datetime    default CURRENT_TIMESTAMP not null comment '鍒涘缓鏃堕棿',
+    completedTime   datetime                           null comment '瀹屾垚鏃堕棿',
+    updateTime      datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '鏇存柊鏃堕棿',
+    isDelete        tinyint     default 0              not null comment '鏄惁鍒犻櫎',
     UNIQUE KEY uk_taskId (taskId),
     INDEX idx_userId (userId),
     INDEX idx_status (status),
     INDEX idx_createTime (createTime),
     INDEX idx_userId_status (userId, status)
-) comment '文章表' collate = utf8mb4_unicode_ci;
+) comment '鏂囩珷琛? collate = utf8mb4_unicode_ci;
 
--- 智能体执行日志表
+-- 鏅鸿兘浣撴墽琛屾棩蹇楄〃
 create table if not exists agent_log
 (
     id              bigint auto_increment comment 'id' primary key,
-    taskId          varchar(64)                        not null comment '任务ID',
-    agentName       varchar(50)                        not null comment '智能体名称',
-    startTime       datetime                           not null comment '开始时间',
-    endTime         datetime                           null comment '结束时间',
-    durationMs      int                                null comment '耗时（毫秒）',
-    status          varchar(20)                        not null comment '状态：SUCCESS/FAILED',
-    errorMessage    text                               null comment '错误信息',
-    prompt          text                               null comment '使用的Prompt',
-    inputData       json                               null comment '输入数据（JSON格式）',
-    outputData      json                               null comment '输出数据（JSON格式）',
-    createTime      datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
-    updateTime      datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    isDelete        tinyint     default 0              not null comment '是否删除',
+    taskId          varchar(64)                        not null comment '浠诲姟ID',
+    agentName       varchar(50)                        not null comment '鏅鸿兘浣撳悕绉?,
+    startTime       datetime                           not null comment '寮€濮嬫椂闂?,
+    endTime         datetime                           null comment '缁撴潫鏃堕棿',
+    durationMs      int                                null comment '鑰楁椂锛堟绉掞級',
+    status          varchar(20)                        not null comment '鐘舵€侊細SUCCESS/FAILED',
+    errorMessage    text                               null comment '閿欒淇℃伅',
+    prompt          text                               null comment '浣跨敤鐨凱rompt',
+    inputData       json                               null comment '杈撳叆鏁版嵁锛圝SON鏍煎紡锛?,
+    outputData      json                               null comment '杈撳嚭鏁版嵁锛圝SON鏍煎紡锛?,
+    createTime      datetime    default CURRENT_TIMESTAMP not null comment '鍒涘缓鏃堕棿',
+    updateTime      datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '鏇存柊鏃堕棿',
+    isDelete        tinyint     default 0              not null comment '鏄惁鍒犻櫎',
     INDEX idx_taskId (taskId),
     INDEX idx_agentName (agentName),
     INDEX idx_status (status),
     INDEX idx_createTime (createTime)
-) comment '智能体执行日志表' collate = utf8mb4_unicode_ci;
+) comment '鏅鸿兘浣撴墽琛屾棩蹇楄〃' collate = utf8mb4_unicode_ci;

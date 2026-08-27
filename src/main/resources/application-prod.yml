@@ -6,6 +6,18 @@ server:
   port: 8123
 
 spring:
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
   # MySQL 数据库配置（通过环境变量覆盖）
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -27,6 +39,11 @@ spring:
 # Pexels API 配置
 pexels:
   api-key: ${PEXELS_API_KEY:}
+
+feedback:
+  mail:
+    recipient: ${FEEDBACK_MAIL_RECIPIENT:235173498@qq.com}
+    sender-name: ${FEEDBACK_MAIL_SENDER_NAME:YuanJian Studio}
 
 # Nano Banana API 配置（可选）
 nano-banana:

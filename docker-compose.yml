@@ -1,5 +1,5 @@
 # ========================================
-# AI 爆款文章创作器 - Docker Compose 配置
+# 沅笺 · YuanJian Studio - Docker Compose 配置
 # ========================================
 # 使用方法：
 #   1. 复制 .env.example 为 .env 并填写 API Key
@@ -11,7 +11,7 @@ services:
   # ============ MySQL 数据库 ============
   mysql:
     image: mysql:8.0
-    container_name: ai-passage-mysql
+    container_name: yuanjian-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
@@ -48,7 +48,7 @@ services:
   # ============ Redis 缓存 ============
   redis:
     image: redis:7-alpine
-    container_name: ai-passage-redis
+    container_name: yuanjian-redis
     restart: unless-stopped
     environment:
       TZ: ${TZ:-Asia/Shanghai}
@@ -74,8 +74,8 @@ services:
       dockerfile: Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
-    image: ai-passage-backend:latest
-    container_name: ai-passage-backend
+    image: yuanjian-backend:latest
+    container_name: yuanjian-backend
     restart: unless-stopped
     environment:
       # Spring 配置
@@ -158,8 +158,8 @@ services:
       dockerfile: Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
-    image: ai-passage-frontend:latest
-    container_name: ai-passage-frontend
+    image: yuanjian-frontend:latest
+    container_name: yuanjian-frontend
     restart: unless-stopped
     environment:
       TZ: ${TZ:-Asia/Shanghai}
@@ -185,11 +185,11 @@ services:
 networks:
   app-network:
     driver: bridge
-    name: ai-passage-network
+    name: yuanjian-network
 
 # ============ 数据卷配置 ============
 volumes:
   mysql-data:
-    name: ai-passage-mysql-data
+    name: yuanjian-mysql-data
   redis-data:
-    name: ai-passage-redis-data
+    name: yuanjian-redis-data

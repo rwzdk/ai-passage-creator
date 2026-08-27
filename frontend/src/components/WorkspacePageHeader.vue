@@ -65,7 +65,7 @@ defineProps<{
 .workspace-page-header__title {
   margin: 0;
   color: var(--ink-deep);
-  font-family: 'Outfit', 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-display);
   font-size: 32px;
   font-weight: 600;
   line-height: 1.2;

@@ -22,13 +22,12 @@ import java.util.Map;
 import java.time.LocalDateTime;
 
 /**
- * 文章异步任务服务
+ * 鏂囩珷寮傛浠诲姟鏈嶅姟
  * 
- * 支持两种执行模式：
- * 1. 多智能体编排模式（通过 article.agent.orchestrator.enabled=true 启用）
- * 2. 原有模式（默认或 article.agent.orchestrator.enabled=false）
+ * 鏀寔涓ょ鎵ц妯″紡锛?
+ * 1. 澶氭櫤鑳戒綋缂栨帓妯″紡锛堥€氳繃 article.agent.orchestrator.enabled=true 鍚敤锛?
+ * 2. 鍘熸湁妯″紡锛堥粯璁ゆ垨 article.agent.orchestrator.enabled=false锛?
  *
- * @author <a href="https://codefather.cn">编程导航学习圈</a>
  */
 @Service
 @Slf4j
@@ -53,32 +52,31 @@ public class ArticleAsyncService {
     private AgentLogService agentLogService;
 
     /**
-     * 阶段1：异步生成标题方案
+     * 闃舵1锛氬紓姝ョ敓鎴愭爣棰樻柟妗?
      *
-     * @param taskId 任务ID
-     * @param topic  选题
-     * @param style  文章风格（可为空）
-     * @param referenceSummary 上传文档生成的参考摘要（可为空）
+     * @param taskId 浠诲姟ID
+     * @param topic  閫夐
+     * @param style  鏂囩珷椋庢牸锛堝彲涓虹┖锛?     * @param referenceSummary 涓婁紶鏂囨。鐢熸垚鐨勫弬鑰冩憳瑕侊紙鍙负绌猴級
      */
     @Async("articleExecutor")
     public void executePhase1(String taskId, String topic, String style, String referenceSummary) {
         boolean useOrchestrator = agentConfig.isOrchestratorEnabled();
-        log.info("阶段1异步任务开始, taskId={}, topic={}, style={}, 使用多智能体编排={}", 
+        log.info("闃舵1寮傛浠诲姟寮€濮? taskId={}, topic={}, style={}, 浣跨敤澶氭櫤鑳戒綋缂栨帓={}", 
                 taskId, topic, style, useOrchestrator);
         
         try {
-            // 更新状态和阶段
+            // 鏇存柊鐘舵€佸拰闃舵
             articleService.updateArticleStatus(taskId, ArticleStatusEnum.PROCESSING, null);
             articleService.updatePhase(taskId, ArticlePhaseEnum.TITLE_GENERATING);
             
-            // 创建状态对象
+            // 鍒涘缓鐘舵€佸璞?
             ArticleState state = new ArticleState();
             state.setTaskId(taskId);
             state.setTopic(topic);
             state.setStyle(style);
             state.setReferenceSummary(referenceSummary);
             
-            // 执行阶段1：生成标题方案（根据配置选择执行方式）
+            // 鎵ц闃舵1锛氱敓鎴愭爣棰樻柟妗堬紙鏍规嵁閰嶇疆閫夋嫨鎵ц鏂瑰紡锛?
             if (useOrchestrator) {
                 articleAgentOrchestrator.executePhase1_GenerateTitles(state, message -> {
                     handleAgentMessage(taskId, message, state);
@@ -89,63 +87,63 @@ public class ArticleAsyncService {
                 });
             }
             
-            // 保存标题方案到数据库
+            // 淇濆瓨鏍囬鏂规鍒版暟鎹簱
             articleService.saveTitleOptions(taskId, state.getTitleOptions());
             
-            // 更新阶段为等待选择标题
+            // 鏇存柊闃舵涓虹瓑寰呴€夋嫨鏍囬
             articleService.updatePhase(taskId, ArticlePhaseEnum.TITLE_SELECTING);
             
-            // 推送标题方案生成完成消息
+            // 鎺ㄩ€佹爣棰樻柟妗堢敓鎴愬畬鎴愭秷鎭?
             Map<String, Object> data = new HashMap<>();
             data.put("titleOptions", state.getTitleOptions());
             sendSseMessage(taskId, SseMessageTypeEnum.TITLES_GENERATED, data);
             
-            log.info("阶段1异步任务完成, taskId={}", taskId);
+            log.info("闃舵1寮傛浠诲姟瀹屾垚, taskId={}", taskId);
         } catch (Exception e) {
-            log.error("阶段1异步任务失败, taskId={}", taskId, e);
+            log.error("闃舵1寮傛浠诲姟澶辫触, taskId={}", taskId, e);
             
-            // 更新状态为失败
+            // 鏇存柊鐘舵€佷负澶辫触
             articleService.updateArticleStatus(taskId, ArticleStatusEnum.FAILED, e.getMessage());
             
-            // 推送错误消息
+            // 鎺ㄩ€侀敊璇秷鎭?
             sendSseMessage(taskId, SseMessageTypeEnum.ERROR, Map.of("message", e.getMessage()));
             
-            // 完成 SSE 连接
+            // 瀹屾垚 SSE 杩炴帴
             sseEmitterManager.complete(taskId);
         }
     }
 
     /**
-     * 阶段2：异步生成大纲（用户确认标题后调用）
+     * 闃舵2锛氬紓姝ョ敓鎴愬ぇ绾诧紙鐢ㄦ埛纭鏍囬鍚庤皟鐢級
      *
-     * @param taskId 任务ID
+     * @param taskId 浠诲姟ID
      */
     @Async("articleExecutor")
     public void executePhase2(String taskId) {
         boolean useOrchestrator = agentConfig.isOrchestratorEnabled();
-        log.info("阶段2异步任务开始, taskId={}, 使用多智能体编排={}", taskId, useOrchestrator);
+        log.info("闃舵2寮傛浠诲姟寮€濮? taskId={}, 浣跨敤澶氭櫤鑳戒綋缂栨帓={}", taskId, useOrchestrator);
         
         try {
-            // 获取文章信息
+            // 鑾峰彇鏂囩珷淇℃伅
             Article article = articleService.getByTaskId(taskId);
             if (article == null) {
-                throw new RuntimeException("文章不存在");
+                throw new RuntimeException("鏂囩珷涓嶅瓨鍦?);
             }
             
-            // 创建状态对象
+            // 鍒涘缓鐘舵€佸璞?
             ArticleState state = new ArticleState();
             state.setTaskId(taskId);
             state.setStyle(article.getStyle());
             state.setUserDescription(article.getUserDescription());
             state.setReferenceSummary(article.getReferenceSummary());
             
-            // 设置标题
+            // 璁剧疆鏍囬
             ArticleState.TitleResult title = new ArticleState.TitleResult();
             title.setMainTitle(article.getMainTitle());
             title.setSubTitle(article.getSubTitle());
             state.setTitle(title);
             
-            // 执行阶段2：生成大纲（根据配置选择执行方式）
+            // 鎵ц闃舵2锛氱敓鎴愬ぇ绾诧紙鏍规嵁閰嶇疆閫夋嫨鎵ц鏂瑰紡锛?
             if (useOrchestrator) {
                 articleAgentOrchestrator.executePhase2_GenerateOutline(state, message -> {
                     handleAgentMessage(taskId, message, state);
@@ -156,58 +154,58 @@ public class ArticleAsyncService {
                 });
             }
             
-            // 保存大纲到数据库
+            // 淇濆瓨澶х翰鍒版暟鎹簱
             Article articleToUpdate = articleService.getByTaskId(taskId);
             articleToUpdate.setOutline(GsonUtils.toJson(state.getOutline().getSections()));
             articleService.updateById(articleToUpdate);
             
-            // 更新阶段为等待编辑大纲
+            // 鏇存柊闃舵涓虹瓑寰呯紪杈戝ぇ绾?
             articleService.updatePhase(taskId, ArticlePhaseEnum.OUTLINE_EDITING);
             
-            // 推送大纲生成完成消息
+            // 鎺ㄩ€佸ぇ绾茬敓鎴愬畬鎴愭秷鎭?
             Map<String, Object> data = new HashMap<>();
             data.put("outline", state.getOutline().getSections());
             sendSseMessage(taskId, SseMessageTypeEnum.OUTLINE_GENERATED, data);
             
-            log.info("阶段2异步任务完成, taskId={}", taskId);
+            log.info("闃舵2寮傛浠诲姟瀹屾垚, taskId={}", taskId);
         } catch (Exception e) {
-            log.error("阶段2异步任务失败, taskId={}", taskId, e);
+            log.error("闃舵2寮傛浠诲姟澶辫触, taskId={}", taskId, e);
             
-            // 更新状态为失败
+            // 鏇存柊鐘舵€佷负澶辫触
             articleService.updateArticleStatus(taskId, ArticleStatusEnum.FAILED, e.getMessage());
             
-            // 推送错误消息
+            // 鎺ㄩ€侀敊璇秷鎭?
             sendSseMessage(taskId, SseMessageTypeEnum.ERROR, Map.of("message", e.getMessage()));
             
-            // 完成 SSE 连接
+            // 瀹屾垚 SSE 杩炴帴
             sseEmitterManager.complete(taskId);
         }
     }
 
     /**
-     * 阶段3：异步生成正文+配图（用户确认大纲后调用）
+     * 闃舵3锛氬紓姝ョ敓鎴愭鏂?閰嶅浘锛堢敤鎴风‘璁ゅぇ绾插悗璋冪敤锛?
      *
-     * @param taskId 任务ID
+     * @param taskId 浠诲姟ID
      */
     @Async("articleExecutor")
     public void executePhase3(String taskId) {
         boolean useOrchestrator = agentConfig.isOrchestratorEnabled();
-        log.info("阶段3异步任务开始, taskId={}, 使用多智能体编排={}", taskId, useOrchestrator);
+        log.info("闃舵3寮傛浠诲姟寮€濮? taskId={}, 浣跨敤澶氭櫤鑳戒綋缂栨帓={}", taskId, useOrchestrator);
         
         try {
-            // 获取文章信息
+            // 鑾峰彇鏂囩珷淇℃伅
             Article article = articleService.getByTaskId(taskId);
             if (article == null) {
-                throw new RuntimeException("文章不存在");
+                throw new RuntimeException("鏂囩珷涓嶅瓨鍦?);
             }
             
-            // 创建状态对象
+            // 鍒涘缓鐘舵€佸璞?
             ArticleState state = new ArticleState();
             state.setTaskId(taskId);
             state.setStyle(article.getStyle());
             state.setReferenceSummary(article.getReferenceSummary());
             
-            // 从数据库获取允许的配图方式
+            // 浠庢暟鎹簱鑾峰彇鍏佽鐨勯厤鍥炬柟寮?
             List<String> enabledMethods = null;
             if (article.getEnabledImageMethods() != null) {
                 enabledMethods = GsonUtils.fromJson(
@@ -217,13 +215,13 @@ public class ArticleAsyncService {
             }
             state.setEnabledImageMethods(enabledMethods);
             
-            // 设置标题
+            // 璁剧疆鏍囬
             ArticleState.TitleResult title = new ArticleState.TitleResult();
             title.setMainTitle(article.getMainTitle());
             title.setSubTitle(article.getSubTitle());
             state.setTitle(title);
             
-            // 设置大纲
+            // 璁剧疆澶х翰
             List<ArticleState.OutlineSection> outlineSections = GsonUtils.fromJson(
                     article.getOutline(),
                     new TypeToken<List<ArticleState.OutlineSection>>(){}
@@ -232,8 +230,8 @@ public class ArticleAsyncService {
             outlineResult.setSections(outlineSections);
             state.setOutline(outlineResult);
             
-            // 执行阶段3：生成正文+配图（根据配置选择执行方式）
-            // 多智能体编排模式支持配图并行生成
+            // 鎵ц闃舵3锛氱敓鎴愭鏂?閰嶅浘锛堟牴鎹厤缃€夋嫨鎵ц鏂瑰紡锛?
+            // 澶氭櫤鑳戒綋缂栨帓妯″紡鏀寔閰嶅浘骞惰鐢熸垚
             if (useOrchestrator) {
                 articleAgentOrchestrator.executePhase3_GenerateContent(state, message -> {
                     handleAgentMessage(taskId, message, state);
@@ -244,35 +242,35 @@ public class ArticleAsyncService {
                 });
             }
             
-            // 保存完整文章到数据库
+            // 淇濆瓨瀹屾暣鏂囩珷鍒版暟鎹簱
             articleService.saveArticleContent(taskId, state);
             
-            // 更新状态为已完成
+            // 鏇存柊鐘舵€佷负宸插畬鎴?
             articleService.updateArticleStatus(taskId, ArticleStatusEnum.COMPLETED, null);
             
-            // 推送完成消息
+            // 鎺ㄩ€佸畬鎴愭秷鎭?
             sendSseMessage(taskId, SseMessageTypeEnum.ALL_COMPLETE, Map.of("taskId", taskId));
             
-            // 完成 SSE 连接
+            // 瀹屾垚 SSE 杩炴帴
             sseEmitterManager.complete(taskId);
             
-            log.info("阶段3异步任务完成, taskId={}", taskId);
+            log.info("闃舵3寮傛浠诲姟瀹屾垚, taskId={}", taskId);
         } catch (Exception e) {
-            log.error("阶段3异步任务失败, taskId={}", taskId, e);
+            log.error("闃舵3寮傛浠诲姟澶辫触, taskId={}", taskId, e);
             
-            // 更新状态为失败
+            // 鏇存柊鐘舵€佷负澶辫触
             articleService.updateArticleStatus(taskId, ArticleStatusEnum.FAILED, e.getMessage());
             
-            // 推送错误消息
+            // 鎺ㄩ€侀敊璇秷鎭?
             sendSseMessage(taskId, SseMessageTypeEnum.ERROR, Map.of("message", e.getMessage()));
             
-            // 完成 SSE 连接
+            // 瀹屾垚 SSE 杩炴帴
             sseEmitterManager.complete(taskId);
         }
     }
 
     /**
-     * 处理智能体消息并推送
+     * 澶勭悊鏅鸿兘浣撴秷鎭苟鎺ㄩ€?
      */
     private void handleAgentMessage(String taskId, String message, ArticleState state) {
         Map<String, Object> data = buildMessageData(message, state);
@@ -282,14 +280,14 @@ public class ArticleAsyncService {
     }
 
     /**
-     * 构建消息数据
+     * 鏋勫缓娑堟伅鏁版嵁
      * 
-     * @param message 原始消息
-     * @param state   文章状态
-     * @return 消息数据，如果消息无效返回 null
+     * @param message 鍘熷娑堟伅
+     * @param state   鏂囩珷鐘舵€?
+     * @return 娑堟伅鏁版嵁锛屽鏋滄秷鎭棤鏁堣繑鍥?null
      */
     private Map<String, Object> buildMessageData(String message, ArticleState state) {
-        // 处理流式消息（带冒号分隔符）
+        // 澶勭悊娴佸紡娑堟伅锛堝甫鍐掑彿鍒嗛殧绗︼級
         String streamingPrefix1 = SseMessageTypeEnum.AGENT1_STREAMING.getStreamingPrefix();
         String streamingPrefix2 = SseMessageTypeEnum.AGENT2_STREAMING.getStreamingPrefix();
         String streamingPrefix3 = SseMessageTypeEnum.AGENT3_STREAMING.getStreamingPrefix();
@@ -359,12 +357,12 @@ public class ArticleAsyncService {
             return data;
         }
         
-        // 处理完成消息（枚举值）
+        // 澶勭悊瀹屾垚娑堟伅锛堟灇涓惧€硷級
         return buildCompleteMessageData(message, state);
     }
 
     /**
-     * 构建流式输出数据
+     * 鏋勫缓娴佸紡杈撳嚭鏁版嵁
      */
     private Map<String, Object> buildStreamingData(SseMessageTypeEnum type, String content) {
         Map<String, Object> data = new HashMap<>();
@@ -374,7 +372,7 @@ public class ArticleAsyncService {
     }
 
     /**
-     * 构建图片完成数据
+     * 鏋勫缓鍥剧墖瀹屾垚鏁版嵁
      */
     private Map<String, Object> buildImageCompleteData(String imageJson) {
         Map<String, Object> data = new HashMap<>();
@@ -391,12 +389,12 @@ public class ArticleAsyncService {
     }
 
     /**
-     * 构建完成消息数据
+     * 鏋勫缓瀹屾垚娑堟伅鏁版嵁
      */
     private Map<String, Object> buildCompleteMessageData(String message, ArticleState state) {
         Map<String, Object> data = new HashMap<>();
         
-        // 使用枚举值匹配
+        // 浣跨敤鏋氫妇鍊煎尮閰?
         if (SseMessageTypeEnum.AGENT1_COMPLETE.getValue().equals(message)) {
             data.put("type", SseMessageTypeEnum.AGENT1_COMPLETE.getValue());
             data.put("title", state.getTitle());
@@ -426,7 +424,7 @@ public class ArticleAsyncService {
     }
 
     /**
-     * 发送 SSE 消息
+     * 鍙戦€?SSE 娑堟伅
      */
     private void sendSseMessage(String taskId, SseMessageTypeEnum type, Map<String, Object> additionalData) {
         Map<String, Object> data = new HashMap<>();
@@ -435,12 +433,11 @@ public class ArticleAsyncService {
         sendEvent(taskId, data);
     }
 
-    /** 推送并持久化用户可见的 SSE 事件，供历史创作页完整回放。 */
+    /** 鎺ㄩ€佸苟鎸佷箙鍖栫敤鎴峰彲瑙佺殑 SSE 浜嬩欢锛屼緵鍘嗗彶鍒涗綔椤靛畬鏁村洖鏀俱€?*/
     private void sendEvent(String taskId, Map<String, Object> data) {
         String payload = GsonUtils.toJson(data);
         String type = String.valueOf(data.get("type"));
-        // 流式正文/大纲每个 token 都会触发事件，实时面板本身不展示这些 token，历史也无需持久化。
-        if (!SseMessageTypeEnum.AGENT1_STREAMING.getValue().equals(type)
+        // 娴佸紡姝ｆ枃/澶х翰姣忎釜 token 閮戒細瑙﹀彂浜嬩欢锛屽疄鏃堕潰鏉挎湰韬笉灞曠ず杩欎簺 token锛屽巻鍙蹭篃鏃犻渶鎸佷箙鍖栥€?        if (!SseMessageTypeEnum.AGENT1_STREAMING.getValue().equals(type)
                 && !SseMessageTypeEnum.AGENT2_STREAMING.getValue().equals(type)
                 && !SseMessageTypeEnum.AGENT3_STREAMING.getValue().equals(type)) {
             LocalDateTime now = LocalDateTime.now();

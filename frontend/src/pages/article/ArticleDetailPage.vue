@@ -22,6 +22,12 @@
               </template>
               重新创建
             </a-button>
+            <a-button v-if="article" @click="editArticle" class="edit-btn">
+              <template #icon>
+                <EditOutlined />
+              </template>
+              编辑
+            </a-button>
             <a-button type="primary" @click="exportMarkdown" class="export-btn">
               <template #icon>
                 <DownloadOutlined />
@@ -51,7 +57,7 @@
           <a-divider />
 
           <!-- 执行日志面板 -->
-          <div v-if="executionStats && executionStats.logs && executionStats.logs.length > 0" class="execution-logs-section">
+          <div v-if="visibleExecutionLogs.length > 0" class="execution-logs-section">
             <div class="logs-header" @click="showExecutionLogs = !showExecutionLogs">
               <h2 class="section-title">
                 <ClockCircleOutlined class="section-icon" />
@@ -69,16 +75,16 @@
                 <div class="stats-summary">
                   <div class="stat-item">
                     <span class="label">总耗时</span>
-                    <span class="value">{{ executionStats.totalDurationMs ?? 0 }}ms</span>
+                    <span class="value">{{ formatDuration(executionStats.totalDurationMs) }}</span>
                   </div>
                   <div class="stat-item">
                     <span class="label">智能体数量</span>
-                    <span class="value">{{ executionStats.agentCount ?? 0 }}</span>
+                    <span class="value">{{ visibleExecutionLogs.length }}</span>
                   </div>
                   <div class="stat-item">
                     <span class="label">平均耗时</span>
                     <span class="value">
-                      {{ executionStats.agentCount && executionStats.totalDurationMs ? Math.round(executionStats.totalDurationMs / executionStats.agentCount) : 0 }}ms
+                      {{ formatDuration(visibleExecutionLogs.length ? Math.round(visibleTotalDurationMs / visibleExecutionLogs.length) : 0) }}
                     </span>
                   </div>
                 </div>
@@ -86,7 +92,7 @@
                 <!-- 智能体时间线 -->
                 <div class="agent-timeline">
                   <div
-                    v-for="log in executionStats.logs"
+                    v-for="log in visibleExecutionLogs"
                     :key="log.id"
                     :class="['timeline-item', log.status?.toLowerCase()]"
                   >
@@ -98,7 +104,7 @@
                     <div class="timeline-content">
                       <div class="timeline-header">
                         <span class="agent-name">{{ getAgentDisplayName(log.agentName ?? '') }}</span>
-                        <span class="duration">{{ log.durationMs ?? 0 }}ms</span>
+                        <span class="duration">{{ formatDuration(log.durationMs) }}</span>
                       </div>
                       <div class="timeline-time">
                         {{ log.startTime ? formatDate(log.startTime) : '' }}
@@ -113,7 +119,7 @@
             </Transition>
           </div>
 
-          <a-divider v-if="executionStats && executionStats.logs && executionStats.logs.length > 0" />
+          <a-divider v-if="visibleExecutionLogs.length > 0" />
 
           <!-- 大纲 -->
           <div v-if="article.outline && article.outline.length > 0" class="outline-section">
@@ -139,7 +145,7 @@
               <FileTextOutlined class="section-icon" />
               完整图文
             </h2>
-            <div v-html="markdownToHtml(article.fullContent)" class="markdown-content"></div>
+            <div v-html="markdownToHtml(mergeArticleImages(article.fullContent, article.images))" class="markdown-content"></div>
           </div>
 
           <!-- 普通正文（无 fullContent 时展示） -->
@@ -174,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
@@ -188,9 +194,11 @@ import {
   CloseCircleOutlined,
   LoadingOutlined,
   RedoOutlined,
+  EditOutlined,
   ThunderboltOutlined
 } from '@ant-design/icons-vue'
 import { getArticle, getExecutionLogs } from '@/api/articleController'
+import { mergeArticleImages } from '@/utils/article'
 import { marked } from 'marked'
 import dayjs from 'dayjs'
 
@@ -256,7 +264,7 @@ const exportMarkdown = () => {
 
   // 优先使用完整图文
   if (article.value.fullContent) {
-    markdown += article.value.fullContent
+    markdown += mergeArticleImages(article.value.fullContent, article.value.images)
   } else {
     if (article.value.outline && article.value.outline.length > 0) {
       markdown += `## 目录\n\n`
@@ -268,10 +276,11 @@ const exportMarkdown = () => {
 
     markdown += article.value.content || ''
 
-    if (article.value.images && article.value.images.length > 0) {
+    const bodyImages = article.value.images?.filter((image) => image.position !== 1 && image.url)
+    if (bodyImages && bodyImages.length > 0) {
       markdown += `\n\n## 配图\n\n`
-      article.value.images.forEach(image => {
-        markdown += `![${image.description}](${image.url})\n\n`
+      bodyImages.forEach(image => {
+        markdown += `![${image.description || image.sectionTitle || '文章配图'}](${image.url})\n\n`
       })
     }
   }
@@ -290,6 +299,10 @@ const exportMarkdown = () => {
 // 格式化日期
 const formatDate = (date: string) => {
   return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+}
+
+const formatDuration = (durationMs?: number) => {
+  return `${((durationMs ?? 0) / 1000).toFixed(1)}s`
 }
 
 // 获取状态颜色
@@ -314,9 +327,8 @@ const getStatusText = (status: string) => {
   return textMap[status] || status
 }
 
-// 获取智能体显示名称
-const getAgentDisplayName = (agentName: string) => {
-  const nameMap: Record<string, string> = {
+// 仅展示用户可理解的关键步骤，隐藏 SSE 回放等内部事件。
+const agentDisplayNames: Record<string, string> = {
     'agent1_generate_titles': '生成标题',
     'agent2_generate_outline': '生成大纲',
     'agent3_generate_content': '生成正文',
@@ -324,8 +336,18 @@ const getAgentDisplayName = (agentName: string) => {
     'agent5_generate_images': '生成配图',
     'agent6_merge_content': '图文合成',
     'ai_modify_outline': 'AI修改大纲'
-  }
-  return nameMap[agentName] || agentName
+}
+
+const visibleExecutionLogs = computed(() => {
+  return (executionStats.value?.logs ?? []).filter((log) => Boolean(log.agentName && agentDisplayNames[log.agentName]))
+})
+
+const visibleTotalDurationMs = computed(() => {
+  return visibleExecutionLogs.value.reduce((total, log) => total + (log.durationMs ?? 0), 0)
+})
+
+const getAgentDisplayName = (agentName: string) => {
+  return agentDisplayNames[agentName] ?? ''
 }
 
 // 重试（重新创建文章）
@@ -348,6 +370,16 @@ const handleRetry = () => {
   })
 }
 
+const editArticle = () => {
+  const taskId = article.value?.taskId || route.params.taskId
+  if (!taskId) return
+
+  router.push({
+    path: '/create',
+    query: { taskId: String(taskId) },
+  })
+}
+
 onMounted(() => {
   loadArticle()
 })
@@ -361,19 +393,21 @@ onMounted(() => {
 
   .page-header {
     background: var(--gradient-hero);
-    padding: 20px;
-    margin-bottom: 24px;
+    padding: 12px 20px 16px;
+    margin-bottom: 16px;
   }
 
   .header-container {
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
   }
 
   .header-actions {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 12px;
   }
 
   .right-actions {
@@ -382,21 +416,26 @@ onMounted(() => {
   }
 
   .back-btn {
-    background: white;
-    border: 1px solid var(--color-border);
+    height: 36px;
+    padding: 0 12px;
+    background: transparent;
+    border-color: transparent;
     color: var(--color-text);
     font-size: 13px;
+    font-weight: 600;
     transition: all var(--transition-fast);
     border-radius: var(--radius-md);
 
     &:hover {
-      background: var(--color-background-secondary);
-      border-color: var(--color-border);
+      background: rgba(143, 184, 164, 0.15);
+      border-color: transparent;
       color: var(--color-text);
     }
   }
 
   .retry-btn {
+    height: 36px;
+    padding: 0 12px;
     background: #ff4d4f;
     color: white;
     border: none;
@@ -411,7 +450,26 @@ onMounted(() => {
     }
   }
 
+  .edit-btn {
+    height: 36px;
+    padding: 0 12px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: var(--radius-md);
+
+    &:hover {
+      border-color: transparent;
+      background: rgba(143, 184, 164, 0.15);
+      color: var(--color-text);
+    }
+  }
+
   .export-btn {
+    height: 36px;
+    padding: 0 14px;
     background: var(--gradient-primary);
     color: white;
     border: none;
@@ -850,6 +908,14 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .article-detail-page {
+    .page-header {
+      padding: 8px 12px 16px;
+    }
+
+    .header-container {
+      padding: 0;
+    }
+
     .article-card {
       :deep(.ant-card-body) {
         padding: 24px;
@@ -867,6 +933,32 @@ onMounted(() => {
     }
   }
 }
+
+@media (max-width: 520px) {
+  .article-detail-page {
+    .header-actions {
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .back-btn {
+      width: auto;
+    }
+
+    .right-actions {
+      flex: 1 1 100%;
+      gap: 8px;
+    }
+
+    .retry-btn {
+      flex-basis: 100%;
+    }
+
+    .right-actions :deep(.ant-btn) {
+      flex: 1 1 0;
+    }
+  }
+}
 /* 沿江阅读页视觉层 */
 .article-detail-page {
   background:
@@ -878,7 +970,7 @@ onMounted(() => {
 .article-detail-page .article-card { border-color: var(--line-soft); background: rgba(255, 255, 255, 0.8); box-shadow: var(--shadow-xl); backdrop-filter: blur(15px); }
 .article-detail-page .article-card :deep(.ant-card-body) { padding: clamp(28px, 5vw, 64px); }
 .article-detail-page .title-section { padding-bottom: 26px; border-bottom: 1px solid var(--line-soft); }
-.article-detail-page .title-section .main-title { color: var(--ink-deep); font-family: 'Outfit', 'Microsoft YaHei', sans-serif; font-size: clamp(2rem, 4vw, 3.6rem); font-weight: 500; }
+.article-detail-page .title-section .main-title { color: var(--ink-deep); font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.6rem); font-weight: 500; }
 .article-detail-page .content-section .markdown-content { max-width: 760px; margin: 0 auto; font-size: 16px; line-height: 2; }
 .article-detail-page .content-section .markdown-content :deep(p) { color: #34504a; }
 .article-detail-page .outline-section .outline-list .outline-item { border-color: var(--line-soft); border-left: 3px solid var(--river-green); background: rgba(243, 247, 243, 0.65); }
@@ -892,7 +984,7 @@ onMounted(() => {
 .article-detail-page {
   background-image:
     linear-gradient(180deg, rgba(247, 250, 246, .58), rgba(247, 245, 238, .9) 78%),
-    url('@/assets/scenes/article-detail-mist.png');
+    url('@/assets/scenes/article-detail-mist.webp');
   background-position: center top;
   background-size: cover;
   background-attachment: fixed;

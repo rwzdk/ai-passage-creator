@@ -1,4 +1,4 @@
-# AI Passage Creator 前端“沅水青山”视觉改造设计规格
+# YuanJian Studio 前端“沅水青山”视觉改造设计规格
 
 ## 1. 目标
 
@@ -105,4 +105,3 @@ frontend/src/components/motion/StaggerList.vue
 ## 7. 背景图素材规则
 
 背景图不放文字、Logo、水印和高对比主体；主体放在右侧或边缘，中央/左侧保留文案空间；整体低饱和、低对比、带自然雾气，避免面板叠加后内容不可读。
-

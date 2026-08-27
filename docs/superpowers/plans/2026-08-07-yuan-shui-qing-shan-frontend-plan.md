@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在保留现有业务流程和接口的前提下，将 AI Passage Creator 全部前端页面统一改造成“沅水青山、诗意清冷、水墨淡染”风格，并为滚动、加载、统计、表单和页面跳转加入稳定的动态反馈。
+**Goal:** 在保留现有业务流程和接口的前提下，将 YuanJian Studio 全部前端页面统一改造成“沅水青山、诗意清冷、水墨淡染”风格，并为滚动、加载、统计、表单和页面跳转加入稳定的动态反馈。
 
 **Architecture:** 先建立全局设计 Token、页面过渡和可复用动效组件，再逐页接入。背景采用“场景绑定”模型，由页面场景控制预加载、交叉淡化和内容显示，避免单个卡片触发背景切换。每个页面独立验证并创建一个只包含该页面相关文件的 Git 提交。
 
@@ -253,4 +253,3 @@ npm run type-check
 npm run build
 git diff --check
 ```
-

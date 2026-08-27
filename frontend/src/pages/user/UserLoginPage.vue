@@ -1,14 +1,12 @@
 <template>
   <main id="userLoginPage" class="auth-page">
     <section class="auth-visual">
-      <div class="visual-water" aria-hidden="true" />
-      <div class="visual-bridge" aria-hidden="true"><span /><span /><span /></div>
       <div class="visual-copy">
-        <div class="visual-mark"><img src="@/assets/logo.png" alt="AI 文章创作器" /></div>
+        <div class="visual-mark"><img src="@/assets/logo.webp" alt="AI 文章创作器" width="64" height="64" /></div>
         <div class="eyebrow">A quiet place to write</div>
-        <h1>把灵感，<br />安静地写下来。</h1>
-        <p>从一个题目开始，沿着自己的节奏，完成一篇真正属于你的作品。</p>
-        <div class="visual-note"><span /> 今日也可以只写一句。</div>
+        <h1>把灵感，<br />安静地写下来</h1>
+        <p>从一个题目开始，沿着自己的节奏，完成一篇真正属于你的作品</p>
+        <div class="visual-note"><span /> 今日也可以只写一句</div>
       </div>
     </section>
 
@@ -16,7 +14,7 @@
       <div class="auth-form-card">
         <div class="form-kicker">WELCOME BACK</div>
         <h2>欢迎回来</h2>
-        <p class="form-subtitle">登录你的创作空间，继续未完成的表达。</p>
+        <p class="form-subtitle">登录你的创作空间，继续未完成的表达</p>
 
         <a-form :model="formState" name="login" autocomplete="off" class="auth-form" @finish="handleSubmit">
           <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号' }]">
@@ -77,27 +75,20 @@ const handleSubmit = async (values: API.UserLoginRequest) => {
 </script>
 
 <style scoped>
-.auth-page { display: grid; grid-template-columns: 1.08fr 0.92fr; min-height: calc(100vh - 64px); background: var(--paper-warm); }
+.auth-page { display: grid; grid-template-columns: 1.08fr 0.92fr; min-height: 100vh; background: var(--paper-warm); }
 .auth-visual { position: relative; display: grid; place-items: center; overflow: hidden; padding: 72px 8vw; background: linear-gradient(150deg, #456f64, #203b38 72%); color: white; }
-.visual-water { position: absolute; inset: 28% -12% -18%; border: 1px solid rgba(213,234,219,0.28); border-radius: 50% 50% 0 0; transform: rotate(-7deg); box-shadow: 0 -20px 120px rgba(143,184,164,0.16); }
-.visual-water::before, .visual-water::after { position: absolute; left: 9%; right: 8%; height: 1px; background: rgba(213,234,219,0.22); content: ''; }
-.visual-water::before { top: 23%; transform: rotate(5deg); }
-.visual-water::after { top: 54%; transform: rotate(-2deg); }
-.visual-bridge { position: absolute; right: -2%; bottom: 18%; width: 48%; height: 32%; border-top: 2px solid rgba(247,245,238,0.24); transform: rotate(-10deg); }
-.visual-bridge span { position: absolute; top: -2px; width: 2px; height: 100%; background: rgba(247,245,238,0.18); transform: rotate(8deg); }
-.visual-bridge span:nth-child(1) { left: 32%; }.visual-bridge span:nth-child(2) { left: 58%; }.visual-bridge span:nth-child(3) { left: 82%; }
 .visual-copy { position: relative; z-index: 1; max-width: 450px; }
 .visual-mark { display: grid; place-items: center; width: 72px; height: 72px; margin-bottom: 32px; border: 1px solid rgba(255,255,255,0.32); border-radius: 22px; background: rgba(247,245,238,0.92); box-shadow: 0 14px 35px rgba(0,0,0,0.15); }
 .visual-mark img { width: 56px; height: 56px; object-fit: contain; }
 .eyebrow, .form-kicker { color: var(--river-green); font-size: 11px; font-weight: 700; letter-spacing: 0.16em; }
-.visual-copy h1 { margin: 22px 0 20px; font-size: clamp(3rem, 5vw, 5.2rem); font-weight: 500; line-height: 1.02; }
+.visual-copy h1 { margin: 22px 0 20px; font-family: var(--font-display); font-size: clamp(3rem, 5vw, 5.2rem); font-weight: 500; line-height: 1.02; }
 .visual-copy p { max-width: 360px; margin: 0; color: rgba(243,247,243,0.74); font-size: 16px; line-height: 1.9; }
 .visual-note { display: flex; align-items: center; gap: 10px; margin-top: 42px; color: rgba(243,247,243,0.82); font-size: 13px; }
 .visual-note span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-gold); box-shadow: 0 0 0 5px rgba(199,168,120,0.18); }
 .auth-form-wrap { display: grid; place-items: center; padding: 56px 7vw; background: rgba(247,245,238,0.92); }
 .auth-form-card { width: min(100%, 390px); }
 .form-kicker { color: var(--mountain-green); }
-.auth-form-card h2 { margin: 18px 0 8px; color: var(--ink-deep); font-size: 38px; font-weight: 500; }
+.auth-form-card h2 { margin: 18px 0 8px; color: var(--ink-deep); font-family: var(--font-display); font-size: 38px; font-weight: 500; }
 .form-subtitle { margin: 0 0 36px; color: var(--ink-muted); font-size: 14px; line-height: 1.7; }
 .auth-form :deep(.ant-form-item) { margin-bottom: 18px; }
 .form-input { border-radius: var(--radius-md); border-color: var(--line-soft); background: rgba(255,255,255,0.68); }
@@ -119,7 +110,7 @@ const handleSubmit = async (values: API.UserLoginRequest) => {
 .auth-page .auth-visual {
   background-image:
     linear-gradient(145deg, rgba(32, 59, 56, .58), rgba(32, 59, 56, .78)),
-    url('@/assets/scenes/auth-dusk-bridge.png');
+    url('@/assets/scenes/auth-dusk-bridge.webp');
   background-position: center;
   background-size: cover;
 }

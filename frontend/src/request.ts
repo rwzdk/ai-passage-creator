@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import { API_BASE_URL } from '@/config/env'
 import { REQUEST_TIMEOUT, UNAUTHORIZED_CODE } from '@/constants'
 
@@ -37,6 +37,17 @@ myAxios.interceptors.response.use(
         window.location.href = `/user/login?redirect=${window.location.href}`
       }
     }
+
+    // 业务接口使用 HTTP 200 返回错误码；统一转成 rejected Promise，
+    // 让调用方的 catch 能恢复页面状态并展示后端真实错误。
+    if (data?.code !== undefined && data.code !== 0) {
+      const error = new Error(data.message || '请求失败') as Error & {
+        response?: typeof response
+      }
+      error.response = response
+      return Promise.reject(error)
+    }
+
     return response
   },
   function (error) {

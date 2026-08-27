@@ -21,7 +21,7 @@
 ### Task 1: Add failing backend request tests
 
 **Files:**
-- Create: `src/test/java/com/yupi/template/service/Image2ServiceTest.java`
+- Create: `src/test/java/com/qc/template/service/Image2ServiceTest.java`
 
 - [ ] **Step 1: Write tests for prompt-only generation and URL-based edit payloads**
 
@@ -36,10 +36,10 @@
 ### Task 2: Implement the Image2 backend strategy
 
 **Files:**
-- Create: `src/main/java/com/yupi/template/config/Image2Config.java`
-- Create: `src/main/java/com/yupi/template/service/Image2Service.java`
-- Modify: `src/main/java/com/yupi/template/model/enums/ImageMethodEnum.java`
-- Modify: `src/main/java/com/yupi/template/service/ImageServiceStrategy.java`
+- Create: `src/main/java/com/qc/template/config/Image2Config.java`
+- Create: `src/main/java/com/qc/template/service/Image2Service.java`
+- Modify: `src/main/java/com/qc/template/model/enums/ImageMethodEnum.java`
+- Modify: `src/main/java/com/qc/template/service/ImageServiceStrategy.java`
 - Modify: `src/main/resources/application.yml`
 - Modify: `src/main/resources/application-local.yml.example`
 - Modify: `src/main/resources/application-prod.yml`

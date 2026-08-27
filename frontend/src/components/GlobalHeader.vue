@@ -1,11 +1,11 @@
 <template>
-  <a-layout-header class="header">
+  <header class="header">
     <div class="header-container">
       <div class="header-left">
         <RouterLink to="/" class="logo-link">
           <div class="logo-wrapper">
-            <img src="@/assets/logo.png" alt="Logo" class="logo-img" />
-            <h1 class="site-title">AI文章创作器</h1>
+            <img src="@/assets/logo-optimized.webp" alt="Logo" class="logo-img" width="64" height="64" />
+            <h1 class="site-title">沅笺</h1>
           </div>
         </RouterLink>
       </div>
@@ -67,13 +67,13 @@
         </div>
       </div>
     </div>
-  </a-layout-header>
+  </header>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, h } from 'vue'
 import { useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
 import { userLogout } from '@/api/userController.ts'
 import {
@@ -160,27 +160,42 @@ const doLogout = async () => {
 <style scoped>
 .header {
   position: sticky;
-  top: 0;
+  top: 12px;
   z-index: 100;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  padding: 0;
   height: 64px;
-  line-height: 64px;
-  border-bottom: 1px solid var(--color-border);
-  transition: all var(--transition-normal);
-  overflow: hidden;
+  margin-bottom: -64px;
+  padding: 0;
+  line-height: normal;
+  background: transparent;
+  border: 0;
+  overflow: visible;
+  transition: transform var(--transition-normal);
 }
 
 .header-container {
-  max-width: 1200px;
+  position: relative;
+  max-width: 1160px;
+  height: 64px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 14px 0 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  background: linear-gradient(105deg, rgba(247, 250, 246, 0.88), rgba(224, 236, 229, 0.8));
+  box-shadow: 0 14px 32px rgba(32, 59, 56, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -1px 0 rgba(69, 111, 100, 0.08);
+}
+
+.header-container::before {
+  position: absolute;
+  top: 0;
+  left: 9%;
+  right: 9%;
+  height: 1px;
+  content: '';
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.96), transparent);
+  pointer-events: none;
 }
 
 .header-left {
@@ -194,7 +209,8 @@ const doLogout = async () => {
 }
 
 .logo-link:hover {
-  opacity: 0.8;
+  opacity: 1;
+  filter: drop-shadow(0 0 12px rgba(143, 184, 164, 0.36));
 }
 
 .logo-wrapper {
@@ -207,13 +223,14 @@ const doLogout = async () => {
   width: 36px;
   height: 36px;
   object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(143, 184, 164, 0.3));
 }
 
 .site-title {
   margin: 0;
   font-size: 17px;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--ink-deep);
   white-space: nowrap;
   letter-spacing: -0.3px;
 }
@@ -222,15 +239,22 @@ const doLogout = async () => {
 .nav-center {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid rgba(69, 111, 100, 0.12);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 11px;
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-secondary);
@@ -239,24 +263,41 @@ const doLogout = async () => {
 }
 
 .nav-item:hover {
-  color: var(--color-text);
-  background: var(--color-background-secondary);
+  color: var(--ink-deep);
+  border-color: rgba(69, 111, 100, 0.13);
+  background: rgba(143, 184, 164, 0.18);
+  box-shadow: 0 0 16px rgba(143, 184, 164, 0.16);
 }
 
 .nav-item.active {
-  color: var(--color-primary-dark);
-  background: rgba(34, 197, 94, 0.1);
+  color: var(--ink-deep);
+  border-color: rgba(69, 111, 100, 0.18);
+  background: linear-gradient(135deg, rgba(143, 184, 164, 0.42), rgba(247, 250, 246, 0.56));
+  box-shadow: 0 0 16px rgba(143, 184, 164, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+.nav-item.active::after {
+  position: absolute;
+  right: 18px;
+  bottom: 3px;
+  left: 18px;
+  height: 2px;
+  content: '';
+  border-radius: var(--radius-full);
+  background: var(--river-green);
+  box-shadow: 0 0 10px rgba(143, 184, 164, 0.8);
 }
 
 .nav-icon {
   font-size: 16px;
+  color: var(--river-green);
 }
 
 /* 用户区域 */
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .user-dropdown {
@@ -276,13 +317,13 @@ const doLogout = async () => {
   font-size: 13px;
   font-weight: 500;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--accent-gold);
   text-decoration: none;
   transition: all var(--transition-fast);
 
   &:hover {
-    background: rgba(34, 197, 94, 0.08);
-    color: var(--color-primary-dark);
+    background: rgba(199, 168, 120, 0.16);
+    color: #e0c79d;
   }
 
   .anticon {
@@ -297,12 +338,12 @@ const doLogout = async () => {
   padding: 6px 14px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-primary);
+  color: var(--accent-gold);
   text-decoration: none;
   transition: all var(--transition-fast);
 
   &:hover {
-    color: var(--color-primary-dark);
+    color: #e0c79d;
   }
 
   .anticon {
@@ -319,16 +360,17 @@ const doLogout = async () => {
 }
 
 .user-info:hover {
-  background: var(--color-background-secondary);
+  background: rgba(143, 184, 164, 0.18);
 }
 
 .user-avatar {
-  border: 2px solid var(--color-border);
+  border: 2px solid rgba(255, 255, 255, 0.86);
+  box-shadow: 0 0 0 3px rgba(143, 184, 164, 0.16), 0 0 14px rgba(143, 184, 164, 0.16);
 }
 
 .user-name {
   font-weight: 500;
-  color: var(--color-text);
+  color: var(--ink-deep);
   font-size: 14px;
 }
 
@@ -342,23 +384,24 @@ const doLogout = async () => {
   font-size: 14px;
   font-weight: 600;
   color: white;
-  background: var(--gradient-primary);
-  border: none;
-  box-shadow: var(--shadow-green);
+  background: rgba(69, 111, 100, 0.9);
+  border: 1px solid rgba(69, 111, 100, 0.2);
+  box-shadow: 0 6px 16px rgba(69, 111, 100, 0.18);
   transition: all var(--transition-normal);
   text-decoration: none;
 }
 
 .login-btn:hover {
   color: white;
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+  background: var(--mountain-green);
+  box-shadow: 0 8px 18px rgba(69, 111, 100, 0.24);
 }
 
 .dropdown-menu {
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(69, 111, 100, 0.18);
 }
 
 .dropdown-item {
@@ -386,8 +429,17 @@ const doLogout = async () => {
 
 /* 响应式 */
 @media (max-width: 768px) {
+  .header {
+    top: 8px;
+    height: 56px;
+    margin-bottom: -56px;
+  }
+
   .header-container {
-    padding: 0 16px;
+    height: 56px;
+    margin: 0 12px;
+    padding: 0 10px;
+    border-radius: 17px;
   }
 
   .site-title {
@@ -399,11 +451,52 @@ const doLogout = async () => {
   }
 
   .nav-item {
-    padding: 8px 12px;
+    padding: 8px 10px;
   }
 
   .user-name {
     display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .header-container {
+    margin: 0 8px;
+  }
+
+  .nav-center {
+    gap: 1px;
+    padding: 3px;
+  }
+
+  .nav-item {
+    padding: 8px;
+  }
+
+  .header-right {
+    gap: 4px;
+  }
+
+  .upgrade-vip-btn,
+  .vip-badge {
+    padding: 6px 8px;
+  }
+
+  .upgrade-vip-btn span,
+  .vip-badge span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header,
+  .logo-link,
+  .nav-item,
+  .upgrade-vip-btn,
+  .vip-badge,
+  .user-info,
+  .login-btn {
+    transition: none;
   }
 }
 </style>

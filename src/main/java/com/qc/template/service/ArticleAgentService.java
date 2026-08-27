@@ -25,9 +25,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * 文章智能体编排服务
+ * 鏂囩珷鏅鸿兘浣撶紪鎺掓湇鍔?
  *
- * @author <a href="https://codefather.cn">编程导航学习圈</a>
  */
 @Service
 @Slf4j
@@ -41,102 +40,97 @@ public class ArticleAgentService {
 
     public String editArticleContent(String content, String instruction) {
         String prompt = """
-                你是一名专业中文文章编辑。请根据用户的修改要求，直接改写下面的 Markdown 文章。
-                只输出修改后的完整 Markdown 正文，不要输出解释、前后引号或 Markdown 代码围栏。
-                保留原文中的图片 Markdown 链接、图片 URL 和文章结构；除非用户明确要求，否则不要删除图片。
+                浣犳槸涓€鍚嶄笓涓氫腑鏂囨枃绔犵紪杈戙€傝鏍规嵁鐢ㄦ埛鐨勪慨鏀硅姹傦紝鐩存帴鏀瑰啓涓嬮潰鐨?Markdown 鏂囩珷銆?                鍙緭鍑轰慨鏀瑰悗鐨勫畬鏁?Markdown 姝ｆ枃锛屼笉瑕佽緭鍑鸿В閲娿€佸墠鍚庡紩鍙锋垨 Markdown 浠ｇ爜鍥存爮銆?                淇濈暀鍘熸枃涓殑鍥剧墖 Markdown 閾炬帴銆佸浘鐗?URL 鍜屾枃绔犵粨鏋勶紱闄ら潪鐢ㄦ埛鏄庣‘瑕佹眰锛屽惁鍒欎笉瑕佸垹闄ゅ浘鐗囥€?
+                銆愮敤鎴蜂慨鏀硅姹傘€?                %s
 
-                【用户修改要求】
-                %s
-
-                【原文 Markdown】
-                %s
+                銆愬師鏂?Markdown銆?                %s
                 """.formatted(instruction.trim(), content);
         return callLlm(prompt);
     }
 
     /**
-     * 阶段1：生成标题方案（3-5个）
+     * 闃舵1锛氱敓鎴愭爣棰樻柟妗堬紙3-5涓級
      *
-     * @param state         文章状态
-     * @param streamHandler 流式输出处理器
+     * @param state         鏂囩珷鐘舵€?
+     * @param streamHandler 娴佸紡杈撳嚭澶勭悊鍣?
      */
     public void executePhase1_GenerateTitles(ArticleState state, Consumer<String> streamHandler) {
         try {
-            // 智能体1：生成标题方案
-            log.info("阶段1：开始生成标题方案, taskId={}", state.getTaskId());
-            // 通过代理调用，使 AOP 生效
+            // 鏅鸿兘浣?锛氱敓鎴愭爣棰樻柟妗?
+            log.info("闃舵1锛氬紑濮嬬敓鎴愭爣棰樻柟妗? taskId={}", state.getTaskId());
+            // 閫氳繃浠ｇ悊璋冪敤锛屼娇 AOP 鐢熸晥
             getProxy().agent1GenerateTitleOptions(state, streamHandler);
             streamHandler.accept(SseMessageTypeEnum.AGENT1_COMPLETE.getValue());
-            log.info("阶段1：标题方案生成完成, taskId={}, optionsCount={}", 
+            log.info("闃舵1锛氭爣棰樻柟妗堢敓鎴愬畬鎴? taskId={}, optionsCount={}", 
                 state.getTaskId(), state.getTitleOptions().size());
         } catch (Exception e) {
-            log.error("阶段1：标题方案生成失败, taskId={}", state.getTaskId(), e);
-            throw new RuntimeException("标题方案生成失败: " + e.getMessage(), e);
+            log.error("闃舵1锛氭爣棰樻柟妗堢敓鎴愬け璐? taskId={}", state.getTaskId(), e);
+            throw new RuntimeException("鏍囬鏂规鐢熸垚澶辫触: " + e.getMessage(), e);
         }
     }
 
     /**
-     * 阶段2：生成大纲（用户选择标题后）
+     * 闃舵2锛氱敓鎴愬ぇ绾诧紙鐢ㄦ埛閫夋嫨鏍囬鍚庯級
      *
-     * @param state         文章状态
-     * @param streamHandler 流式输出处理器
+     * @param state         鏂囩珷鐘舵€?
+     * @param streamHandler 娴佸紡杈撳嚭澶勭悊鍣?
      */
     public void executePhase2_GenerateOutline(ArticleState state, Consumer<String> streamHandler) {
         try {
-            // 智能体2：生成大纲（流式输出）
-            log.info("阶段2：开始生成大纲, taskId={}", state.getTaskId());
-            // 通过代理调用，使 AOP 生效
+            // 鏅鸿兘浣?锛氱敓鎴愬ぇ绾诧紙娴佸紡杈撳嚭锛?
+            log.info("闃舵2锛氬紑濮嬬敓鎴愬ぇ绾? taskId={}", state.getTaskId());
+            // 閫氳繃浠ｇ悊璋冪敤锛屼娇 AOP 鐢熸晥
             getProxy().agent2GenerateOutline(state, streamHandler);
             streamHandler.accept(SseMessageTypeEnum.AGENT2_COMPLETE.getValue());
-            log.info("阶段2：大纲生成完成, taskId={}", state.getTaskId());
+            log.info("闃舵2锛氬ぇ绾茬敓鎴愬畬鎴? taskId={}", state.getTaskId());
         } catch (Exception e) {
-            log.error("阶段2：大纲生成失败, taskId={}", state.getTaskId(), e);
-            throw new RuntimeException("大纲生成失败: " + e.getMessage(), e);
+            log.error("闃舵2锛氬ぇ绾茬敓鎴愬け璐? taskId={}", state.getTaskId(), e);
+            throw new RuntimeException("澶х翰鐢熸垚澶辫触: " + e.getMessage(), e);
         }
     }
 
     /**
-     * 阶段3：生成正文+配图（用户确认大纲后）
+     * 闃舵3锛氱敓鎴愭鏂?閰嶅浘锛堢敤鎴风‘璁ゅぇ绾插悗锛?
      *
-     * @param state         文章状态
-     * @param streamHandler 流式输出处理器
+     * @param state         鏂囩珷鐘舵€?
+     * @param streamHandler 娴佸紡杈撳嚭澶勭悊鍣?
      */
     public void executePhase3_GenerateContent(ArticleState state, Consumer<String> streamHandler) {
         try {
-            // 获取代理对象
+            // 鑾峰彇浠ｇ悊瀵硅薄
             ArticleAgentService proxy = getProxy();
             
-            // 智能体3：生成正文（流式输出）
-            log.info("阶段3：开始生成正文, taskId={}", state.getTaskId());
+            // 鏅鸿兘浣?锛氱敓鎴愭鏂囷紙娴佸紡杈撳嚭锛?
+            log.info("闃舵3锛氬紑濮嬬敓鎴愭鏂? taskId={}", state.getTaskId());
             proxy.agent3GenerateContent(state, streamHandler);
             streamHandler.accept(SseMessageTypeEnum.AGENT3_COMPLETE.getValue());
 
-            // 智能体4：分析配图需求
-            log.info("阶段3：开始分析配图需求, taskId={}", state.getTaskId());
+            // 鏅鸿兘浣?锛氬垎鏋愰厤鍥鹃渶姹?
+            log.info("闃舵3锛氬紑濮嬪垎鏋愰厤鍥鹃渶姹? taskId={}", state.getTaskId());
             proxy.agent4AnalyzeImageRequirements(state);
             streamHandler.accept(SseMessageTypeEnum.AGENT4_COMPLETE.getValue());
 
-            // 智能体5：生成配图
-            log.info("阶段3：开始生成配图, taskId={}", state.getTaskId());
+            // 鏅鸿兘浣?锛氱敓鎴愰厤鍥?
+            log.info("闃舵3锛氬紑濮嬬敓鎴愰厤鍥? taskId={}", state.getTaskId());
             proxy.agent5GenerateImages(state, streamHandler);
             streamHandler.accept(SseMessageTypeEnum.AGENT5_COMPLETE.getValue());
 
-            // 图文合成：将配图插入正文
-            log.info("阶段3：开始图文合成, taskId={}", state.getTaskId());
+            // 鍥炬枃鍚堟垚锛氬皢閰嶅浘鎻掑叆姝ｆ枃
+            log.info("闃舵3锛氬紑濮嬪浘鏂囧悎鎴? taskId={}", state.getTaskId());
             proxy.mergeImagesIntoContent(state);
             streamHandler.accept(SseMessageTypeEnum.MERGE_COMPLETE.getValue());
 
-            log.info("阶段3：正文生成完成, taskId={}", state.getTaskId());
+            log.info("闃舵3锛氭鏂囩敓鎴愬畬鎴? taskId={}", state.getTaskId());
         } catch (Exception e) {
-            log.error("阶段3：正文生成失败, taskId={}", state.getTaskId(), e);
-            throw new RuntimeException("正文生成失败: " + e.getMessage(), e);
+            log.error("闃舵3锛氭鏂囩敓鎴愬け璐? taskId={}", state.getTaskId(), e);
+            throw new RuntimeException("姝ｆ枃鐢熸垚澶辫触: " + e.getMessage(), e);
         }
     }
 
     /**
-     * 智能体1：生成标题方案（3-5个）
+     * 鏅鸿兘浣?锛氱敓鎴愭爣棰樻柟妗堬紙3-5涓級
      */
-    @AgentExecution(value = "agent1_generate_titles", description = "生成标题方案")
+    @AgentExecution(value = "agent1_generate_titles", description = "鐢熸垚鏍囬鏂规")
     public void agent1GenerateTitleOptions(ArticleState state, Consumer<String> streamHandler) {
         String prompt = PromptConstant.AGENT1_TITLE_PROMPT
                 .replace("{topic}", state.getTopic())
@@ -151,18 +145,18 @@ public class ArticleAgentService {
         List<ArticleState.TitleOption> titleOptions = parseJsonListResponse(
                 content, 
                 new TypeToken<List<ArticleState.TitleOption>>(){}, 
-                "标题方案"
+                "鏍囬鏂规"
         );
         state.setTitleOptions(titleOptions);
-        log.info("智能体1：标题方案生成成功, optionsCount={}", titleOptions.size());
+        log.info("鏅鸿兘浣?锛氭爣棰樻柟妗堢敓鎴愭垚鍔? optionsCount={}", titleOptions.size());
     }
 
     /**
-     * 智能体2：生成大纲（流式输出）
+     * 鏅鸿兘浣?锛氱敓鎴愬ぇ绾诧紙娴佸紡杈撳嚭锛?
      */
-    @AgentExecution(value = "agent2_generate_outline", description = "生成文章大纲")
+    @AgentExecution(value = "agent2_generate_outline", description = "鐢熸垚鏂囩珷澶х翰")
     public void agent2GenerateOutline(ArticleState state, Consumer<String> streamHandler) {
-        // 构建 prompt，根据是否有用户补充描述插入对应部分
+        // 鏋勫缓 prompt锛屾牴鎹槸鍚︽湁鐢ㄦ埛琛ュ厖鎻忚堪鎻掑叆瀵瑰簲閮ㄥ垎
         String descriptionSection = "";
         if (state.getUserDescription() != null && !state.getUserDescription().trim().isEmpty()) {
             descriptionSection = PromptConstant.AGENT2_DESCRIPTION_SECTION
@@ -177,15 +171,15 @@ public class ArticleAgentService {
                 + getStylePrompt(state.getStyle());
 
         String content = callLlmWithStreaming(prompt, streamHandler, SseMessageTypeEnum.AGENT2_STREAMING);
-        ArticleState.OutlineResult outlineResult = parseJsonResponse(content, ArticleState.OutlineResult.class, "大纲");
+        ArticleState.OutlineResult outlineResult = parseJsonResponse(content, ArticleState.OutlineResult.class, "澶х翰");
         state.setOutline(outlineResult);
-        log.info("智能体2：大纲生成成功, sections={}", outlineResult.getSections().size());
+        log.info("鏅鸿兘浣?锛氬ぇ绾茬敓鎴愭垚鍔? sections={}", outlineResult.getSections().size());
     }
 
     /**
-     * 智能体3：生成正文（流式输出）
+     * 鏅鸿兘浣?锛氱敓鎴愭鏂囷紙娴佸紡杈撳嚭锛?
      */
-    @AgentExecution(value = "agent3_generate_content", description = "生成文章正文")
+    @AgentExecution(value = "agent3_generate_content", description = "鐢熸垚鏂囩珷姝ｆ枃")
     public void agent3GenerateContent(ArticleState state, Consumer<String> streamHandler) {
         String outlineText = GsonUtils.toJson(state.getOutline().getSections());
         String prompt = PromptConstant.AGENT3_CONTENT_PROMPT
@@ -197,17 +191,17 @@ public class ArticleAgentService {
 
         String content = callLlmWithStreaming(prompt, streamHandler, SseMessageTypeEnum.AGENT3_STREAMING);
         state.setContent(content);
-        log.info("智能体3：正文生成成功, length={}", content.length());
+        log.info("鏅鸿兘浣?锛氭鏂囩敓鎴愭垚鍔? length={}", content.length());
     }
 
     /**
-     * 智能体4：分析配图需求（在正文中插入占位符）
+     * 鏅鸿兘浣?锛氬垎鏋愰厤鍥鹃渶姹傦紙鍦ㄦ鏂囦腑鎻掑叆鍗犱綅绗︼級
      */
-    @AgentExecution(value = "agent4_analyze_image_requirements", description = "分析配图需求")
+    @AgentExecution(value = "agent4_analyze_image_requirements", description = "鍒嗘瀽閰嶅浘闇€姹?)
     public void agent4AnalyzeImageRequirements(ArticleState state) {
-        // 构建可用配图方式说明
+        // 鏋勫缓鍙敤閰嶅浘鏂瑰紡璇存槑
         String availableMethods = buildAvailableMethodsDescription(state.getEnabledImageMethods());
-        // 构建各配图方式的详细使用指南（只包含允许的方式）
+        // 鏋勫缓鍚勯厤鍥炬柟寮忕殑璇︾粏浣跨敤鎸囧崡锛堝彧鍖呭惈鍏佽鐨勬柟寮忥級
         String methodUsageGuide = buildMethodUsageGuide(state.getEnabledImageMethods());
         
         String prompt = PromptConstant.AGENT4_IMAGE_REQUIREMENTS_PROMPT
@@ -220,36 +214,36 @@ public class ArticleAgentService {
         ArticleState.Agent4Result agent4Result = parseJsonResponse(
                 content, 
                 ArticleState.Agent4Result.class, 
-                "配图需求"
+                "閰嶅浘闇€姹?
         );
         
-        // 更新正文为包含占位符的版本
+        // 鏇存柊姝ｆ枃涓哄寘鍚崰浣嶇鐨勭増鏈?
         state.setContent(agent4Result.getContentWithPlaceholders());
         
-        // 验证并过滤配图需求，确保所有 imageSource 都在允许列表中
+        // 楠岃瘉骞惰繃婊ら厤鍥鹃渶姹傦紝纭繚鎵€鏈?imageSource 閮藉湪鍏佽鍒楄〃涓?
         List<ArticleState.ImageRequirement> validatedRequirements = validateAndFilterImageRequirements(
                 agent4Result.getImageRequirements(), 
                 state.getEnabledImageMethods()
         );
         
         state.setImageRequirements(validatedRequirements);
-        log.info("智能体4：配图需求分析成功, count={}, validated={}, 已在正文中插入占位符", 
+        log.info("鏅鸿兘浣?锛氶厤鍥鹃渶姹傚垎鏋愭垚鍔? count={}, validated={}, 宸插湪姝ｆ枃涓彃鍏ュ崰浣嶇", 
                 agent4Result.getImageRequirements().size(), validatedRequirements.size());
     }
 
     /**
-     * 智能体5：生成配图（串行执行，支持混用多种配图方式，统一上传到 COS）
+     * 鏅鸿兘浣?锛氱敓鎴愰厤鍥撅紙涓茶鎵ц锛屾敮鎸佹贩鐢ㄥ绉嶉厤鍥炬柟寮忥紝缁熶竴涓婁紶鍒?COS锛?
      */
-    @AgentExecution(value = "agent5_generate_images", description = "生成配图")
+    @AgentExecution(value = "agent5_generate_images", description = "鐢熸垚閰嶅浘")
     public void agent5GenerateImages(ArticleState state, Consumer<String> streamHandler) {
         List<ArticleState.ImageResult> imageResults = new ArrayList<>();
         
         for (ArticleState.ImageRequirement requirement : state.getImageRequirements()) {
             String imageSource = requirement.getImageSource();
-            log.info("智能体5：开始获取配图, position={}, imageSource={}, keywords={}", 
+            log.info("鏅鸿兘浣?锛氬紑濮嬭幏鍙栭厤鍥? position={}, imageSource={}, keywords={}", 
                     requirement.getPosition(), imageSource, requirement.getKeywords());
             
-            // 构建图片请求对象
+            // 鏋勫缓鍥剧墖璇锋眰瀵硅薄
             ImageRequest imageRequest = ImageRequest.builder()
                     .keywords(requirement.getKeywords())
                     .prompt(requirement.getPrompt())
@@ -257,32 +251,32 @@ public class ArticleAgentService {
                     .type(requirement.getType())
                     .build();
             
-            // 使用策略模式获取图片并统一上传到 COS
+            // 浣跨敤绛栫暐妯″紡鑾峰彇鍥剧墖骞剁粺涓€涓婁紶鍒?COS
             ImageServiceStrategy.ImageResult result = imageServiceStrategy.getImageAndUpload(imageSource, imageRequest);
             
             String cosUrl = result.getUrl();
             ImageMethodEnum method = result.getMethod();
             
-            // 创建配图结果（URL 已经是 COS 地址）
+            // 鍒涘缓閰嶅浘缁撴灉锛圲RL 宸茬粡鏄?COS 鍦板潃锛?
             ArticleState.ImageResult imageResult = buildImageResult(requirement, cosUrl, method);
             imageResults.add(imageResult);
             
-            // 推送单张配图完成
+            // 鎺ㄩ€佸崟寮犻厤鍥惧畬鎴?
             String imageCompleteMessage = SseMessageTypeEnum.IMAGE_COMPLETE.getStreamingPrefix() + GsonUtils.toJson(imageResult);
             streamHandler.accept(imageCompleteMessage);
             
-            log.info("智能体5：配图获取并上传成功, position={}, method={}, cosUrl={}", 
+            log.info("鏅鸿兘浣?锛氶厤鍥捐幏鍙栧苟涓婁紶鎴愬姛, position={}, method={}, cosUrl={}", 
                     requirement.getPosition(), method.getValue(), cosUrl);
         }
         
         state.setImages(imageResults);
-        log.info("智能体5：所有配图生成并上传完成, count={}", imageResults.size());
+        log.info("鏅鸿兘浣?锛氭墍鏈夐厤鍥剧敓鎴愬苟涓婁紶瀹屾垚, count={}", imageResults.size());
     }
 
     /**
-     * 图文合成：根据占位符将配图插入正文
+     * 鍥炬枃鍚堟垚锛氭牴鎹崰浣嶇灏嗛厤鍥炬彃鍏ユ鏂?
      */
-    @AgentExecution(value = "agent6_merge_content", description = "图文合成")
+    @AgentExecution(value = "agent6_merge_content", description = "鍥炬枃鍚堟垚")
     public void mergeImagesIntoContent(ArticleState state) {
         String content = state.getContent();
         List<ArticleState.ImageResult> images = state.getImages();
@@ -294,7 +288,7 @@ public class ArticleAgentService {
 
         String fullContent = content;
         
-        // 遍历所有配图，根据占位符替换为实际图片
+        // 閬嶅巻鎵€鏈夐厤鍥撅紝鏍规嵁鍗犱綅绗︽浛鎹负瀹為檯鍥剧墖
         for (ArticleState.ImageResult image : images) {
             String placeholder = image.getPlaceholderId();
             if (placeholder != null && !placeholder.isEmpty()) {
@@ -304,13 +298,13 @@ public class ArticleAgentService {
         }
         
         state.setFullContent(fullContent);
-        log.info("图文合成完成, fullContentLength={}", fullContent.length());
+        log.info("鍥炬枃鍚堟垚瀹屾垚, fullContentLength={}", fullContent.length());
     }
 
-    // region 辅助方法
+    // region 杈呭姪鏂规硶
 
     /**
-     * 调用 LLM（非流式）
+     * 璋冪敤 LLM锛堥潪娴佸紡锛?
      */
     private String callLlm(String prompt) {
         ChatResponse response = chatModel.call(new Prompt(new UserMessage(prompt)));
@@ -318,7 +312,7 @@ public class ArticleAgentService {
     }
 
     /**
-     * 调用 LLM（流式输出）
+     * 璋冪敤 LLM锛堟祦寮忚緭鍑猴級
      */
     private String callLlmWithStreaming(String prompt, Consumer<String> streamHandler, SseMessageTypeEnum messageType) {
         StringBuilder contentBuilder = new StringBuilder();
@@ -333,38 +327,38 @@ public class ArticleAgentService {
                         streamHandler.accept(messageType.getStreamingPrefix() + chunk);
                     }
                 })
-                .doOnError(error -> log.error("LLM 流式调用失败, messageType={}", messageType, error))
+                .doOnError(error -> log.error("LLM 娴佸紡璋冪敤澶辫触, messageType={}", messageType, error))
                 .blockLast();
         
         return contentBuilder.toString();
     }
 
     /**
-     * 解析 JSON 响应
+     * 瑙ｆ瀽 JSON 鍝嶅簲
      */
     private <T> T parseJsonResponse(String content, Class<T> clazz, String name) {
         try {
             return GsonUtils.fromJson(content, clazz);
         } catch (JsonSyntaxException e) {
-            log.error("{}解析失败, content={}", name, content, e);
-            throw new RuntimeException(name + "解析失败");
+            log.error("{}瑙ｆ瀽澶辫触, content={}", name, content, e);
+            throw new RuntimeException(name + "瑙ｆ瀽澶辫触");
         }
     }
 
     /**
-     * 解析 JSON 列表响应
+     * 瑙ｆ瀽 JSON 鍒楄〃鍝嶅簲
      */
     private <T> T parseJsonListResponse(String content, TypeToken<T> typeToken, String name) {
         try {
             return GsonUtils.fromJson(content, typeToken);
         } catch (JsonSyntaxException e) {
-            log.error("{}解析失败, content={}", name, content, e);
-            throw new RuntimeException(name + "解析失败");
+            log.error("{}瑙ｆ瀽澶辫触, content={}", name, content, e);
+            throw new RuntimeException(name + "瑙ｆ瀽澶辫触");
         }
     }
 
     /**
-     * 构建配图结果
+     * 鏋勫缓閰嶅浘缁撴灉
      */
     private ArticleState.ImageResult buildImageResult(ArticleState.ImageRequirement requirement, 
                                                        String imageUrl, 
@@ -381,15 +375,15 @@ public class ArticleAgentService {
     }
 
     /**
-     * 构建可用配图方式说明
+     * 鏋勫缓鍙敤閰嶅浘鏂瑰紡璇存槑
      */
     private String buildAvailableMethodsDescription(List<String> enabledMethods) {
-        // 如果为空或 null，表示支持所有方式
+        // 濡傛灉涓虹┖鎴?null锛岃〃绀烘敮鎸佹墍鏈夋柟寮?
         if (enabledMethods == null || enabledMethods.isEmpty()) {
             return getAllMethodsDescription();
         }
 
-        // 只描述允许的方式
+        // 鍙弿杩板厑璁哥殑鏂瑰紡
         StringBuilder sb = new StringBuilder();
         for (String method : enabledMethods) {
             ImageMethodEnum methodEnum = ImageMethodEnum.getByValue(method);
@@ -403,43 +397,42 @@ public class ArticleAgentService {
     }
 
     /**
-     * 获取所有配图方式的完整描述
+     * 鑾峰彇鎵€鏈夐厤鍥炬柟寮忕殑瀹屾暣鎻忚堪
      */
     private String getAllMethodsDescription() {
         return """
-               - PEXELS: 适合真实场景、产品照片、人物照片、自然风景等写实图片
-               - NANO_BANANA: 适合创意插画、信息图表、需要文字渲染、抽象概念、艺术风格等 AI 生成图片
-               - NANO_BANANA_APICLAUDE: 通过 apiclaude 接入 Nano Banana，适合创意插画、信息图表、抽象概念等 AI 生图
-               - IMAGE_2: 适合通用 AI 生图、产品视觉和需要详细英文提示词描述的图片
-               - MERMAID: 适合流程图、架构图、时序图、关系图、甘特图等结构化图表
-               - ICONIFY: 适合图标、符号、小型装饰性图标（如：箭头、勾选、星星、心形等）
-               - EMOJI_PACK: 适合表情包、搞笑图片、轻松幽默的配图
-               - SVG_DIAGRAM: 适合概念示意图、思维导图样式、逻辑关系展示（不涉及精确数据）
+               - PEXELS: 閫傚悎鐪熷疄鍦烘櫙銆佷骇鍝佺収鐗囥€佷汉鐗╃収鐗囥€佽嚜鐒堕鏅瓑鍐欏疄鍥剧墖
+               - NANO_BANANA: 閫傚悎鍒涙剰鎻掔敾銆佷俊鎭浘琛ㄣ€侀渶瑕佹枃瀛楁覆鏌撱€佹娊璞℃蹇点€佽壓鏈鏍肩瓑 AI 鐢熸垚鍥剧墖
+               - NANO_BANANA_APICLAUDE: 閫氳繃 apiclaude 鎺ュ叆 Nano Banana锛岄€傚悎鍒涙剰鎻掔敾銆佷俊鎭浘琛ㄣ€佹娊璞℃蹇电瓑 AI 鐢熷浘
+               - IMAGE_2: 閫傚悎閫氱敤 AI 鐢熷浘銆佷骇鍝佽瑙夊拰闇€瑕佽缁嗚嫳鏂囨彁绀鸿瘝鎻忚堪鐨勫浘鐗?               - MERMAID: 閫傚悎娴佺▼鍥俱€佹灦鏋勫浘銆佹椂搴忓浘銆佸叧绯诲浘銆佺敇鐗瑰浘绛夌粨鏋勫寲鍥捐〃
+               - ICONIFY: 閫傚悎鍥炬爣銆佺鍙枫€佸皬鍨嬭楗版€у浘鏍囷紙濡傦細绠ご銆佸嬀閫夈€佹槦鏄熴€佸績褰㈢瓑锛?
+               - EMOJI_PACK: 閫傚悎琛ㄦ儏鍖呫€佹悶绗戝浘鐗囥€佽交鏉惧菇榛樼殑閰嶅浘
+               - SVG_DIAGRAM: 閫傚悎姒傚康绀烘剰鍥俱€佹€濈淮瀵煎浘鏍峰紡銆侀€昏緫鍏崇郴灞曠ず锛堜笉娑夊強绮剧‘鏁版嵁锛?
                """;
     }
 
     /**
-     * 获取配图方式的使用说明
+     * 鑾峰彇閰嶅浘鏂瑰紡鐨勪娇鐢ㄨ鏄?
      */
     private String getMethodUsageDescription(ImageMethodEnum method) {
         return switch (method) {
-            case PEXELS -> "适合真实场景、产品照片、人物照片、自然风景等写实图片";
-            case NANO_BANANA -> "适合创意插画、信息图表、需要文字渲染、抽象概念、艺术风格等 AI 生成图片";
-            case NANO_BANANA_APICLAUDE -> "通过 apiclaude 接入 Nano Banana，适合创意插画、信息图表、抽象概念等 AI 生图";
-            case IMAGE_2 -> "适合通用 AI 生图、产品视觉和需要详细英文提示词描述的图片";
-            case MERMAID -> "适合流程图、架构图、时序图、关系图、甘特图等结构化图表";
-            case ICONIFY -> "适合图标、符号、小型装饰性图标（如：箭头、勾选、星星、心形等）";
-            case EMOJI_PACK -> "适合表情包、搞笑图片、轻松幽默的配图";
-            case SVG_DIAGRAM -> "适合概念示意图、思维导图样式、逻辑关系展示（不涉及精确数据）";
+            case PEXELS -> "閫傚悎鐪熷疄鍦烘櫙銆佷骇鍝佺収鐗囥€佷汉鐗╃収鐗囥€佽嚜鐒堕鏅瓑鍐欏疄鍥剧墖";
+            case NANO_BANANA -> "閫傚悎鍒涙剰鎻掔敾銆佷俊鎭浘琛ㄣ€侀渶瑕佹枃瀛楁覆鏌撱€佹娊璞℃蹇点€佽壓鏈鏍肩瓑 AI 鐢熸垚鍥剧墖";
+            case NANO_BANANA_APICLAUDE -> "閫氳繃 apiclaude 鎺ュ叆 Nano Banana锛岄€傚悎鍒涙剰鎻掔敾銆佷俊鎭浘琛ㄣ€佹娊璞℃蹇电瓑 AI 鐢熷浘";
+            case IMAGE_2 -> "閫傚悎閫氱敤 AI 鐢熷浘銆佷骇鍝佽瑙夊拰闇€瑕佽缁嗚嫳鏂囨彁绀鸿瘝鎻忚堪鐨勫浘鐗?;
+            case MERMAID -> "閫傚悎娴佺▼鍥俱€佹灦鏋勫浘銆佹椂搴忓浘銆佸叧绯诲浘銆佺敇鐗瑰浘绛夌粨鏋勫寲鍥捐〃";
+            case ICONIFY -> "閫傚悎鍥炬爣銆佺鍙枫€佸皬鍨嬭楗版€у浘鏍囷紙濡傦細绠ご銆佸嬀閫夈€佹槦鏄熴€佸績褰㈢瓑锛?;
+            case EMOJI_PACK -> "閫傚悎琛ㄦ儏鍖呫€佹悶绗戝浘鐗囥€佽交鏉惧菇榛樼殑閰嶅浘";
+            case SVG_DIAGRAM -> "閫傚悎姒傚康绀烘剰鍥俱€佹€濈淮瀵煎浘鏍峰紡銆侀€昏緫鍏崇郴灞曠ず锛堜笉娑夊強绮剧‘鏁版嵁锛?;
             default -> method.getDescription();
         };
     }
 
     /**
-     * 构建配图方式的详细使用指南（只包含允许的方式）
+     * 鏋勫缓閰嶅浘鏂瑰紡鐨勮缁嗕娇鐢ㄦ寚鍗楋紙鍙寘鍚厑璁哥殑鏂瑰紡锛?
      */
     private String buildMethodUsageGuide(List<String> enabledMethods) {
-        // 如果没有限制，返回所有方式的使用指南
+        // 濡傛灉娌℃湁闄愬埗锛岃繑鍥炴墍鏈夋柟寮忕殑浣跨敤鎸囧崡
         List<String> methodsToInclude = (enabledMethods == null || enabledMethods.isEmpty())
                 ? List.of("PEXELS", "NANO_BANANA", "NANO_BANANA_APICLAUDE", "IMAGE_2", "MERMAID", "ICONIFY", "EMOJI_PACK", "SVG_DIAGRAM")
                 : enabledMethods;
@@ -457,45 +450,45 @@ public class ArticleAgentService {
     }
 
     /**
-     * 获取单个配图方式的详细使用指南
+     * 鑾峰彇鍗曚釜閰嶅浘鏂瑰紡鐨勮缁嗕娇鐢ㄦ寚鍗?
      */
     private String getMethodDetailedGuide(String method) {
         return switch (method) {
             case "PEXELS" -> """
-                    - PEXELS: 提供英文搜索关键词(keywords)，要准确、具体。prompt 留空。""";
+                    - PEXELS: 鎻愪緵鑻辨枃鎼滅储鍏抽敭璇?keywords)锛岃鍑嗙‘銆佸叿浣撱€俻rompt 鐣欑┖銆?"";
             case "NANO_BANANA" -> """
-                    - NANO_BANANA: 提供详细的英文生图提示词(prompt)，描述场景、风格、细节。keywords 留空。""";
+                    - NANO_BANANA: 鎻愪緵璇︾粏鐨勮嫳鏂囩敓鍥炬彁绀鸿瘝(prompt)锛屾弿杩板満鏅€侀鏍笺€佺粏鑺傘€俴eywords 鐣欑┖銆?"";
             case "NANO_BANANA_APICLAUDE" -> """
-                    - NANO_BANANA_APICLAUDE: 通过 apiclaude 接入 Nano Banana，提供详细的英文生图提示词(prompt)。keywords 留空。""";
+                    - NANO_BANANA_APICLAUDE: 閫氳繃 apiclaude 鎺ュ叆 Nano Banana锛屾彁渚涜缁嗙殑鑻辨枃鐢熷浘鎻愮ず璇?prompt)銆俴eywords 鐣欑┖銆?"";
             case "IMAGE_2" -> """
                     - IMAGE_2: Provide a detailed English image-generation prompt; keep keywords empty and do not send images.
                     """;
             case "MERMAID" -> """
-                    - MERMAID: 在 prompt 字段生成完整的 Mermaid 代码（如流程图、架构图）。keywords 留空。""";
+                    - MERMAID: 鍦?prompt 瀛楁鐢熸垚瀹屾暣鐨?Mermaid 浠ｇ爜锛堝娴佺▼鍥俱€佹灦鏋勫浘锛夈€俴eywords 鐣欑┖銆?"";
             case "ICONIFY" -> """
-                    - ICONIFY: 提供英文图标关键词(keywords)，如：check、arrow、star、heart。prompt 留空。""";
+                    - ICONIFY: 鎻愪緵鑻辨枃鍥炬爣鍏抽敭璇?keywords)锛屽锛歝heck銆乤rrow銆乻tar銆乭eart銆俻rompt 鐣欑┖銆?"";
             case "EMOJI_PACK" -> """
-                    - EMOJI_PACK: 提供中文或英文关键词(keywords)描述表情内容。prompt 留空。系统会自动添加"表情包"搜索。""";
+                    - EMOJI_PACK: 鎻愪緵涓枃鎴栬嫳鏂囧叧閿瘝(keywords)鎻忚堪琛ㄦ儏鍐呭銆俻rompt 鐣欑┖銆傜郴缁熶細鑷姩娣诲姞"琛ㄦ儏鍖?鎼滅储銆?"";
             case "SVG_DIAGRAM" -> """
-                    - SVG_DIAGRAM: 在 prompt 字段描述示意图需求（中文），说明要表达的概念和关系。keywords 留空。
-                      示例：绘制思维导图样式的图，中心是"自律"，周围4个分支：习惯、环境、反馈、系统""";
+                    - SVG_DIAGRAM: 鍦?prompt 瀛楁鎻忚堪绀烘剰鍥鹃渶姹傦紙涓枃锛夛紝璇存槑瑕佽〃杈剧殑姒傚康鍜屽叧绯汇€俴eywords 鐣欑┖銆?
+                      绀轰緥锛氱粯鍒舵€濈淮瀵煎浘鏍峰紡鐨勫浘锛屼腑蹇冩槸"鑷緥"锛屽懆鍥?涓垎鏀細涔犳儻銆佺幆澧冦€佸弽棣堛€佺郴缁?"";
             default -> null;
         };
     }
 
     /**
-     * 验证并过滤配图需求
-     * 确保所有 imageSource 都在允许列表中
+     * 楠岃瘉骞惰繃婊ら厤鍥鹃渶姹?
+     * 纭繚鎵€鏈?imageSource 閮藉湪鍏佽鍒楄〃涓?
      *
-     * @param requirements    原始配图需求列表
-     * @param enabledMethods  允许的配图方式列表
-     * @return 验证后的配图需求列表
+     * @param requirements    鍘熷閰嶅浘闇€姹傚垪琛?
+     * @param enabledMethods  鍏佽鐨勯厤鍥炬柟寮忓垪琛?
+     * @return 楠岃瘉鍚庣殑閰嶅浘闇€姹傚垪琛?
      */
     private List<ArticleState.ImageRequirement> validateAndFilterImageRequirements(
             List<ArticleState.ImageRequirement> requirements,
             List<String> enabledMethods) {
         
-        // 如果没有限制，返回所有需求
+        // 濡傛灉娌℃湁闄愬埗锛岃繑鍥炴墍鏈夐渶姹?
         if (enabledMethods == null || enabledMethods.isEmpty()) {
             return requirements;
         }
@@ -505,20 +498,20 @@ public class ArticleAgentService {
         for (ArticleState.ImageRequirement req : requirements) {
             String imageSource = req.getImageSource();
             
-            // 验证 imageSource 是否在允许列表中
+            // 楠岃瘉 imageSource 鏄惁鍦ㄥ厑璁稿垪琛ㄤ腑
             if (enabledMethods.contains(imageSource)) {
                 validatedRequirements.add(req);
-                log.debug("配图需求验证通过, position={}, imageSource={}", req.getPosition(), imageSource);
+                log.debug("閰嶅浘闇€姹傞獙璇侀€氳繃, position={}, imageSource={}", req.getPosition(), imageSource);
             } else {
-                log.warn("配图需求不符合限制被过滤, position={}, imageSource={}, enabledMethods={}", 
+                log.warn("閰嶅浘闇€姹備笉绗﹀悎闄愬埗琚繃婊? position={}, imageSource={}, enabledMethods={}", 
                         req.getPosition(), imageSource, enabledMethods);
                 
-                // 尝试替换为允许的方式（优先使用第一个允许的方式）
+                // 灏濊瘯鏇挎崲涓哄厑璁哥殑鏂瑰紡锛堜紭鍏堜娇鐢ㄧ涓€涓厑璁哥殑鏂瑰紡锛?
                 if (!enabledMethods.isEmpty()) {
                     String fallbackSource = enabledMethods.get(0);
                     req.setImageSource(fallbackSource);
                     validatedRequirements.add(req);
-                    log.info("配图需求已替换为允许的方式, position={}, fallback={}", 
+                    log.info("閰嶅浘闇€姹傚凡鏇挎崲涓哄厑璁哥殑鏂瑰紡, position={}, fallback={}", 
                             req.getPosition(), fallbackSource);
                 }
             }
@@ -528,10 +521,10 @@ public class ArticleAgentService {
     }
 
     /**
-     * 根据风格获取对应的 Prompt 附加内容
+     * 鏍规嵁椋庢牸鑾峰彇瀵瑰簲鐨?Prompt 闄勫姞鍐呭
      *
-     * @param style 文章风格
-     * @return 风格对应的 Prompt 附加内容，如果无风格则返回空字符串
+     * @param style 鏂囩珷椋庢牸
+     * @return 椋庢牸瀵瑰簲鐨?Prompt 闄勫姞鍐呭锛屽鏋滄棤椋庢牸鍒欒繑鍥炵┖瀛楃涓?
      */
     private String getStylePrompt(String style) {
         if (style == null || style.isEmpty()) {
@@ -559,15 +552,15 @@ public class ArticleAgentService {
     }
 
     /**
-     * AI 修改大纲
+     * AI 淇敼澶х翰
      *
-     * @param mainTitle        主标题
-     * @param subTitle         副标题
-     * @param currentOutline   当前大纲
-     * @param modifySuggestion 用户修改建议
-     * @return 修改后的大纲
+     * @param mainTitle        涓绘爣棰?
+     * @param subTitle         鍓爣棰?
+     * @param currentOutline   褰撳墠澶х翰
+     * @param modifySuggestion 鐢ㄦ埛淇敼寤鸿
+     * @return 淇敼鍚庣殑澶х翰
      */
-    @AgentExecution(value = "ai_modify_outline", description = "AI修改大纲")
+    @AgentExecution(value = "ai_modify_outline", description = "AI淇敼澶х翰")
     public List<ArticleState.OutlineSection> aiModifyOutline(String mainTitle, String subTitle, 
                                                              List<ArticleState.OutlineSection> currentOutline,
                                                              String modifySuggestion) {
@@ -580,22 +573,22 @@ public class ArticleAgentService {
                 .replace("{modifySuggestion}", modifySuggestion);
 
         String content = callLlm(prompt);
-        ArticleState.OutlineResult outlineResult = parseJsonResponse(content, ArticleState.OutlineResult.class, "修改后的大纲");
+        ArticleState.OutlineResult outlineResult = parseJsonResponse(content, ArticleState.OutlineResult.class, "淇敼鍚庣殑澶х翰");
         
-        log.info("AI修改大纲成功, sectionsCount={}", outlineResult.getSections().size());
+        log.info("AI淇敼澶х翰鎴愬姛, sectionsCount={}", outlineResult.getSections().size());
         return outlineResult.getSections();
     }
 
     /**
-     * 获取当前类的代理对象
-     * 用于解决 Spring AOP 同类方法调用代理失效问题
+     * 鑾峰彇褰撳墠绫荤殑浠ｇ悊瀵硅薄
+     * 鐢ㄤ簬瑙ｅ喅 Spring AOP 鍚岀被鏂规硶璋冪敤浠ｇ悊澶辨晥闂
      */
     private ArticleAgentService getProxy() {
         try {
             return (ArticleAgentService) AopContext.currentProxy();
         } catch (IllegalStateException e) {
-            // 如果获取代理失败，返回 this（降级处理）
-            log.warn("获取 AOP 代理对象失败，使用原始对象: {}", e.getMessage());
+            // 濡傛灉鑾峰彇浠ｇ悊澶辫触锛岃繑鍥?this锛堥檷绾у鐞嗭級
+            log.warn("鑾峰彇 AOP 浠ｇ悊瀵硅薄澶辫触锛屼娇鐢ㄥ師濮嬪璞? {}", e.getMessage());
             return this;
         }
     }

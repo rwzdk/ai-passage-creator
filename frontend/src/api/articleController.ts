@@ -76,6 +76,58 @@ export async function createArticle(
   })
 }
 
+/** 保存文章编辑内容 POST /article/update-content */
+export async function updateArticleContent(
+  body: API.ArticleUpdateContentRequest,
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseBoolean>('/article/update-content', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** AI 编辑文章内容 POST /article/ai-edit-content */
+export async function aiEditArticleContent(
+  body: API.ArticleAiEditRequest,
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseString>('/article/ai-edit-content', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 重新生成文章配图 POST /article/regenerate-image */
+export async function regenerateArticleImage(
+  body: API.ArticleRegenerateImageRequest,
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseArticleVO>('/article/regenerate-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 切换文章配图版本 POST /article/select-image-version */
+export async function selectArticleImageVersion(
+  body: { taskId: string; position: number; versionId: string },
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseArticleVO>('/article/select-image-version', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
 /** 上传并总结文章参考文档 POST /article/reference/parse */
 export async function parseArticleReference(file: File, options?: { [key: string]: any }) {
   const formData = new FormData()
@@ -87,9 +139,33 @@ export async function parseArticleReference(file: File, options?: { [key: string
   })
 }
 
+/** 提交平台反馈建议 POST /feedback */
+export async function submitFeedback(content: string, images: File[], options?: { [key: string]: any }) {
+  const formData = new FormData()
+  formData.append('content', content)
+  images.forEach((image) => formData.append('images', image))
+  return request<API.BaseResponseBoolean>('/feedback', {
+    method: 'POST',
+    data: formData,
+    ...(options || {}),
+  })
+}
+
 /** 删除文章 POST /article/delete */
 export async function deleteArticle(body: API.DeleteRequest, options?: { [key: string]: any }) {
   return request<API.BaseResponseBoolean>('/article/delete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 批量删除文章 POST /article/batch-delete */
+export async function batchDeleteArticles(body: API.BatchDeleteRequest, options?: { [key: string]: any }) {
+  return request<API.BaseResponseInteger>('/article/batch-delete', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

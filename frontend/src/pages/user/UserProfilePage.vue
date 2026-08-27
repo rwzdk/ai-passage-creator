@@ -352,11 +352,11 @@ import { marked } from 'marked'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
 import { getUserArticleStats, listArticle } from '@/api/articleController.ts'
 import { updateMyProfile, uploadAvatar } from '@/api/userController.ts'
-import profileOverviewBackground from '@/assets/profile/profile-overview-bg.png'
-import creationStatsBackground from '@/assets/profile/creation-stats-bg.png'
-import creationHistoryBackground from '@/assets/profile/creation-history-bg.png'
-import myWorksBackground from '@/assets/profile/my-works-bg.png'
-import editProfileBackground from '@/assets/profile/edit-profile-bg.png'
+import profileOverviewBackground from '@/assets/profile/profile-overview-bg.webp'
+import creationStatsBackground from '@/assets/profile/creation-stats-bg.webp'
+import creationHistoryBackground from '@/assets/profile/creation-history-bg.webp'
+import myWorksBackground from '@/assets/profile/my-works-bg.webp'
+import editProfileBackground from '@/assets/profile/edit-profile-bg.webp'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
@@ -931,7 +931,7 @@ h2 { margin: 12px 0 10px; font-size: clamp(30px, 4vw, 50px); line-height: 1.05; 
 .primary-action:hover { background: #168743; transform: translateY(-2px); }
 .ghost-action, .outline-action { border: 1px solid rgba(22, 53, 42, .12); color: var(--profile-ink); background: rgba(255, 255, 255, .72); box-shadow: 0 8px 20px rgba(56, 111, 73, .04); }
 .ghost-action:hover, .outline-action:hover { border-color: #7ab88e; background: #fff; }
-.avatar-panel { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.avatar-panel { display: flex; flex-direction: column; align-items: center; gap: 15px; transform: translate(-24px, 112px); }
 .avatar-input { display: none; }
 .avatar-button { position: relative; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 50%; }
 .avatar-button:disabled { cursor: wait; opacity: .7; }
@@ -959,9 +959,9 @@ h2 { margin: 12px 0 10px; font-size: clamp(30px, 4vw, 50px); line-height: 1.05; 
 .panel-caption { color: #8aa496; font-size: 11px; text-align: right; }
 .stats-chart-body { display: grid; grid-template-columns: 148px 1fr; align-items: center; gap: 28px; }
 .completion-ring { display: grid; place-items: center; width: 148px; height: 148px; border-radius: 50%; box-shadow: 0 14px 30px rgba(29, 158, 82, .12); }
-.completion-ring-inner { display: grid; place-items: center; width: 112px; height: 112px; border-radius: 50%; background: rgba(250, 253, 250, .92); }
-.completion-ring-inner strong { color: #1d9e52; font-size: 30px; line-height: 1; letter-spacing: -.06em; }
-.completion-ring-inner span { margin-top: -26px; color: #7b9887; font-size: 11px; }
+.completion-ring-inner { position: relative; display: grid; place-items: center; width: 112px; height: 112px; border-radius: 50%; background: rgba(250, 253, 250, .92); }
+.completion-ring-inner strong { position: absolute; top: 50%; left: 50%; color: #1d9e52; font-size: 30px; line-height: 1; letter-spacing: -.06em; transform: translate(-50%, -50%); }
+.completion-ring-inner span { position: absolute; right: 0; bottom: 18px; left: 0; color: #7b9887; font-size: 11px; text-align: center; }
 .status-bars { display: grid; gap: 18px; }
 .status-bar-row { display: grid; gap: 8px; }
 .status-bar-label { display: flex; justify-content: space-between; gap: 12px; color: #668273; font-size: 12px; }
@@ -1036,7 +1036,7 @@ h2 { margin: 12px 0 10px; font-size: clamp(30px, 4vw, 50px); line-height: 1.05; 
   .hero-grid { grid-template-columns: 1fr; gap: 28px; }
   .hero-section { padding-top: 40px; }
   h1 { font-size: 52px; }
-  .avatar-panel { order: -1; align-items: flex-start; }
+  .avatar-panel { order: -1; align-items: flex-start; transform: none; }
   .hero-insight-grid { grid-template-columns: 1fr; max-width: 100%; }
   .stats-grid { grid-template-columns: 1fr; }
   .stats-chart-body { grid-template-columns: 1fr; justify-items: center; }
