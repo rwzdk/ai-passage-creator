@@ -56,7 +56,7 @@ public class QuotaServiceImpl implements QuotaService {
             return;
         }
 
-        // 浣跨敤鍘熷瓙鏇存柊锛歎PDATE user SET quota = quota - 1 WHERE id = ? AND quota > 0
+        // 使用原子更新：UPDATE user SET quota = quota - 1 WHERE id = ? AND quota > 0
         // 閫氳繃褰卞搷琛屾暟鍒ゆ柇鏄惁鎴愬姛锛岄伩鍏嶅苟鍙戦棶棰?
         int affectedRows = userMapper.decrementQuota(user.getId());
 

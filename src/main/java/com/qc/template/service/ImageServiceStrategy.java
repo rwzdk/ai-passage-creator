@@ -34,7 +34,7 @@ public class ImageServiceStrategy {
     private CosService cosService;
 
     /**
-     * 鍥剧墖鏈嶅姟鏄犲皠锛欼mageMethodEnum -> ImageSearchService
+     * 图片服务映射：ImageMethodEnum -> ImageSearchService
      */
     private final Map<ImageMethodEnum, ImageSearchService> serviceMap = new EnumMap<>(ImageMethodEnum.class);
 
@@ -53,11 +53,11 @@ public class ImageServiceStrategy {
     }
 
     /**
-     * 鑾峰彇鍥剧墖骞朵笂浼犲埌 COS锛堟帹鑽愭柟娉曪級
+     * 获取图片并上传到 COS（推荐方法）
      * 缁熶竴澶勭悊鎵€鏈夊浘鐗囨潵婧愮殑涓婁紶閫昏緫
      *
-     * @param imageSource 鍥剧墖鏉ユ簮
-     * @param request     鍥剧墖璇锋眰瀵硅薄
+     * @param imageSource 图片来源
+     * @param request     图片请求对象
      * @return 鍥剧墖鑾峰彇缁撴灉锛堝寘鍚?COS URL锛?
      */
     public ImageResult getImageAndUpload(String imageSource, ImageRequest request) {
@@ -111,8 +111,8 @@ public class ImageServiceStrategy {
     /**
      * 鏍规嵁鍥剧墖璇锋眰鑾峰彇鍥剧墖
      *
-     * @param imageSource 鍥剧墖鏉ユ簮
-     * @param request     鍥剧墖璇锋眰瀵硅薄
+     * @param imageSource 图片来源
+     * @param request     图片请求对象
      * @return 鍥剧墖鑾峰彇缁撴灉
      * @deprecated 浣跨敤 getImageAndUpload() 鏇夸唬
      */
@@ -140,7 +140,7 @@ public class ImageServiceStrategy {
     /**
      * 鏍规嵁鍥剧墖鏉ユ簮鑾峰彇瀵瑰簲鐨勫浘鐗囷紙鍏煎鏃ф帴鍙ｏ紝涓嶄笂浼犲埌 COS锛?
      *
-     * @param imageSource 鍥剧墖鏉ユ簮锛圥EXELS / NANO_BANANA 绛夛級
+     * @param imageSource 图片来源（PEXELS / NANO_BANANA 等）
      * @param keywords    鍏抽敭璇嶏紙鐢ㄤ簬鍥惧簱妫€绱級
      * @param prompt      鎻愮ず璇嶏紙鐢ㄤ簬 AI 鐢熷浘锛?
      * @return 鍥剧墖鑾峰彇缁撴灉
@@ -227,7 +227,7 @@ public class ImageServiceStrategy {
      * 鑾峰彇鎸囧畾鏂规硶鐨勫浘鐗囨湇鍔?
      *
      * @param method 鍥剧墖鏂规硶
-     * @return 鍥剧墖鏈嶅姟锛屾湭鎵惧埌杩斿洖 null
+     * @return 图片服务，未找到返回 null
      */
     public ImageSearchService getService(ImageMethodEnum method) {
         return serviceMap.get(method);

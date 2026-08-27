@@ -194,7 +194,7 @@ public class PaymentServiceImpl implements PaymentService {
                                 .setProductData(
                                         SessionCreateParams.LineItem.PriceData.ProductData.builder()
                                                 .setName(productType.getDescription())
-                                                .setDescription("瑙ｉ攣鍏ㄩ儴楂樼骇鍔熻兘锛屾棤闄愬垱浣滈厤棰濓紝缁堣韩鏈夋晥")
+                                                .setDescription("解锁全部高级功能，无限创作配额，终身有效")
                                                 .build()
                                 )
                                 .build()

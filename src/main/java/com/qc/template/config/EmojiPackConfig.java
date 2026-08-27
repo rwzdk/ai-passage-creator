@@ -26,7 +26,7 @@ public class EmojiPackConfig {
     private String suffix = EMOJI_PACK_SUFFIX;
 
     /**
-     * 璇锋眰瓒呮椂鏃堕棿锛堟绉掞級
+     * 请求超时时间（毫秒）
      */
     private Integer timeout = 10000;
 }

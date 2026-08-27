@@ -18,7 +18,7 @@ public class ArticleCreateRequest implements Serializable {
     private String topic;
 
     /**
-     * 鏂囩珷椋庢牸锛歵ech/emotional/educational/humorous锛屽彲涓虹┖
+     * 文章风格：tech/emotional/educational/humorous，可为空
      */
     private String style;
 

@@ -54,7 +54,7 @@ public class AgentLog implements Serializable {
     private LocalDateTime endTime;
 
     /**
-     * 鑰楁椂锛堟绉掞級
+     * 耗时（毫秒）
      */
     private Integer durationMs;
 

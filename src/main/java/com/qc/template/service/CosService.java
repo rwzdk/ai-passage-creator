@@ -52,7 +52,7 @@ public class CosService {
      * 涓婁紶 ImageData 鍒?COS锛堢粺涓€鍏ュ彛锛?
      * 鏍规嵁鏁版嵁绫诲瀷鑷姩閫夋嫨涓婁紶鏂瑰紡
      *
-     * @param imageData 鍥剧墖鏁版嵁瀵硅薄
+     * @param imageData 图片数据对象
      * @param folder    鏂囦欢澶?
      * @return COS 鍥剧墖 URL锛屼笂浼犲け璐ヨ繑鍥?null
      */
@@ -174,7 +174,7 @@ public class CosService {
      */
     public String uploadImage(String imageUrl, String folder) {
         String result = uploadFromUrl(imageUrl, folder);
-        // 闄嶇骇锛氬鏋滀笂浼犲け璐ワ紝杩斿洖鍘熷 URL
+        // 降级：如果上传失败，返回原始 URL
         return result != null ? result : imageUrl;
     }
 
@@ -193,7 +193,7 @@ public class CosService {
     /**
      * 涓婁紶鏂囦欢鍒?COS
      *
-     * @param file   鏂囦欢瀵硅薄
+     * @param file   文件对象
      * @param folder 鏂囦欢澶?
      * @return COS 鏂囦欢 URL
      */

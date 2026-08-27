@@ -29,8 +29,8 @@ public class MermaidService implements ImageSearchService {
 
     @Override
     public String searchImage(String keywords) {
-        // 瀵逛簬 Mermaid锛宬eywords 灏辨槸 Mermaid 浠ｇ爜
-        // 姝ゆ柟娉曞凡搴熷純锛岃浣跨敤 getImageData()
+        // 对于 Mermaid，keywords 就是 Mermaid 代码
+        // 此方法已废弃，请使用 getImageData()
         ImageData imageData = generateDiagramData(keywords);
         // 杩斿洖 null锛屽洜涓轰笉鍐嶇洿鎺ヨ繑鍥?URL
         return null;
@@ -38,14 +38,14 @@ public class MermaidService implements ImageSearchService {
 
     @Override
     public String getImage(ImageRequest request) {
-        // 姝ゆ柟娉曞凡搴熷純锛岃浣跨敤 getImageData()
+        // 此方法已废弃，请使用 getImageData()
         // 杩斿洖 null锛屼笂浼犻€昏緫鐢?ImageServiceStrategy 缁熶竴澶勭悊
         return null;
     }
 
     @Override
     public ImageData getImageData(ImageRequest request) {
-        // 浼樺厛浣跨敤 prompt锛圡ermaid 浠ｇ爜锛夛紝鍚﹀垯浣跨敤 keywords
+        // 优先使用 prompt（Mermaid 代码），否则使用 keywords
         String mermaidCode = request.getEffectiveParam(true);
         return generateDiagramData(mermaidCode);
     }
@@ -94,7 +94,7 @@ public class MermaidService implements ImageSearchService {
             log.error("Mermaid 鍥捐〃鐢熸垚寮傚父", e);
             return null;
         } finally {
-            // 娓呯悊涓存椂鏂囦欢
+            // 清理临时文件
             if (tempInputFile != null) {
                 FileUtil.del(tempInputFile);
             }

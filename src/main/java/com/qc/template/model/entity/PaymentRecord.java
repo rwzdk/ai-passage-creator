@@ -49,7 +49,7 @@ public class PaymentRecord implements Serializable {
     private String stripePaymentIntentId;
 
     /**
-     * 閲戦锛堢編鍏冿級
+     * 金额（美元）
      */
     private BigDecimal amount;
 
@@ -64,7 +64,7 @@ public class PaymentRecord implements Serializable {
     private String status;
 
     /**
-     * 浜у搧绫诲瀷锛歏IP_PERMANENT
+     * 产品类型：VIP_PERMANENT
      */
     private String productType;
 

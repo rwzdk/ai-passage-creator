@@ -35,7 +35,7 @@ public class SvgDiagramService implements ImageSearchService {
 
     @Override
     public String searchImage(String keywords) {
-        // 姝ゆ柟娉曞凡搴熷純锛岃浣跨敤 getImageData()
+        // 此方法已废弃，请使用 getImageData()
         // 杩斿洖 null锛屼笂浼犻€昏緫鐢?ImageServiceStrategy 缁熶竴澶勭悊
         return null;
     }
@@ -97,7 +97,7 @@ public class SvgDiagramService implements ImageSearchService {
         ChatResponse response = chatModel.call(new Prompt(new UserMessage(prompt)));
         String svgCode = response.getResult().getOutput().getText().trim();
 
-        // 鎻愬彇 SVG 浠ｇ爜锛堢Щ闄ゅ彲鑳界殑 markdown 浠ｇ爜鍧楁爣璁帮級
+        // 提取 SVG 代码（移除可能的 markdown 代码块标记）
         svgCode = extractSvgCode(svgCode);
 
         return svgCode;

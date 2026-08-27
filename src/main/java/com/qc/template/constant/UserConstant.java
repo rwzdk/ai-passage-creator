@@ -11,7 +11,7 @@ public interface UserConstant {
      */
     String USER_LOGIN_STATE = "user_login";
 
-    //  region 鏉冮檺
+    //  region 权限
 
     /**
      * 榛樿瑙掕壊

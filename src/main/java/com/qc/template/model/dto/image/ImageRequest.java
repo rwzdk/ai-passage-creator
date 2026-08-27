@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 /**
- * 鍥剧墖璇锋眰瀵硅薄
+ * 图片请求对象
  * 缁熶竴灏佽鍥剧墖鑾峰彇鎵€闇€鐨勫悇绉嶅弬鏁帮紝渚夸簬鎵╁睍
  *
  */

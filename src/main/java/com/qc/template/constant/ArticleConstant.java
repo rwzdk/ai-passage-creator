@@ -52,7 +52,7 @@ public interface ArticleConstant {
     String BING_IMAGE_SEARCH_URL = "https://cn.bing.com/images/async";
 
     /**
-     * 琛ㄦ儏鍖呭叧閿瘝鍚庣紑锛堢▼搴忓浐瀹氭嫾鎺ワ級
+     * 表情包关键词后缀（程序固定拼接）
      */
     String EMOJI_PACK_SUFFIX = "鐔婄尗澶磋〃鎯呭寘";
 

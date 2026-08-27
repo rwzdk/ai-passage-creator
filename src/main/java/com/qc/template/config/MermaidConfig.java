@@ -29,12 +29,12 @@ public class MermaidConfig {
     private String outputFormat = "svg";
 
     /**
-     * 鍥剧墖瀹藉害锛堝儚绱狅級
+     * 图片宽度（像素）
      */
     private Integer width = 800;
 
     /**
-     * 鍛戒护鎵ц瓒呮椂鏃堕棿锛堟绉掞級
+     * 命令执行超时时间（毫秒）
      */
     private Long timeout = 30000L;
 }

@@ -24,9 +24,9 @@ import java.time.LocalDateTime;
 /**
  * 鏂囩珷寮傛浠诲姟鏈嶅姟
  * 
- * 鏀寔涓ょ鎵ц妯″紡锛?
- * 1. 澶氭櫤鑳戒綋缂栨帓妯″紡锛堥€氳繃 article.agent.orchestrator.enabled=true 鍚敤锛?
- * 2. 鍘熸湁妯″紡锛堥粯璁ゆ垨 article.agent.orchestrator.enabled=false锛?
+ * 支持两种执行模式：
+ * 1. 多智能体编排模式（通过 article.agent.orchestrator.enabled=true 启用）
+ * 2. 原有模式（默认或 article.agent.orchestrator.enabled=false）
  *
  */
 @Service
@@ -56,7 +56,7 @@ public class ArticleAsyncService {
      *
      * @param taskId 浠诲姟ID
      * @param topic  閫夐
-     * @param style  鏂囩珷椋庢牸锛堝彲涓虹┖锛?     * @param referenceSummary 涓婁紶鏂囨。鐢熸垚鐨勫弬鑰冩憳瑕侊紙鍙负绌猴級
+     * @param topic  选题
      */
     @Async("articleExecutor")
     public void executePhase1(String taskId, String topic, String style, String referenceSummary) {
@@ -114,7 +114,7 @@ public class ArticleAsyncService {
     }
 
     /**
-     * 闃舵2锛氬紓姝ョ敓鎴愬ぇ绾诧紙鐢ㄦ埛纭鏍囬鍚庤皟鐢級
+     * 阶段2：异步生成大纲（用户确认标题后调用）
      *
      * @param taskId 浠诲姟ID
      */
@@ -284,10 +284,10 @@ public class ArticleAsyncService {
      * 
      * @param message 鍘熷娑堟伅
      * @param state   鏂囩珷鐘舵€?
-     * @return 娑堟伅鏁版嵁锛屽鏋滄秷鎭棤鏁堣繑鍥?null
+     * @param message 原始消息
      */
     private Map<String, Object> buildMessageData(String message, ArticleState state) {
-        // 澶勭悊娴佸紡娑堟伅锛堝甫鍐掑彿鍒嗛殧绗︼級
+        // 处理流式消息（带冒号分隔符）
         String streamingPrefix1 = SseMessageTypeEnum.AGENT1_STREAMING.getStreamingPrefix();
         String streamingPrefix2 = SseMessageTypeEnum.AGENT2_STREAMING.getStreamingPrefix();
         String streamingPrefix3 = SseMessageTypeEnum.AGENT3_STREAMING.getStreamingPrefix();
@@ -362,7 +362,7 @@ public class ArticleAsyncService {
     }
 
     /**
-     * 鏋勫缓娴佸紡杈撳嚭鏁版嵁
+     * 构建流式输出数据
      */
     private Map<String, Object> buildStreamingData(SseMessageTypeEnum type, String content) {
         Map<String, Object> data = new HashMap<>();
@@ -433,7 +433,7 @@ public class ArticleAsyncService {
         sendEvent(taskId, data);
     }
 
-    /** 鎺ㄩ€佸苟鎸佷箙鍖栫敤鎴峰彲瑙佺殑 SSE 浜嬩欢锛屼緵鍘嗗彶鍒涗綔椤靛畬鏁村洖鏀俱€?*/
+    /** 推送并持久化用户可见的 SSE 事件，供历史创作页完整回放。 */
     private void sendEvent(String taskId, Map<String, Object> data) {
         String payload = GsonUtils.toJson(data);
         String type = String.valueOf(data.get("type"));

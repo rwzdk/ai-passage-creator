@@ -29,7 +29,7 @@ public class StatisticsController {
     private StatisticsService statisticsService;
 
     /**
-     * 鑾峰彇绯荤粺缁熻鏁版嵁锛堜粎绠＄悊鍛橈級
+     * 获取系统统计数据（仅管理员）
      */
     @GetMapping("/overview")
     @Operation(summary = "鑾峰彇绯荤粺缁熻鏁版嵁")

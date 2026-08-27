@@ -85,7 +85,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "璐﹀彿闀垮害杩囩煭");
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "瀵嗙爜闀垮害杩囩煭");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度过短");
         }
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "涓ゆ杈撳叆鐨勫瘑鐮佷笉涓€鑷?);
@@ -97,9 +97,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (count > 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "璐﹀彿閲嶅");
         }
-        // 3. 鍔犲瘑瀵嗙爜
+        // 3. 加密密码
         String encryptPassword = getEncryptPassword(userPassword);
-        // 4. 鍒涘缓鐢ㄦ埛锛屾彃鍏ユ暟鎹簱
+        // 4. 创建用户，插入数据库
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
@@ -108,7 +108,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setQuota(DEFAULT_QUOTA);
         boolean saveResult = this.save(user);
         if (!saveResult) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "娉ㄥ唽澶辫触锛屾暟鎹簱閿欒");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "注册失败，数据库错误");
         }
         return user.getId();
     }
@@ -150,7 +150,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "璐﹀彿闀垮害杩囩煭");
         }
         if (userPassword.length() < 8) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "瀵嗙爜闀垮害杩囩煭");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度过短");
         }
         // 2. 鍔犲瘑
         String encryptPassword = getEncryptPassword(userPassword);
@@ -160,7 +160,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.eq("userPassword", encryptPassword);
         User user = this.mapper.selectOneByQuery(queryWrapper);
         if (user == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "鐢ㄦ埛涓嶅瓨鍦ㄦ垨瀵嗙爜閿欒");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
         // 4. 濡傛灉鐢ㄦ埛瀛樺湪锛岃褰曠敤鎴风殑鐧诲綍鎬?
         request.getSession().setAttribute(USER_LOGIN_STATE, user);

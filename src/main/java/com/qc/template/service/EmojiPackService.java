@@ -107,11 +107,11 @@ public class EmojiPackService implements ImageSearchService {
     }
 
     /**
-     * 娓呯悊鍥剧墖 URL 鍙傛暟
+     * 清理图片 URL 参数
      * 绉婚櫎 ?w=xxx&h=xxx 绛夊弬鏁帮紝閬垮厤鍥剧墖璐ㄩ噺涓嬮檷鍜岃闂棶棰?
      *
      * @param url 鍘熷鍥剧墖 URL
-     * @return 娓呯悊鍚庣殑 URL
+     * @return 清理后的 URL
      */
     private String cleanImageUrl(String url) {
         if (StrUtil.isBlank(url)) {

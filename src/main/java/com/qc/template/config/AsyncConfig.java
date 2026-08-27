@@ -35,7 +35,7 @@ public class AsyncConfig {
         // 绾跨▼鍚嶇О鍓嶇紑
         executor.setThreadNamePrefix("article-async-");
         
-        // 鎷掔粷绛栫暐锛氱敱璋冪敤绾跨▼澶勭悊
+        // 拒绝策略：由调用线程处理
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         
         // 绛夊緟鎵€鏈変换鍔″畬鎴愬悗鍐嶅叧闂嚎绋嬫睜

@@ -24,7 +24,7 @@ public class IconifyConfig {
     private Integer searchLimit = 10;
 
     /**
-     * 榛樿鍥炬爣楂樺害锛堝儚绱狅級
+     * 默认图标高度（像素）
      */
     private Integer defaultHeight = 64;
 

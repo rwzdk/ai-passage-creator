@@ -5,7 +5,7 @@ import lombok.Getter;
 /**
  * 閰嶅浘鏂瑰紡鏋氫妇
  * 
- * 鎵╁睍鏂扮殑鍥剧墖鏉ユ簮鏃讹紝鍙渶娣诲姞鏂扮殑鏋氫妇鍊煎苟璁剧疆姝ｇ‘鐨勫睘鎬э細
+ * 扩展新的图片来源时，只需添加新的枚举值并设置正确的属性：
  * - isAiGenerated: 鏄惁涓?AI 鐢熷浘鏂瑰紡锛堝喅瀹氫娇鐢?prompt 杩樻槸 keywords锛?
  * - isFallback: 鏄惁涓洪檷绾ф柟妗?
  *
@@ -51,7 +51,7 @@ public enum ImageMethodEnum {
     SVG_DIAGRAM("SVG_DIAGRAM", "SVG 姒傚康绀烘剰鍥?, true, false),
 
     /**
-     * Picsum 闅忔満鍥剧墖锛堥檷绾ф柟妗堬級
+     * Picsum 随机图片（降级方案）
      */
     PICSUM("PICSUM", "Picsum 闅忔満鍥剧墖", false, true);
 

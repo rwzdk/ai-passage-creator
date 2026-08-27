@@ -67,7 +67,7 @@ public class ArticleState implements Serializable {
     private List<ImageRequirement> imageRequirements;
 
     /**
-     * 灏侀潰鍥?URL锛堝崟鐙瓨鍌紝鍚屾椂 images 鍒楄〃涓殑 position=1 涔熸槸灏侀潰鍥撅級
+     * 封面图 URL（单独存储，同时 images 列表中的 position=1 也是封面图）
      */
     private String coverImage;
 
@@ -127,7 +127,7 @@ public class ArticleState implements Serializable {
         private String sectionTitle;
         private String keywords;
         /**
-         * 鍥剧墖鏉ユ簮锛歅EXELS锛堝浘搴撴绱級鎴?NANO_BANANA锛圓I 鐢熷浘锛?
+         * 图片来源：PEXELS（图库检索）或 NANO_BANANA（AI 生图）
          */
         private String imageSource;
         /**
@@ -135,7 +135,7 @@ public class ArticleState implements Serializable {
          */
         private String prompt;
         /**
-         * 鍗犱綅绗D锛岀敤浜庡湪姝ｆ枃涓畾浣嶆彃鍏ヤ綅缃紝鏍煎紡锛歿{IMAGE_PLACEHOLDER_N}}
+         * 占位符ID，用于在正文中定位插入位置，格式：{{IMAGE_PLACEHOLDER_N}}
          */
         private String placeholderId;
     }

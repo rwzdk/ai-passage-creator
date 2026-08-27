@@ -15,7 +15,7 @@ public interface AgentLogService extends IService<AgentLog> {
     /**
      * 寮傛淇濆瓨鏃ュ織
      *
-     * @param log 鏃ュ織瀵硅薄
+     * @param log 日志对象
      */
     void saveLogAsync(AgentLog log);
 

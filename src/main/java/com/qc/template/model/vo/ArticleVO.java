@@ -151,7 +151,7 @@ public class ArticleVO implements Serializable {
     }
 
     /**
-     * 瀵硅薄杞寘瑁呯被
+     * 对象转包装类
      *
      * @param article 鏂囩珷
      * @return 鏂囩珷瑙嗗浘

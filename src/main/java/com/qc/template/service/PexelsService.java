@@ -83,7 +83,7 @@ public class PexelsService implements ImageSearchService {
      *
      * @param responseBody 鍝嶅簲浣?
      * @param keywords     鎼滅储鍏抽敭璇嶏紙鐢ㄤ簬鏃ュ織锛?
-     * @return 鍥剧墖 URL锛屾湭鎵惧埌杩斿洖 null
+     * @return 图片 URL，未找到返回 null
      */
     private String extractImageUrl(String responseBody, String keywords) {
         JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();

@@ -107,7 +107,7 @@ public class ArticleController {
         ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(request.getTopic() == null || request.getTopic().trim().isEmpty(), 
                 ErrorCode.PARAMS_ERROR, "閫夐涓嶈兘涓虹┖");
-        // 鏍￠獙椋庢牸鍙傛暟锛堝厑璁镐负绌猴級
+        // 校验风格参数（允许为空）
         ThrowUtils.throwIf(!ArticleStyleEnum.isValid(request.getStyle()),
                 ErrorCode.PARAMS_ERROR, "鏃犳晥鐨勬枃绔犻鏍?);
 

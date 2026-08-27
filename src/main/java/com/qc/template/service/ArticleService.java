@@ -94,7 +94,7 @@ public interface ArticleService extends IService<Article> {
      *
      * @param taskId       浠诲姟ID
      * @param status       鐘舵€佹灇涓?
-     * @param errorMessage 閿欒淇℃伅锛堝彲閫夛級
+     * @param errorMessage 错误信息（可选）
      */
     void updateArticleStatus(String taskId, ArticleStatusEnum status, String errorMessage);
 

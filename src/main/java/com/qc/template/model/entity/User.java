@@ -39,7 +39,7 @@ public class User implements Serializable {
     private String userAccount;
 
     /**
-     * 瀵嗙爜
+     * 密码
      */
     private String userPassword;
 
@@ -71,7 +71,7 @@ public class User implements Serializable {
     private String userGithub;
 
     /**
-     * 鐢ㄦ埛瑙掕壊锛歶ser/admin
+     * 用户角色：user/admin
      */
     private String userRole;
 

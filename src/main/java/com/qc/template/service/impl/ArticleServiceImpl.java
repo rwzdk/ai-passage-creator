@@ -61,7 +61,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 澶勭悊閰嶅浘鏂瑰紡锛氬鏋滅敤鎴锋湭閫夋嫨锛岀粰鏅€氱敤鎴疯缃粯璁ょ殑闈?VIP 鏂瑰紡
         List<String> finalImageMethods = processImageMethods(enabledImageMethods, loginUser);
         
-        // 鏍￠獙閰嶅浘鏂瑰紡鏉冮檺锛堟櫘閫氱敤鎴蜂笉鑳戒娇鐢?NANO_BANANA 鍜?SVG_DIAGRAM锛?
+        // 校验配图方式权限（普通用户不能使用 NANO_BANANA 和 SVG_DIAGRAM）
         validateImageMethods(finalImageMethods, loginUser);
 
         // 鐢熸垚浠诲姟ID
@@ -91,7 +91,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public String createArticleTaskWithQuotaCheck(String topic, String style, List<String> enabledImageMethods,
                                                   String referenceSummary, User loginUser) {
         // 鍦ㄥ悓涓€浜嬪姟涓細鍏堟墸閰嶉锛屽啀鍒涘缓浠诲姟
-        // 濡傛灉浠诲姟鍒涘缓澶辫触锛岄厤棰濅細鑷姩鍥炴粴
+        // 如果任务创建失败，配额会自动回滚
         quotaService.checkAndConsumeQuota(loginUser);
         return createArticleTask(topic, style, enabledImageMethods, referenceSummary, loginUser);
     }
@@ -119,7 +119,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         long current = request.getPageNum();
         long size = request.getPageSize();
 
-        // 鏋勫缓鏌ヨ鏉′欢
+        // 构建查询条件
         QueryWrapper queryWrapper = QueryWrapper.create()
                 .eq("isDelete", 0)
                 .orderBy("createTime", false);
@@ -224,7 +224,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         article.setContent(state.getContent());
         article.setFullContent(state.getFullContent());
         
-        // 淇濆瓨灏侀潰鍥?URL锛堜粠 images 鍒楄〃涓彁鍙?position=1 鐨?URL锛?
+        // 保存封面图 URL（从 images 列表中提取 position=1 的 URL）
         if (state.getImages() != null && !state.getImages().isEmpty()) {
             ArticleState.ImageResult cover = state.getImages().stream()
                 .filter(img -> img.getPosition() != null && img.getPosition() == 1)
@@ -247,7 +247,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
         checkArticlePermission(article, loginUser);
         ThrowUtils.throwIf(!ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()),
-                ErrorCode.OPERATION_ERROR, "鏂囩珷灏氭湭鍒涗綔瀹屾垚锛屾殏涓嶈兘缂栬緫");
+                ErrorCode.OPERATION_ERROR, "文章尚未创作完成，暂不能编辑");
 
         if (mainTitle != null && !mainTitle.isBlank()) {
             article.setMainTitle(mainTitle.trim());
@@ -265,7 +265,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
         checkArticlePermission(article, loginUser);
         ThrowUtils.throwIf(!ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()),
-                ErrorCode.OPERATION_ERROR, "鏂囩珷灏氭湭鍒涗綔瀹屾垚锛屾殏涓嶈兘浣跨敤 AI 缂栬緫");
+                ErrorCode.OPERATION_ERROR, "文章尚未创作完成，暂不能使用 AI 编辑");
         return articleAgentService.editArticleContent(content, instruction);
     }
 
@@ -275,7 +275,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
         checkArticlePermission(article, loginUser);
         ThrowUtils.throwIf(!ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()),
-                ErrorCode.OPERATION_ERROR, "鏂囩珷灏氭湭鍒涗綔瀹屾垚锛屾殏涓嶈兘淇敼閰嶅浘");
+                ErrorCode.OPERATION_ERROR, "文章尚未创作完成，暂不能修改配图");
 
         List<ArticleVO.ImageItem> images = GsonUtils.fromJson(article.getImages(),
                 new TypeToken<List<ArticleVO.ImageItem>>() {});
@@ -298,7 +298,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         String oldUrl = image.getUrl();
         String generationPrompt = prompt == null || prompt.isBlank()
                 ? (image.getKeywords() == null || image.getKeywords().isBlank()
-                    ? article.getMainTitle() + "锛岀數褰辨殤鏈熸。鐑害涓庤浼楄褰辨疆鐨勭湡瀹炲満鏅?
+                    ? article.getMainTitle() + "，电影暑期档热度与观众观影潮的真实场景"
                     : image.getKeywords())
                 : prompt.trim();
         ImageRequest imageRequest = ImageRequest.builder()
@@ -339,7 +339,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
         checkArticlePermission(article, loginUser);
         ThrowUtils.throwIf(!ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()),
-                ErrorCode.OPERATION_ERROR, "鏂囩珷灏氭湭鍒涗綔瀹屾垚锛屾殏涓嶈兘鍒囨崲閰嶅浘");
+                ErrorCode.OPERATION_ERROR, "文章尚未创作完成，暂不能切换配图");
         List<ArticleVO.ImageItem> images = GsonUtils.fromJson(article.getImages(),
                 new TypeToken<List<ArticleVO.ImageItem>>() {});
         ThrowUtils.throwIf(images == null || images.isEmpty(), ErrorCode.NOT_FOUND_ERROR, "鏂囩珷娌℃湁鍙垏鎹㈢殑閰嶅浘");
@@ -384,7 +384,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     /**
-     * 鏍￠獙鏂囩珷鏉冮檺
+     * 校验文章权限
      *
      * @param article   鏂囩珷
      * @param loginUser 褰撳墠鐢ㄦ埛
@@ -421,10 +421,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         Article article = getByTaskId(taskId);
         ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
 
-        // 鏍￠獙鏉冮檺
+        // 校验权限
         checkArticlePermission(article, loginUser);
 
-        // 鏍￠獙褰撳墠闃舵锛堝繀椤绘槸 TITLE_SELECTING锛?
+        // 校验当前阶段（必须是 TITLE_SELECTING）
         ArticlePhaseEnum currentPhase = ArticlePhaseEnum.getByValue(article.getPhase());
         ThrowUtils.throwIf(currentPhase != ArticlePhaseEnum.TITLE_SELECTING,
                 ErrorCode.OPERATION_ERROR, "褰撳墠闃舵涓嶅厑璁告鎿嶄綔");
@@ -444,10 +444,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         Article article = getByTaskId(taskId);
         ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
 
-        // 鏍￠獙鏉冮檺
+        // 校验权限
         checkArticlePermission(article, loginUser);
 
-        // 鏍￠獙褰撳墠闃舵锛堝繀椤绘槸 OUTLINE_EDITING锛?
+        // 校验当前阶段（必须是 OUTLINE_EDITING）
         ArticlePhaseEnum currentPhase = ArticlePhaseEnum.getByValue(article.getPhase());
         ThrowUtils.throwIf(currentPhase != ArticlePhaseEnum.OUTLINE_EDITING,
                 ErrorCode.OPERATION_ERROR, "褰撳墠闃舵涓嶅厑璁告鎿嶄綔");
@@ -491,14 +491,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         Article article = getByTaskId(taskId);
         ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
 
-        // 鏍￠獙鏉冮檺
+        // 校验权限
         checkArticlePermission(article, loginUser);
 
-        // 鏍￠獙 VIP 鏉冮檺锛堟櫘閫氱敤鎴蜂笉鑳戒娇鐢?AI 淇敼澶х翰锛?
+        // 校验 VIP 权限（普通用户不能使用 AI 修改大纲）
         ThrowUtils.throwIf(!isVipOrAdmin(loginUser), ErrorCode.NO_AUTH_ERROR, 
                 "AI 淇敼澶х翰鍔熻兘浠呴檺 VIP 浼氬憳浣跨敤");
 
-        // 鏍￠獙褰撳墠闃舵锛堝繀椤绘槸 OUTLINE_EDITING锛?
+        // 校验当前阶段（必须是 OUTLINE_EDITING）
         ArticlePhaseEnum currentPhase = ArticlePhaseEnum.getByValue(article.getPhase());
         ThrowUtils.throwIf(currentPhase != ArticlePhaseEnum.OUTLINE_EDITING,
                 ErrorCode.OPERATION_ERROR, "褰撳墠闃舵涓嶅厑璁告鎿嶄綔");
@@ -527,7 +527,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     /**
      * 澶勭悊閰嶅浘鏂瑰紡
-     * 濡傛灉鐢ㄦ埛鏈€夋嫨锛岀粰鏅€氱敤鎴疯缃粯璁ょ殑闈?VIP 鏂瑰紡锛孷IP 鐢ㄦ埛涓嶉檺鍒?
+     * 处理配图方式
      */
     private List<String> processImageMethods(List<String> enabledImageMethods, User loginUser) {
         // 濡傛灉鐢ㄦ埛宸查€夋嫨锛岀洿鎺ヨ繑鍥?
@@ -535,7 +535,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             return enabledImageMethods;
         }
 
-        // VIP 鍜岀鐞嗗憳锛氫笉闄愬埗锛岃繑鍥?null 琛ㄧず鏀寔鎵€鏈夋柟寮?
+        // VIP 和管理员：不限制，返回 null 表示支持所有方式
         if (isVipOrAdmin(loginUser)) {
             return null;
         }
@@ -550,7 +550,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     /**
-     * 鏍￠獙閰嶅浘鏂瑰紡鏉冮檺
+     * 校验配图方式权限
      * 鏅€氱敤鎴蜂笉鑳戒娇鐢?NANO_BANANA 鍜?SVG_DIAGRAM
      */
     private void validateImageMethods(List<String> enabledImageMethods, User loginUser) {
@@ -570,7 +570,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 ImageMethodEnum.IMAGE_2.getValue().equals(method) ||
                 ImageMethodEnum.SVG_DIAGRAM.getValue().equals(method)) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR, 
-                        "楂樼骇閰嶅浘鍔熻兘锛圓I 鐢熷浘銆丼VG 鍥捐〃锛変粎闄?VIP 浼氬憳浣跨敤");
+                        "高级配图功能（AI 生图、SVG 图表）仅限 VIP 会员使用");
             }
         }
     }

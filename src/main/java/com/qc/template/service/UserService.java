@@ -22,8 +22,8 @@ public interface UserService extends IService<User> {
      * 鐢ㄦ埛娉ㄥ唽
      *
      * @param userAccount   鐢ㄦ埛璐︽埛
-     * @param userPassword  鐢ㄦ埛瀵嗙爜
-     * @param checkPassword 鏍￠獙瀵嗙爜
+     * @param userPassword  用户密码
+     * @param checkPassword 校验密码
      * @return 鏂扮敤鎴?id
      */
     long userRegister(String userAccount, String userPassword, String checkPassword);
@@ -45,7 +45,7 @@ public interface UserService extends IService<User> {
      * 鐢ㄦ埛鐧诲綍
      *
      * @param userAccount  鐢ㄦ埛璐︽埛
-     * @param userPassword 鐢ㄦ埛瀵嗙爜
+     * @param userPassword 用户密码
      * @param request
      * @return 鑴辨晱鍚庣殑鐢ㄦ埛淇℃伅
      */
@@ -68,7 +68,7 @@ public interface UserService extends IService<User> {
     UserVO getUserVO(User user);
 
     /**
-     * 鑾峰彇鑴辨晱鍚庣殑鐢ㄦ埛淇℃伅锛堝垎椤碉級
+     * 获取脱敏后的用户信息（分页）
      *
      * @param userList 鐢ㄦ埛鍒楄〃
      * @return
@@ -94,8 +94,8 @@ public interface UserService extends IService<User> {
     /**
      * 鍔犲瘑
      *
-     * @param userPassword 鐢ㄦ埛瀵嗙爜
-     * @return 鍔犲瘑鍚庣殑鐢ㄦ埛瀵嗙爜
+     * @param userPassword 用户密码
+     * @return 加密后的用户密码
      */
     String getEncryptPassword(String userPassword);
 }

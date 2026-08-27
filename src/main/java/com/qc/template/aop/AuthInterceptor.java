@@ -17,7 +17,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * 鏉冮檺鏍￠獙 AOP
+ * 权限校验 AOP
  *
  */
 @Aspect
@@ -31,7 +31,7 @@ public class AuthInterceptor {
      * 鎵ц鎷︽埅
      *
      * @param joinPoint 鍒囧叆鐐?
-     * @param authCheck 鏉冮檺鏍￠獙娉ㄨВ
+     * @param authCheck 权限校验注解
      */
     @Around("@annotation(authCheck)")
     public Object doInterceptor(ProceedingJoinPoint joinPoint, AuthCheck authCheck) throws Throwable {
@@ -51,7 +51,7 @@ public class AuthInterceptor {
         if (userRoleEnum == null) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        // 瑕佹眰蹇呴』鏈夌鐞嗗憳鏉冮檺锛屼絾褰撳墠鐧诲綍鐢ㄦ埛娌℃湁
+        // 要求必须有管理员权限，但当前登录用户没有
         if (UserRoleEnum.ADMIN.equals(mustRoleEnum) && !UserRoleEnum.ADMIN.equals(userRoleEnum)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }

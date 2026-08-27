@@ -63,7 +63,7 @@ public class Article implements Serializable {
     private String enabledImageMethods;
 
     /**
-     * 鏂囩珷椋庢牸锛歵ech/emotional/educational/humorous锛屽彲涓虹┖
+     * 文章风格：tech/emotional/educational/humorous，可为空
      */
     private String style;
 
@@ -88,7 +88,7 @@ public class Article implements Serializable {
     private String outline;
 
     /**
-     * 姝ｆ枃锛圡arkdown鏍煎紡锛屼笉鍚浘鐗囷級
+     * 正文（Markdown格式，不含图片）
      */
     private String content;
 
@@ -113,7 +113,7 @@ public class Article implements Serializable {
     private String status;
 
     /**
-     * 褰撳墠闃舵锛歅ENDING/TITLE_GENERATING/TITLE_SELECTING/OUTLINE_GENERATING/OUTLINE_EDITING/CONTENT_GENERATING
+     * 当前阶段：PENDING/TITLE_GENERATING/TITLE_SELECTING/OUTLINE_GENERATING/OUTLINE_EDITING/CONTENT_GENERATING
      */
     private String phase;
 

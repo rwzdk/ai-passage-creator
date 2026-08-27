@@ -14,7 +14,7 @@ public enum SseMessageTypeEnum {
      */
     AGENT1_COMPLETE("AGENT1_COMPLETE", "鏍囬鏂规鐢熸垚瀹屾垚"),
 
-    AGENT1_STREAMING("AGENT1_STREAMING", "鏍囬鏂规娴佸紡杈撳嚭"),
+    AGENT1_STREAMING("AGENT1_STREAMING", "标题方案流式输出"),
     
     /**
      * 鏍囬鏂规鐢熸垚瀹屾垚锛堢瓑寰呯敤鎴烽€夋嫨锛?
@@ -24,7 +24,7 @@ public enum SseMessageTypeEnum {
     /**
      * 鏅鸿兘浣?娴佸紡杈撳嚭锛堝ぇ绾诧級
      */
-    AGENT2_STREAMING("AGENT2_STREAMING", "澶х翰娴佸紡杈撳嚭"),
+    AGENT2_STREAMING("AGENT2_STREAMING", "大纲流式输出"),
 
     /**
      * 鏅鸿兘浣?瀹屾垚锛堢敓鎴愬ぇ绾诧級
@@ -32,14 +32,14 @@ public enum SseMessageTypeEnum {
     AGENT2_COMPLETE("AGENT2_COMPLETE", "澶х翰鐢熸垚瀹屾垚"),
     
     /**
-     * 澶х翰鐢熸垚瀹屾垚锛堢瓑寰呯敤鎴风紪杈戯級
+     * 大纲生成完成（等待用户编辑）
      */
     OUTLINE_GENERATED("OUTLINE_GENERATED", "澶х翰宸茬敓鎴?),
 
     /**
      * 鏅鸿兘浣?娴佸紡杈撳嚭锛堟鏂囷級
      */
-    AGENT3_STREAMING("AGENT3_STREAMING", "姝ｆ枃娴佸紡杈撳嚭"),
+    AGENT3_STREAMING("AGENT3_STREAMING", "正文流式输出"),
 
     /**
      * 鏅鸿兘浣?瀹屾垚锛堢敓鎴愭鏂囷級
@@ -102,10 +102,10 @@ public enum SseMessageTypeEnum {
     }
 
     /**
-     * 鑾峰彇娴佸紡杈撳嚭娑堟伅鍓嶇紑
-     * 鐢ㄤ簬鏋勫缓甯︽暟鎹殑娴佸紡娑堟伅锛屽 "AGENT2_STREAMING:鍐呭"
+     * 获取流式输出消息前缀
+     * 用于构建带数据的流式消息，如 "AGENT2_STREAMING:内容"
      *
-     * @return 娑堟伅鍓嶇紑锛堝甫鍐掑彿锛?
+     * @return 消息前缀（带冒号）
      */
     public String getStreamingPrefix() {
         return this.value + ":";

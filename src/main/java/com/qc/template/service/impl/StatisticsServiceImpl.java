@@ -75,7 +75,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 骞冲潎鑰楁椂缁熻
         Integer avgDurationMs = calculateAvgDuration();
 
-        // 娲昏穬鐢ㄦ埛缁熻锛堟湰鍛ㄦ湁鍒涗綔鐨勭敤鎴凤級
+        // 活跃用户统计（本周有创作的用户）
         Long activeUserCount = countActiveUsers(getWeekStart());
 
         // 鎬荤敤鎴锋暟
@@ -111,7 +111,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     /**
-     * 缁熻鎸囧畾鏃堕棿鑼冨洿鍐呯殑鏂囩珷鏁伴噺
+     * 统计指定时间范围内的文章数量
      */
     private Long countArticlesByDateRange(LocalDateTime start, LocalDateTime end) {
         QueryWrapper queryWrapper = QueryWrapper.create()

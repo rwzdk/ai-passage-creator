@@ -42,7 +42,7 @@ public class AgentExecutionAspect {
         String inputData = extractInputData(pjp);
         String prompt = extractPrompt(pjp);
         
-        // 鍒涘缓鏃ュ織瀵硅薄
+        // 创建日志对象
         AgentLog agentLog = AgentLog.builder()
                 .taskId(taskId)
                 .agentName(agentExecution.value())
@@ -163,7 +163,7 @@ public class AgentExecutionAspect {
                 return String.valueOf(result);
             }
 
-            // 瀵逛簬闆嗗悎绫诲瀷锛屽彧璁板綍鏁伴噺
+            // 对于集合类型，只记录数量
             if (result instanceof java.util.List) {
                 return "{\"listSize\": " + ((java.util.List<?>) result).size() + "}";
             }

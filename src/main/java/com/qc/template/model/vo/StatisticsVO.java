@@ -45,7 +45,7 @@ public class StatisticsVO implements Serializable {
     private Double successRate;
 
     /**
-     * 骞冲潎鑰楁椂锛堟绉掞級
+     * 平均耗时（毫秒）
      */
     private Integer avgDurationMs;
 

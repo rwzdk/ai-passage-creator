@@ -110,7 +110,7 @@ public class UserController {
      * 鐢ㄦ埛鐧诲綍
      *
      * @param userLoginRequest 鐢ㄦ埛鐧诲綍璇锋眰
-     * @param request          璇锋眰瀵硅薄
+     * @param request          请求对象
      * @return 鑴辨晱鍚庣殑鐢ㄦ埛鐧诲綍淇℃伅
      */
     @PostMapping("/login")
@@ -131,7 +131,7 @@ public class UserController {
     /**
      * 鐢ㄦ埛娉ㄩ攢
      *
-     * @param request 璇锋眰瀵硅薄
+     * @param request 请求对象
      * @return
      */
     @PostMapping("/logout")
@@ -150,7 +150,7 @@ public class UserController {
         ThrowUtils.throwIf(userAddRequest == null, ErrorCode.PARAMS_ERROR);
         User user = new User();
         BeanUtil.copyProperties(userAddRequest, user);
-        // 榛樿瀵嗙爜 12345678
+        // 默认密码 12345678
         final String DEFAULT_PASSWORD = "12345678";
         String encryptPassword = userService.getEncryptPassword(DEFAULT_PASSWORD);
         user.setUserPassword(encryptPassword);
@@ -160,7 +160,7 @@ public class UserController {
     }
 
     /**
-     * 鏍规嵁 id 鑾峰彇鐢ㄦ埛锛堜粎绠＄悊鍛橈級
+     * 根据 id 获取用户（仅管理员）
      */
     @GetMapping("/get")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -232,7 +232,7 @@ public class UserController {
     }
 
     /**
-     * 鍒嗛〉鑾峰彇鐢ㄦ埛灏佽鍒楄〃锛堜粎绠＄悊鍛橈級
+     * 分页获取用户封装列表（仅管理员）
      *
      * @param userQueryRequest 鏌ヨ璇锋眰鍙傛暟
      */

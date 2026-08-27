@@ -48,7 +48,7 @@ public class GsonUtils {
     /**
      * 瀵硅薄杞?JSON 瀛楃涓?
      *
-     * @param obj 瀵硅薄
+     * @param obj 对象
      * @return JSON 瀛楃涓?
      */
     public static String toJson(Object obj) {
@@ -59,12 +59,12 @@ public class GsonUtils {
     }
 
     /**
-     * JSON 瀛楃涓茶浆瀵硅薄
+     * JSON 字符串转对象
      *
      * @param json  JSON 瀛楃涓?
      * @param clazz 鐩爣绫诲瀷
      * @param <T>   娉涘瀷绫诲瀷
-     * @return 瀵硅薄瀹炰緥
+     * @return 对象实例
      */
     public static <T> T fromJson(String json, Class<T> clazz) {
         if (json == null || json.isEmpty()) {
@@ -74,12 +74,12 @@ public class GsonUtils {
     }
 
     /**
-     * JSON 瀛楃涓茶浆瀵硅薄锛堟敮鎸佹硾鍨嬶級
+     * JSON 字符串转对象（支持泛型）
      *
      * @param json      JSON 瀛楃涓?
      * @param typeToken TypeToken 绫诲瀷寮曠敤
      * @param <T>       娉涘瀷绫诲瀷
-     * @return 瀵硅薄瀹炰緥
+     * @return 对象实例
      */
     public static <T> T fromJson(String json, TypeToken<T> typeToken) {
         if (json == null || json.isEmpty()) {
@@ -94,7 +94,7 @@ public class GsonUtils {
      * @param json JSON 瀛楃涓?
      * @param type Type 绫诲瀷
      * @param <T>  娉涘瀷绫诲瀷
-     * @return 瀵硅薄瀹炰緥
+     * @return 对象实例
      */
     public static <T> T fromJson(String json, Type type) {
         if (json == null || json.isEmpty()) {

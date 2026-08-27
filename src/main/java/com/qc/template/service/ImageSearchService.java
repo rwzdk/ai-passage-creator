@@ -32,8 +32,8 @@ public interface ImageSearchService {
      * 鑾峰彇鍥剧墖鏁版嵁锛堢敤浜庣粺涓€涓婁紶鍒?COS锛?
      * 瀛愮被鍙噸鍐欐鏂规硶杩斿洖鏇撮珮鏁堢殑鏁版嵁鏍煎紡锛堝瀛楄妭鏁版嵁锛?
      *
-     * @param request 鍥剧墖璇锋眰瀵硅薄
-     * @return ImageData 瀵硅薄锛屽寘鍚浘鐗囧瓧鑺傛垨 URL
+     * @param request 图片请求对象
+     * @return ImageData 对象，包含图片字节或 URL
      */
     default ImageData getImageData(ImageRequest request) {
         // 榛樿瀹炵幇锛氶€氳繃 getImage 鑾峰彇 URL锛岀劧鍚庤浆鎹负 ImageData

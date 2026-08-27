@@ -19,9 +19,9 @@ public class ThrowUtils {
     }
 
     /**
-     * 鏉′欢鎴愮珛鍒欐姏寮傚父
+     * 条件成立则抛异常
      *
-     * @param condition 鏉′欢
+     * @param condition 条件
      * @param errorCode 閿欒鐮?
      */
     public static void throwIf(boolean condition, ErrorCode errorCode) {
@@ -29,9 +29,9 @@ public class ThrowUtils {
     }
 
     /**
-     * 鏉′欢鎴愮珛鍒欐姏寮傚父
+     * 条件成立则抛异常
      *
-     * @param condition 鏉′欢
+     * @param condition 条件
      * @param errorCode 閿欒鐮?
      * @param message   閿欒淇℃伅
      */
