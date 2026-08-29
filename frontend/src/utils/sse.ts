@@ -29,7 +29,8 @@ export const connectSSE = (taskId: string, options: SSEOptions): EventSource => 
       hasReportedError = false
       onMessage(message)
       
-      // 妫€鏌ユ槸鍚﹀畬鎴?      if (message.type === 'ALL_COMPLETE' || message.type === 'ERROR') {
+      // 妫€鏌ユ槸鍚﹀畬鎴?
+      if (message.type === 'ALL_COMPLETE' || message.type === 'ERROR') {
         eventSource.close()
         onComplete?.()
       }
@@ -40,7 +41,8 @@ export const connectSSE = (taskId: string, options: SSEOptions): EventSource => 
 
   eventSource.onerror = (error) => {
     console.error('SSE 杩炴帴閿欒:', error)
-    // EventSource 浼氳嚜鍔ㄩ噸杩烇紱鍙姤鍛婄涓€娆℃柇绾匡紝鐢遍〉闈㈠惎鍔ㄧ姸鎬佽疆璇㈠厹搴曘€?    if (!hasReportedError) {
+    // EventSource 浼氳嚜鍔ㄩ噸杩烇紱鍙姤鍛婄涓€娆℃柇绾匡紝鐢遍〉闈㈠惎鍔ㄧ姸鎬佽疆璇㈠厹搴曘€?
+    if (!hasReportedError) {
       hasReportedError = true
       onError?.(error)
     }
