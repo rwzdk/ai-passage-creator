@@ -1364,7 +1364,7 @@ const animateCurrentStage = () => {
   stageTimeline.fromTo(
     stage,
     { autoAlpha: 0, y: 54, scale: 0.965, clipPath: 'inset(0 0 14% 0)' },
-    { autoAlpha: 1, y: 0, scale: 1, clipPath: 'inset(0 0 0% 0)', duration: 1.02 },
+    { autoAlpha: 1, y: 0, scale: 1, clipPath: 'inset(0 0 0% 0)', duration: 0.72 },
   )
 
   const details = stage.querySelectorAll<HTMLElement>(
@@ -1373,8 +1373,8 @@ const animateCurrentStage = () => {
   stageTimeline.fromTo(
     details,
     { autoAlpha: 0, y: 22 },
-    { autoAlpha: 1, y: 0, duration: 0.72, stagger: 0.09 },
-    '-=0.58',
+    { autoAlpha: 1, y: 0, duration: 0.48, stagger: 0.05 },
+    '-=0.34',
   )
 }
 
@@ -1394,12 +1394,12 @@ useGsapMotion(createPageRef, (element, reducedMotion) => {
   gsap.fromTo(
     columns,
     { autoAlpha: 0, x: (index: number) => (index === 0 ? -42 : index === 2 ? 42 : 0), y: 18 },
-    { autoAlpha: 1, x: 0, y: 0, duration: 1.08, stagger: 0.14, ease: 'power3.out' },
+    { autoAlpha: 1, x: 0, y: 0, duration: 0.72, stagger: 0.08, ease: 'power3.out' },
   )
   gsap.fromTo(
     flowItems,
     { autoAlpha: 0, x: -22, y: 18 },
-    { autoAlpha: 1, x: 0, y: 0, duration: 0.76, stagger: 0.1, delay: 0.42, ease: 'power3.out' },
+    { autoAlpha: 1, x: 0, y: 0, duration: 0.54, stagger: 0.06, delay: 0.12, ease: 'power3.out' },
   )
   gsap.fromTo(
     panelSections,
@@ -1408,9 +1408,9 @@ useGsapMotion(createPageRef, (element, reducedMotion) => {
       autoAlpha: 1,
       x: 0,
       clipPath: 'inset(0 0 0 0%)',
-      duration: 0.82,
-      stagger: 0.1,
-      delay: 0.35,
+      duration: 0.58,
+      stagger: 0.06,
+      delay: 0.1,
       ease: 'power3.out',
     },
   )
@@ -5187,7 +5187,7 @@ onBeforeUnmount(() => {
   background-blend-mode: normal;
   background-position: 88% center;
   background-size: cover;
-  background-attachment: fixed;
+  background-attachment: scroll;
   filter: saturate(1.16) contrast(1.12);
   pointer-events: none;
 }
