@@ -43,6 +43,15 @@ useGsapMotion(root, (element, reducedMotion) => {
       duration: 0.88,
       delay: props.delay / 1000,
       ease: 'power3.out',
+      onStart: () => {
+        element.style.willChange = 'transform, opacity'
+      },
+      onComplete: () => {
+        element.style.willChange = ''
+      },
+      onReverseComplete: () => {
+        element.style.willChange = ''
+      },
       scrollTrigger: {
         trigger: element,
         start: `top ${props.rootMargin.includes('-') ? '84%' : '88%'}`,
@@ -55,7 +64,4 @@ useGsapMotion(root, (element, reducedMotion) => {
 </script>
 
 <style scoped>
-.scroll-reveal {
-  will-change: opacity, transform;
-}
 </style>

@@ -40,6 +40,15 @@ useGsapMotion(root, (element, reducedMotion) => {
       duration: 0.88,
       stagger: props.step / 1000,
       ease: 'power3.out',
+      onStart: () => {
+        gsap.set(children, { willChange: 'transform, opacity' })
+      },
+      onComplete: () => {
+        gsap.set(children, { clearProps: 'willChange' })
+      },
+      onReverseComplete: () => {
+        gsap.set(children, { clearProps: 'willChange' })
+      },
       scrollTrigger: {
         trigger: element,
         start: props.start,
@@ -51,9 +60,3 @@ useGsapMotion(root, (element, reducedMotion) => {
 
 })
 </script>
-
-<style scoped>
-.stagger-list :deep(> *) {
-  will-change: opacity, transform;
-}
-</style>

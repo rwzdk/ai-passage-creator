@@ -5403,17 +5403,6 @@ onBeforeUnmount(() => {
   }
 }
 
-.create-layout,
-.sidebar-left,
-.main-content,
-.sidebar-right,
-.flow-item,
-.panel-section,
-.input-state,
-.input-card {
-  will-change: transform, opacity;
-}
-
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition:
@@ -5457,15 +5446,5 @@ onBeforeUnmount(() => {
     transition: none;
   }
 
-  .create-layout,
-  .sidebar-left,
-  .main-content,
-  .sidebar-right,
-  .flow-item,
-  .panel-section,
-  .input-state,
-  .input-card {
-    will-change: auto;
-  }
 }
 </style>
