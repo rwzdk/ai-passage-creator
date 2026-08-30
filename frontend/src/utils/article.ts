@@ -37,6 +37,29 @@ export interface ArticleImageMarkdown {
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+const insertImageAfterSectionContent = (
+  markdown: string,
+  sectionTitle: string,
+  imageMarkdown: string,
+): string | null => {
+  const headingPattern = new RegExp(
+    `(^|\\n)(#{1,6})\\s*${escapeRegExp(sectionTitle)}\\s*(?=\\n|$)`,
+    'i',
+  )
+  const headingMatch = headingPattern.exec(markdown)
+  if (!headingMatch || headingMatch.index === undefined) return null
+
+  const sectionContentStart = headingMatch.index + headingMatch[0].length
+  const nextHeadingPattern = /\n#{1,6}\s+[^\r\n]+(?=\r?\n|$)/g
+  nextHeadingPattern.lastIndex = sectionContentStart
+  const nextHeadingMatch = nextHeadingPattern.exec(markdown)
+  const sectionContentEnd = nextHeadingMatch?.index ?? markdown.length
+  const before = markdown.slice(0, sectionContentEnd).trimEnd()
+  const after = markdown.slice(sectionContentEnd).trimStart()
+
+  return `${before}\n\n${imageMarkdown}${after ? `\n\n${after}` : '\n'}`
+}
+
 /** 将配图补回正文，兼容占位符、章节标题和旧数据。 */
 export const mergeArticleImages = (
   markdown: string,
@@ -68,9 +91,24 @@ export const mergeArticleImages = (
     .filter((image) => image.url && (includeCover || image.position !== 1))
     .forEach((image) => {
       const url = image.url as string
-      if (result.includes(`](${url})`)) return
-
       const imageMarkdown = `![${image.description || image.sectionTitle || '文章配图'}](${url})`
+      if (result.includes(`](${url})`)) {
+        const sectionTitle = image.sectionTitle?.trim()
+        if (sectionTitle) {
+          const imagePattern = new RegExp(
+            `!\\[[^\\]]*\\]\\(${escapeRegExp(url)}\\)\\s*`,
+            'g',
+          )
+          const mergedResult = insertImageAfterSectionContent(
+            result.replace(imagePattern, ''),
+            sectionTitle,
+            imageMarkdown,
+          )
+          if (mergedResult) result = mergedResult
+        }
+        return
+      }
+
       const positionPlaceholder = image.position && image.position > 1
         ? `{{IMAGE_PLACEHOLDER_${image.position - 1}}}`
         : undefined
@@ -88,14 +126,9 @@ export const mergeArticleImages = (
 
       const sectionTitle = image.sectionTitle?.trim()
       if (sectionTitle) {
-        const headingPattern = new RegExp(
-          `(^|\\n)(#{1,6})\\s*${escapeRegExp(sectionTitle)}\\s*(?=\\n|$)`,
-          'i',
-        )
-        const headingMatch = headingPattern.exec(result)
-        if (headingMatch && headingMatch.index !== undefined) {
-          const insertAt = headingMatch.index + headingMatch[0].length
-          result = `${result.slice(0, insertAt)}\n\n${imageMarkdown}${result.slice(insertAt)}`
+        const mergedResult = insertImageAfterSectionContent(result, sectionTitle, imageMarkdown)
+        if (mergedResult) {
+          result = mergedResult
           return
         }
       }

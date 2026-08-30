@@ -823,6 +823,7 @@ onMounted(() => {
       :deep(p) {
         margin-bottom: 14px;
         text-indent: 2em;
+        text-align: justify;
         color: var(--color-text);
       }
 

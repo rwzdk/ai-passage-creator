@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '@/pages/HomePage.vue'
+import UserLoginPage from '@/pages/user/UserLoginPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -20,6 +21,7 @@ const router = createRouter({
     },
     {
       path: '/article/list',
+      meta: { requiresAuth: true },
       name: '文章列表',
       component: () => import('@/pages/article/ArticleListPage.vue'),
     },
@@ -31,7 +33,7 @@ const router = createRouter({
     {
       path: '/user/login',
       name: '用户登录',
-      component: () => import('@/pages/user/UserLoginPage.vue'),
+      component: UserLoginPage,
     },
     {
       path: '/user/register',

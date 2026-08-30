@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 文章异步任务服务
@@ -52,6 +54,8 @@ public class ArticleAsyncService {
     @Resource
     private AgentLogService agentLogService;
 
+    private final Set<String> runningPhase1Tasks = ConcurrentHashMap.newKeySet();
+
     /**
      * 阶段1：异步生成标题方案
      *
@@ -62,6 +66,11 @@ public class ArticleAsyncService {
      */
     @Async("articleExecutor")
     public void executePhase1(String taskId, String topic, String style, String referenceSummary) {
+        if (!runningPhase1Tasks.add(taskId)) {
+            log.info("阶段1任务已在执行，忽略重复启动: taskId={}", taskId);
+            return;
+        }
+
         boolean useOrchestrator = agentConfig.isOrchestratorEnabled();
         log.info("阶段1异步任务开始, taskId={}, topic={}, style={}, 使用多智能体编排={}",
                 taskId, topic, style, useOrchestrator);
@@ -112,6 +121,8 @@ public class ArticleAsyncService {
             
             // 完成 SSE 连接
             sseEmitterManager.complete(taskId);
+        } finally {
+            runningPhase1Tasks.remove(taskId);
         }
     }
 

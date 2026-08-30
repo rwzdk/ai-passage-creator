@@ -998,7 +998,7 @@ h2 { margin: 12px 0 10px; font-size: clamp(30px, 4vw, 50px); line-height: 1.05; 
 .article-subtitle { color: #6e8b79; font-size: 14px; }
 .article-body { color: #4d6657; font-size: 15px; line-height: 1.95; }
 .article-body :deep(h1), .article-body :deep(h2), .article-body :deep(h3) { margin: 26px 0 10px; font-size: 22px; letter-spacing: -.03em; }
-.article-body :deep(p) { margin: 0 0 14px; }
+.article-body :deep(p) { margin: 0 0 14px; text-align: justify; }
 .article-body :deep(img) { max-width: 100%; border-radius: 14px; }
 .article-body :deep(blockquote) { margin: 18px 0; padding: 12px 18px; border-left: 3px solid #78bd8c; background: #f2faf4; color: #64816e; }
 .works-sentinel { display: flex; justify-content: center; padding: 24px; color: #8aa496; font-size: 12px; }

@@ -19,10 +19,12 @@ import com.qc.template.model.dto.article.ArticleRegenerateImageRequest;
 import com.qc.template.model.dto.article.ArticleSelectImageVersionRequest;
 import com.qc.template.model.dto.article.ArticleState;
 import com.qc.template.model.dto.article.ArticleUpdateContentRequest;
+import com.qc.template.model.entity.Article;
 
 import java.util.List;
 import java.util.Map;
 import com.qc.template.model.entity.User;
+import com.qc.template.model.enums.ArticlePhaseEnum;
 import com.qc.template.model.enums.ArticleStatusEnum;
 import com.qc.template.model.enums.ArticleStyleEnum;
 import com.qc.template.model.vo.AgentExecutionStats;
@@ -121,15 +123,30 @@ public class ArticleController {
                 loginUser
         );
 
-        // 异步执行阶段1：生成标题方案
-        articleAsyncService.executePhase1(
-                taskId, 
-                request.getTopic(),
-                request.getStyle(),
-                request.getReferenceSummary()
-        );
-
         return ResultUtils.success(taskId);
+    }
+
+    /**
+     * 在 SSE 连接建立后启动阶段1，避免标题流式事件早于前端连接而丢失。
+     */
+    @PostMapping("/start/{taskId}")
+    @Operation(summary = "启动文章标题生成")
+    public BaseResponse<Boolean> startArticle(@PathVariable String taskId, HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(taskId == null || taskId.trim().isEmpty(),
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        articleService.getArticleDetail(taskId, loginUser);
+        Article article = articleService.getByTaskId(taskId);
+        if (article != null && ArticlePhaseEnum.PENDING.getValue().equals(article.getPhase())) {
+            articleAsyncService.executePhase1(
+                    taskId,
+                    article.getTopic(),
+                    article.getStyle(),
+                    article.getReferenceSummary()
+            );
+        }
+        return ResultUtils.success(true);
     }
 
     /**
@@ -147,6 +164,9 @@ public class ArticleController {
 
         // 创建 SSE Emitter
         SseEmitter emitter = sseEmitterManager.createEmitter(taskId);
+
+        // 先发送握手事件，确保浏览器收到响应并触发 EventSource.onopen，随后前端再启动阶段1。
+        sseEmitterManager.send(taskId, GsonUtils.toJson(Map.of("type", "SSE_READY")));
 
         // EventSource 重连后若任务已结束，立即补发终态供前端同步最终图文。
         if (ArticleStatusEnum.COMPLETED.getValue().equals(articleService.getArticleDetail(taskId, loginUser).getStatus())) {

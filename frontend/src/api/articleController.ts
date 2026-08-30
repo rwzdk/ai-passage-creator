@@ -76,6 +76,17 @@ export async function createArticle(
   })
 }
 
+/** 启动文章标题生成 POST /article/start/${param0} */
+export async function startArticle(
+  params: { taskId: string },
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseBoolean>(`/article/start/${params.taskId}`, {
+    method: 'POST',
+    ...(options || {}),
+  })
+}
+
 /** 保存文章编辑内容 POST /article/update-content */
 export async function updateArticleContent(
   body: API.ArticleUpdateContentRequest,

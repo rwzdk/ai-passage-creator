@@ -1,7 +1,11 @@
 <template>
   <div ref="createPageRef" class="article-create-page">
+    <div v-if="isRestoringHistory" class="history-restore-loading" aria-live="polite">
+      <LoadingOutlined class="spin-icon" />
+      <span>正在打开文章...</span>
+    </div>
     <!-- 三栏布局容器 -->
-    <div class="create-layout">
+    <div v-else class="create-layout">
       <!-- 左侧：智能体流程可视化 -->
       <aside :class="['sidebar-left', { 'has-article-summary': currentPhase === 'COMPLETED' }]">
         <div class="sidebar-header">
@@ -1042,6 +1046,7 @@ import {
 } from '@ant-design/icons-vue'
 import {
   createArticle,
+  startArticle,
   confirmTitle,
   confirmOutline,
   getArticle,
@@ -1158,6 +1163,7 @@ const selectedStyle = ref('') // 选中的文章风格（空字符串表示默�
 const selectedImageMethods = ref<string[]>([]) // 选中的配图方式（空数组表示全部）
 const isCreating = ref(false)
 const isCompleted = ref(false)
+const isRestoringHistory = ref(Boolean(route.query.taskId))
 const isStreaming = ref(false)
 const isOutlineStreaming = ref(false)
 const currentStep = ref(0)
@@ -1743,6 +1749,16 @@ const loadExecutionLogs = async (existingTaskId: string) => {
 
 const isArticleRunning = (status?: string) => status === 'PENDING' || status === 'PROCESSING'
 
+const startArticleGeneration = async (existingTaskId: string) => {
+  try {
+    await startArticle({ taskId: existingTaskId })
+  } catch (error) {
+    const err = error as Error
+    addLog(`启动标题生成失败: ${err.message || '未知错误'}`, 'error')
+    message.error(err.message || '启动标题生成失败')
+  }
+}
+
 const getExecutionProgress = () => {
   const logs = executionLogRecords.value
   const hasAgent = (agentName: string) => logs.some((log) => log.agentName === agentName)
@@ -2074,10 +2090,13 @@ const startCreate = async () => {
     // 刷新用户信息（更新配额）
     await loginUserStore.fetchLoginUser()
 
-    // 建立 SSE 连接
+    // 先建立 SSE 连接，连接真正打开后再启动后端任务，避免丢失标题流式事件
     addLog('已建立实时连接，开始生成...', 'info')
     eventSource = connectSSE(taskId.value, {
       onMessage: handleSSEMessage,
+      onOpen: () => {
+        void startArticleGeneration(taskId.value)
+      },
       onError: handleSSEError,
       onComplete: handleSSEComplete,
     })
@@ -2453,6 +2472,9 @@ const restoreArticleForEditing = async (existingTaskId: string) => {
     if (isArticleRunning(existingArticle.status)) {
       eventSource = connectSSE(existingTaskId, {
         onMessage: handleSSEMessage,
+        onOpen: () => {
+          void startArticleGeneration(existingTaskId)
+        },
         onError: handleSSEError,
         onComplete: handleSSEComplete,
       })
@@ -2460,6 +2482,8 @@ const restoreArticleForEditing = async (existingTaskId: string) => {
     }
   } catch (error) {
     message.error((error as Error).message || '加载文章失败')
+  } finally {
+    isRestoringHistory.value = false
   }
 }
 
@@ -2976,12 +3000,27 @@ onBeforeUnmount(() => {
   if (titleStreamingPreviewTimer !== undefined) window.clearTimeout(titleStreamingPreviewTimer)
   if (streamingMarkdownTimer !== undefined) window.clearTimeout(streamingMarkdownTimer)
   if (scrollFrame !== undefined) window.cancelAnimationFrame(scrollFrame)
+  if (stagePreloadTimer !== undefined) window.clearTimeout(stagePreloadTimer)
   stageTimeline?.kill()
   stageTimeline = null
 })
 </script>
 
 <style scoped lang="scss">
+.history-restore-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--ink-soft, #64748b);
+  font-size: 15px;
+}
+
+.history-restore-loading .spin-icon {
+  color: var(--river-green, #16a34a);
+}
+
 .article-create-page {
   height: auto;
   margin-bottom: 0;
@@ -3963,6 +4002,7 @@ onBeforeUnmount(() => {
   :deep(p) {
     margin-bottom: 14px;
     text-indent: 2em;
+    text-align: justify;
   }
 
   :deep(img) {
@@ -5115,6 +5155,7 @@ onBeforeUnmount(() => {
 
   :deep(p) {
     margin: 0 0 1.35em;
+    text-align: justify;
   }
 
   :deep(h2) {
@@ -5162,20 +5203,10 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes stage-settle {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 /* 临水书桌背景：保留中间工作台阅读区域 */
 .article-create-page::before {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 0;
   background:

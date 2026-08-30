@@ -27,6 +27,13 @@ const scheduleLoginUserFetch = (loginUserStore: ReturnType<typeof useLoginUserSt
 router.beforeEach(async (to, from, next) => {
   const loginUserStore = useLoginUserStore()
   const toUrl = to.fullPath
+  if (to.meta.requiresAuth && !loginUserStore.loginUser.id) {
+    next({
+      path: '/user/login',
+      query: { redirect: to.fullPath },
+    })
+    return
+  }
   if (toUrl.startsWith('/admin')) {
     await ensureLoginUser(loginUserStore)
     const loginUser = loginUserStore.loginUser

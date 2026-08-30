@@ -10,6 +10,7 @@ export interface SSEMessage {
 
 export interface SSEOptions {
   onMessage: (message: SSEMessage) => void
+  onOpen?: () => void
   onError?: (error: Event) => void
   onComplete?: () => void
 }
@@ -18,10 +19,14 @@ export interface SSEOptions {
  * 寤虹珛 SSE 连接
  */
 export const connectSSE = (taskId: string, options: SSEOptions): EventSource => {
-  const { onMessage, onError, onComplete } = options
+  const { onMessage, onOpen, onError, onComplete } = options
   let hasReportedError = false
 
   const eventSource = new EventSource(`/api/article/progress/${taskId}`)
+
+  eventSource.onopen = () => {
+    onOpen?.()
+  }
 
   eventSource.onmessage = (event) => {
     try {
