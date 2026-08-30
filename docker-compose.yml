@@ -119,8 +119,8 @@ services:
       # Stripe 配置（可选）
       STRIPE_API_KEY: ${STRIPE_API_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost/vip?success=true}
-      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost/vip?cancelled=true}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-https://mindofqc.me/vip?success=true}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-https://mindofqc.me/vip?cancelled=true}
       
       # 腾讯云 COS 配置（可选）
       TENCENT_COS_SECRET_ID: ${TENCENT_COS_SECRET_ID:-}

@@ -71,8 +71,8 @@ image-2:
 stripe:
   api-key: ${STRIPE_API_KEY:}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-  success-url: ${STRIPE_SUCCESS_URL:http://localhost/vip?success=true}
-  cancel-url: ${STRIPE_CANCEL_URL:http://localhost/vip?cancelled=true}
+  success-url: ${STRIPE_SUCCESS_URL:https://mindofqc.me/vip?success=true}
+  cancel-url: ${STRIPE_CANCEL_URL:https://mindofqc.me/vip?cancelled=true}
 
 # 腾讯云 COS 配置（可选）
 tencent:

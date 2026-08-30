@@ -1,5 +1,6 @@
 package com.qc.template.controller;
 
+import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.model.checkout.Session;
 import com.qc.template.service.PaymentService;
@@ -8,10 +9,12 @@ import com.google.gson.JsonParser;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Stripe Webhook 鎺у埗鍣?
+ * Stripe Webhook 控制器
  *
  */
 @RestController
@@ -24,23 +27,23 @@ public class StripeWebhookController {
     private PaymentService paymentService;
 
     /**
-     * 澶勭悊 Stripe Webhook 鍥炶皟
+     * 处理 Stripe Webhook 鍥炶皟
      */
     @PostMapping("/stripe")
-    public String handleStripeWebhook(
+    public ResponseEntity<String> handleStripeWebhook(
             @RequestBody String payload,
             @RequestHeader("Stripe-Signature") String sigHeader) {
         
         try {
-            // 楠岃瘉 Webhook 绛惧悕
+            // 验证 Webhook 签名
             Event event = paymentService.constructEvent(payload, sigHeader);
             
             log.info("鏀跺埌 Stripe Webhook 浜嬩欢, type={}", event.getType());
             
-            // 澶勭悊浜嬩欢
+            // 处理事件
             switch (event.getType()) {
                 case "checkout.session.completed":
-                    // 鏀粯鎴愬姛
+                    // 支付成功
                     JsonObject sessionJson = JsonParser.parseString(
                             event.getDataObjectDeserializer().getRawJson()).getAsJsonObject();
                     String sessionId = sessionJson.get("id").getAsString();
@@ -49,7 +52,7 @@ public class StripeWebhookController {
                     break;
                     
                 case "checkout.session.async_payment_succeeded":
-                    // 寮傛鏀粯鎴愬姛
+                    // 异步支付成功
                     JsonObject asyncSessionJson = JsonParser.parseString(
                             event.getDataObjectDeserializer().getRawJson()).getAsJsonObject();
                     String asyncSessionId = asyncSessionJson.get("id").getAsString();
@@ -58,14 +61,17 @@ public class StripeWebhookController {
                     break;
                     
                 default:
-                    log.info("鏈鐞嗙殑浜嬩欢绫诲瀷: {}", event.getType());
+                    log.info("未处理的事件类型: {}", event.getType());
                     break;
             }
             
-            return "success";
+            return ResponseEntity.ok("success");
+        } catch (SignatureVerificationException e) {
+            log.warn("Stripe Webhook signature verification failed", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("invalid signature");
         } catch (Exception e) {
-            log.error("澶勭悊 Stripe Webhook 澶辫触", e);
-            return "error";
+            log.error("处理 Stripe Webhook 失败", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("error");
         }
     }
 }
