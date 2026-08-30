@@ -54,7 +54,7 @@ stripe:
 
 3. 转发 Webhook 到本地:
    ```bash
-   stripe listen --forward-to localhost:8567/webhook/stripe
+   stripe listen --forward-to localhost:8567/api/webhook/stripe
    ```
 
 4. 复制显示的 webhook 签名密钥（以 `whsec_` 开头）到配置文件
@@ -63,11 +63,22 @@ stripe:
 
 1. 进入 **开发者 -> Webhooks** 页面
 2. 点击 **添加端点**
-3. 填写 URL: `https://你的域名/webhook/stripe`
+3. 填写 URL: `https://你的域名/api/webhook/stripe`
 4. 选择事件：
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`
 5. 复制 **签名密钥** 到配置文件
+
+公网部署时，必须使用 Stripe Dashboard 为该线上 Webhook 端点生成的 `whsec_...`，不能继续使用 `stripe listen` 输出的本地测试密钥。
+
+Docker Compose 环境变量示例：
+
+```dotenv
+STRIPE_API_KEY=sk_live_你的生产密钥
+STRIPE_WEBHOOK_SECRET=whsec_线上Webhook签名密钥
+STRIPE_SUCCESS_URL=https://你的域名/vip?success=true
+STRIPE_CANCEL_URL=https://你的域名/vip?cancelled=true
+```
 
 ## 6. 测试流程
 
