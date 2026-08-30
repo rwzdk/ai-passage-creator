@@ -77,14 +77,17 @@ public interface PromptConstant {
 
             ### 技术规范 ###
             - 必须包含 <?xml version="1.0" encoding="UTF-8"?> 声明。
-            - 必须设置 viewBox="0 0 800 600"，便于自适应缩放。
-            - 字体使用 font-family="Arial, sans-serif"，确保跨平台兼容。
+            - 必须设置 viewBox="0 0 800 600"、width="800"、height="600"，并设置 preserveAspectRatio="xMidYMid meet"。
+            - 所有图形和文字必须位于安全区域 x=40..760、y=40..560 内，不能越界或被裁剪。
+            - 图表主体至少占安全区域宽度的 75% 和高度的 65%，禁止把内容集中在画布中央的小区域。
+            - 节点要根据文字长度自动调整宽度；中文标签允许使用 tspan 分行，但不能缩小文字来适应节点。
+            - 字体使用 font-family="Microsoft YaHei, PingFang SC, Noto Sans CJK SC, Arial, sans-serif"，正文文字字号不小于 20px，确保跨平台兼容。
             - 使用语义化的 id 和 class 命名。
 
             ### 设计风格 ###
             - 配色以蓝色系为主（#4A90D9、#6BB3F0、#E8F4FC），辅以渐变效果。
-            - 布局留白充足，元素间距均匀，层次分明。
-            - 文字标签简洁，字号适中（14-18px），颜色对比清晰。
+            - 保留 40px 左右边距即可，元素间距均匀，层次分明，避免大面积空白。
+            - 文字标签简洁，字号清晰（20-26px），颜色对比清晰。
             - 连线使用带箭头的线条表示方向和关系，线条粗细为 2-3px。
 
             直接返回完整的 SVG XML 代码，不要有任何解释或其他内容。
