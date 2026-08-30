@@ -4,9 +4,9 @@ import router from '@/router'
 import { USER_ROLE_ADMIN } from '@/constants/user'
 
 let loginUserFetchPromise: Promise<void> | undefined
-let loginUserFetchTimer: number | undefined
 
 const ensureLoginUser = (loginUserStore: ReturnType<typeof useLoginUserStore>) => {
+  if (loginUserStore.loginUser.id) return Promise.resolve()
   if (!loginUserFetchPromise) {
     loginUserFetchPromise = loginUserStore.fetchLoginUser().catch(() => undefined)
   }
@@ -14,36 +14,40 @@ const ensureLoginUser = (loginUserStore: ReturnType<typeof useLoginUserStore>) =
 }
 
 const scheduleLoginUserFetch = (loginUserStore: ReturnType<typeof useLoginUserStore>) => {
-  if (loginUserFetchPromise || loginUserFetchTimer) return
-  loginUserFetchTimer = window.setTimeout(() => {
-    loginUserFetchTimer = undefined
-    void ensureLoginUser(loginUserStore)
-  }, 900)
+  void ensureLoginUser(loginUserStore)
 }
 
 /**
  * 全局权限校验
  */
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const loginUserStore = useLoginUserStore()
   const toUrl = to.fullPath
-  if (to.meta.requiresAuth && !loginUserStore.loginUser.id) {
-    next({
-      path: '/user/login',
-      query: { redirect: to.fullPath },
-    })
-    return
-  }
-  if (toUrl.startsWith('/admin')) {
-    await ensureLoginUser(loginUserStore)
+  const isAdminRoute = toUrl.startsWith('/admin')
+
+  if (to.meta.requiresAuth || isAdminRoute) {
+    if (!loginUserStore.loginUser.id) {
+      await ensureLoginUser(loginUserStore)
+    }
+
     const loginUser = loginUserStore.loginUser
-    if (!loginUser || loginUser.userRole !== USER_ROLE_ADMIN) {
+    if (!loginUser.id) {
+      next({
+        path: '/user/login',
+        query: { redirect: to.fullPath },
+      })
+      return
+    }
+
+    if (isAdminRoute && loginUser.userRole !== USER_ROLE_ADMIN) {
       message.error('没有权限')
       next(`/user/login?redirect=${to.fullPath}`)
       return
     }
   } else {
-    scheduleLoginUserFetch(loginUserStore)
+    if (!to.path.startsWith('/user/login') && !to.path.startsWith('/user/register')) {
+      scheduleLoginUserFetch(loginUserStore)
+    }
   }
   next()
 })

@@ -2,7 +2,7 @@
   <div class="statistics-page">
     <WorkspacePageHeader title="数据分析" subtitle="系统运营数据概览">
       <template #actions>
-        <a-button @click="loadData" :loading="loading" class="refresh-btn">
+        <a-button @click="loadData(true)" :loading="loading" class="refresh-btn">
           <template #icon>
             <ReloadOutlined />
           </template>
@@ -97,7 +97,7 @@
                 class="quota-user-select"
                 :loading="quotaUsersLoading"
                 aria-label="选择普通用户配额统计"
-                @change="renderQuotaChart"
+                @change="scheduleChartRender"
               >
                 <a-select-option value="all">全部普通用户</a-select-option>
                 <a-select-option v-for="user in normalQuotaUsers" :key="user.id" :value="String(user.id)">
@@ -128,7 +128,7 @@ import {
 } from '@ant-design/icons-vue'
 import { getStatistics } from '@/api/statisticsController'
 import { listNormalUserQuotas } from '@/api/userController'
-import type { ECharts, EChartsOption } from 'echarts'
+import type { EChartsOption } from 'echarts'
 import WorkspacePageHeader from '@/components/WorkspacePageHeader.vue'
 
 const loading = ref(false)
@@ -141,28 +141,72 @@ const quotaChartRef = ref<HTMLElement>()
 const normalQuotaUsers = ref<API.UserVO[]>([])
 const quotaUsersLoading = ref(false)
 const selectedQuotaUserId = ref('all')
-let echarts: typeof import('echarts') | null = null
-let trendChart: ECharts | null = null
-let performanceChart: ECharts | null = null
-let userChart: ECharts | null = null
-let quotaChart: ECharts | null = null
+type EChartsCore = typeof import('echarts/core')
+type EChartsInstance = ReturnType<EChartsCore['init']>
+let echarts: EChartsCore | null = null
+let echartsLoading: Promise<void> | null = null
+let trendChart: EChartsInstance | null = null
+let performanceChart: EChartsInstance | null = null
+let userChart: EChartsInstance | null = null
+let quotaChart: EChartsInstance | null = null
+let chartRenderTimer: number | undefined
 
 const loadEcharts = async () => {
-  echarts ??= await import('echarts')
+  if (echarts) return
+  if (!echartsLoading) {
+    echartsLoading = (async () => {
+      const [core, charts, components, renderers] = await Promise.all([
+        import('echarts/core'),
+        import('echarts/charts'),
+        import('echarts/components'),
+        import('echarts/renderers'),
+      ])
+      core.use([
+        charts.BarChart,
+        charts.GaugeChart,
+        charts.PieChart,
+        components.GridComponent,
+        components.GraphicComponent,
+        components.LegendComponent,
+        components.TooltipComponent,
+        renderers.CanvasRenderer,
+      ])
+      echarts = core
+    })().catch((error) => {
+      echartsLoading = null
+      throw error
+    })
+  }
+  await echartsLoading
+}
+
+const renderCharts = async () => {
+  if (!stats.value) return
+  await loadEcharts()
+  await nextTick()
+  renderTrendChart()
+  renderPerformanceChart()
+  renderUserChart()
+  renderQuotaChart()
+}
+
+const scheduleChartRender = () => {
+  if (chartRenderTimer !== undefined) window.clearTimeout(chartRenderTimer)
+  chartRenderTimer = window.setTimeout(() => {
+    chartRenderTimer = undefined
+    void renderCharts()
+  }, 0)
 }
 
 // 加载数据
-const loadData = async () => {
+const loadData = async (refresh = false) => {
   loading.value = true
+  void loadQuotaUsers()
   try {
-    const res = await getStatistics({ params: { refresh: true } })
+    const res = await getStatistics(refresh ? { params: { refresh: true } } : undefined)
     stats.value = res.data.data || null
     await nextTick()
-    await loadEcharts()
-    renderTrendChart()
-    renderPerformanceChart()
-    renderUserChart()
-    loadQuotaUsers()
+    scheduleChartRender()
   } catch (error) {
     message.error((error as Error).message || '加载数据失败')
   } finally {
@@ -176,7 +220,7 @@ const loadQuotaUsers = async () => {
     const res = await listNormalUserQuotas()
     normalQuotaUsers.value = res.data.data ?? []
     await nextTick()
-    renderQuotaChart()
+    scheduleChartRender()
   } catch (error) {
     message.error((error as Error).message || '获取普通用户配额失败')
   } finally {
@@ -193,6 +237,7 @@ const renderTrendChart = () => {
   }
 
   const option: EChartsOption = {
+    animation: false,
     tooltip: {
       trigger: 'item',
       backgroundColor: 'rgba(32, 59, 56, .92)',
@@ -260,7 +305,7 @@ const renderTrendChart = () => {
     ]
   }
 
-  trendChart.setOption(option)
+  trendChart!.setOption(option)
 }
 
 // 渲染性能统计图
@@ -273,7 +318,8 @@ const renderPerformanceChart = () => {
 
   const successRate = Math.min(100, Math.max(0, stats.value.successRate ?? 0))
   const averageDurationMs = Math.max(0, stats.value.avgDurationMs ?? 0)
-  performanceChart.setOption({
+  performanceChart!.setOption({
+    animation: false,
     tooltip: {
       trigger: 'item',
       formatter: (params: unknown) => {
@@ -378,6 +424,7 @@ const renderUserChart = () => {
   ]
 
   const option: EChartsOption = {
+    animation: false,
     tooltip: {
       trigger: 'item',
       formatter: (params: unknown) => {
@@ -461,7 +508,7 @@ const renderUserChart = () => {
     ]
   }
 
-  userChart.setOption(option)
+  userChart!.setOption(option)
 }
 
 // 渲染配额使用图
@@ -491,6 +538,7 @@ const renderQuotaChart = () => {
     : [{ value: 1, name: '暂无配额', itemStyle: { color: '#dfe9e3' } }]
 
   const option: EChartsOption = {
+    animation: false,
     tooltip: {
       trigger: 'item',
       formatter: (params: unknown) => {
@@ -554,7 +602,7 @@ const renderQuotaChart = () => {
     ]
   }
 
-  quotaChart.setOption(option)
+  quotaChart!.setOption(option)
 }
 
 // 格式化耗时
@@ -577,6 +625,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (chartRenderTimer !== undefined) window.clearTimeout(chartRenderTimer)
   window.removeEventListener('resize', handleResize)
   trendChart?.dispose()
   performanceChart?.dispose()

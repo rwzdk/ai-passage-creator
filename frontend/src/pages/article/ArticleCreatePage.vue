@@ -537,7 +537,7 @@
                 <span class="article-reading-note">全文阅读</span>
               </div>
               <div
-                v-html="markdownToHtml(getArticleBodyContent(article.fullContent || article.content || '', article.images, article.mainTitle))"
+                v-html="markdownToHtml(getArticleBodyContent(article.fullContent || article.content || '', article.images, article.mainTitle, article.subTitle))"
                 class="markdown-body"
               ></div>
             </div>
@@ -1355,8 +1355,10 @@ const mainContentRef = ref<HTMLElement | null>(null)
 const createPageRef = ref<HTMLElement | null>(null)
 
 let stageTimeline: gsap.core.Timeline | null = null
-let stagePreloadTimer: number | undefined
+let hotTopicsLoadTimer: number | undefined
 let reducedMotionPreference = false
+const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
+const isPageReload = navigationEntry?.type === 'reload'
 
 const animateCurrentStage = () => {
   const stage = mainContentRef.value?.querySelector<HTMLElement>(
@@ -1389,14 +1391,14 @@ const animateCurrentStage = () => {
 }
 
 useGsapMotion(createPageRef, (element, reducedMotion) => {
-  reducedMotionPreference = reducedMotion
+  reducedMotionPreference = reducedMotion || isPageReload
   const columns = Array.from(
     element.querySelectorAll<HTMLElement>('.sidebar-left, .main-content, .sidebar-right'),
   )
   const flowItems = Array.from(element.querySelectorAll<HTMLElement>('.flow-item'))
   const panelSections = Array.from(element.querySelectorAll<HTMLElement>('.panel-section'))
 
-  if (reducedMotion) {
+  if (reducedMotion || isPageReload) {
     gsap.set([...columns, ...flowItems, ...panelSections], { clearProps: 'all' })
     return
   }
@@ -1476,7 +1478,7 @@ const getImageVersions = (image: API.ImageItem): API.ImageVersion[] => {
   return image.url ? [{ url: image.url, prompt: image.keywords }] : []
 }
 
-const stripGeneratedArticleHeading = (markdown: string, mainTitle?: string) => {
+const stripGeneratedArticleHeading = (markdown: string, mainTitle?: string, subTitle?: string) => {
   let content = markdown || ''
 
   // 生成服务偶尔会把标题元数据一起写入正文，展示时只保留独立标题区。
@@ -1488,7 +1490,16 @@ const stripGeneratedArticleHeading = (markdown: string, mainTitle?: string) => {
   if (normalizedTitle) {
     const escapedTitle = normalizedTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     content = content.replace(
-      new RegExp(`^\\s*(?:#\\s*)?${escapedTitle}\\s*(?:\\r?\\n|$)`),
+      new RegExp(`^\\s*(?:#{1,6}\\s*)?${escapedTitle}\\s*(?:\\r?\\n|$)`),
+      '',
+    )
+  }
+
+  const normalizedSubTitle = subTitle?.trim()
+  if (normalizedSubTitle) {
+    const escapedSubTitle = normalizedSubTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    content = content.replace(
+      new RegExp(`^\\s*(?:#{1,6}\\s*|>\\s*)?${escapedSubTitle}\\s*(?:\\r?\\n|$)`),
       '',
     )
   }
@@ -1498,7 +1509,7 @@ const stripGeneratedArticleHeading = (markdown: string, mainTitle?: string) => {
 
 const getEditableArticleContent = (articleData: Partial<API.ArticleVO>) => {
   const source = articleData.fullContent || articleData.content || ''
-  return stripGeneratedArticleHeading(source, articleData.mainTitle)
+  return stripGeneratedArticleHeading(source, articleData.mainTitle, articleData.subTitle)
     .replace(/!\[[^\]]*\]\([^\)\r\n]*\)\s*/g, '')
 }
 
@@ -1764,11 +1775,21 @@ const getExecutionProgress = () => {
   const hasAgent = (agentName: string) => logs.some((log) => log.agentName === agentName)
   const hasSuccessfulAgent = (agentName: string) =>
     logs.some((log) => log.agentName === agentName && log.status === 'SUCCESS')
-  const imageAnalyzerLog = [...logs].reverse().find((log) => log.agentName === 'agent4_analyze_image_requirements')
+  const imageAnalyzerLog = [...logs].reverse().find(
+    (log) =>
+      log.agentName === 'agent4_analyze_image_requirements' ||
+      getExecutionEventType(log) === 'AGENT4_COMPLETE',
+  )
   let analyzedImageCount = 0
   if (imageAnalyzerLog?.outputData) {
     try {
-      analyzedImageCount = Number((JSON.parse(imageAnalyzerLog.outputData) as { requirementsCount?: number }).requirementsCount) || 0
+      const data = JSON.parse(imageAnalyzerLog.outputData) as {
+        imageRequirements?: unknown[]
+        requirementsCount?: number
+      }
+      analyzedImageCount = Array.isArray(data.imageRequirements)
+        ? data.imageRequirements.length
+        : Number(data.requirementsCount) || 0
     } catch {
       analyzedImageCount = 0
     }
@@ -1806,7 +1827,7 @@ const syncTaskSnapshot = (snapshot: API.ArticleVO | undefined) => {
   const previewSource = snapshot.fullContent || snapshotContent
   if (previewSource && (snapshotContent !== previousContent || snapshot.fullContent || snapshot.images?.length)) {
     scheduleStreamingMarkdown(
-      getArticleBodyContent(previewSource, article.value.images, article.value.mainTitle),
+      getArticleBodyContent(previewSource, article.value.images, article.value.mainTitle, article.value.subTitle),
     )
   }
 
@@ -1833,7 +1854,7 @@ const syncTaskSnapshot = (snapshot: API.ArticleVO | undefined) => {
     if (previewSource) {
       isStreaming.value = true
       scheduleStreamingMarkdown(
-        getArticleBodyContent(previewSource, article.value.images, article.value.mainTitle),
+        getArticleBodyContent(previewSource, article.value.images, article.value.mainTitle, article.value.subTitle),
       )
     }
   } else if (snapshot.phase === 'TITLE_SELECTING' && snapshot.titleOptions?.length) {
@@ -1926,7 +1947,7 @@ const appendStreamingContent = (chunk: unknown) => {
   if (mergedContent === currentContent) return
   article.value.content = mergedContent
   scheduleStreamingMarkdown(
-    getArticleBodyContent(mergedContent, article.value.images, article.value.mainTitle),
+    getArticleBodyContent(mergedContent, article.value.images, article.value.mainTitle, article.value.subTitle),
   )
 }
 
@@ -1934,16 +1955,17 @@ const getArticleBodyContent = (
   markdown: string,
   images?: API.ImageItem[],
   mainTitle?: string,
+  subTitle?: string,
 ) => {
   return mergeArticleImages(
-    stripGeneratedArticleHeading(markdown, mainTitle),
+    stripGeneratedArticleHeading(markdown, mainTitle, subTitle),
     images,
     false,
   )
 }
 
 const getSummaryText = (markdown: string) => {
-  return getArticleBodyContent(markdown, undefined, article.value.mainTitle)
+  return getArticleBodyContent(markdown, undefined, article.value.mainTitle, article.value.subTitle)
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/^\s*[-*+]\s+/gm, '')
     .replace(/`{1,3}/g, '')
@@ -2147,6 +2169,7 @@ const applyAgent5Complete = (msg: SSEMessage) => {
     article.value.content || '',
     article.value.images,
     article.value.mainTitle,
+    article.value.subTitle,
   )
   flushStreamingMarkdown()
   addLog('所有配图生成完成', 'success')
@@ -2301,6 +2324,7 @@ const handleSSEMessage = (msg: SSEMessage) => {
           article.value.content || '',
           article.value.images,
           article.value.mainTitle,
+          article.value.subTitle,
         )
         scheduleStreamingMarkdown(pendingStreamingMarkdown)
         flushPendingAgent5Complete()
@@ -2349,6 +2373,7 @@ const handleSSEMessage = (msg: SSEMessage) => {
         msg.fullContent || article.value.content || '',
         article.value.images,
         article.value.mainTitle,
+        article.value.subTitle,
       )
       flushStreamingMarkdown()
       currentStepStatus.value = 'working'
@@ -2424,6 +2449,7 @@ const restoreArticleForEditing = async (existingTaskId: string) => {
       existingArticle.fullContent || existingArticle.content || '',
       existingArticle.images,
       existingArticle.mainTitle,
+      existingArticle.subTitle,
     )
     flushStreamingMarkdown()
 
@@ -2955,12 +2981,10 @@ onMounted(() => {
     window.setTimeout(animateCurrentStage, 80)
   }
   startHotTopicLoop()
-  loadHotTopics()
-  stagePreloadTimer = window.setTimeout(() => {
-    void loadTitleSelectingStage()
-    void loadOutlineEditingStage()
-    stagePreloadTimer = undefined
-  }, 1200)
+  hotTopicsLoadTimer = window.setTimeout(() => {
+    hotTopicsLoadTimer = undefined
+    void loadHotTopics()
+  }, 1000)
 })
 
 const loadHotTopics = async (refresh = false) => {
@@ -2993,6 +3017,7 @@ const selectHotTopic = (item: API.HotTopicItem) => {
 
 // 组件卸载前关闭 SSE
 onBeforeUnmount(() => {
+  if (hotTopicsLoadTimer !== undefined) window.clearTimeout(hotTopicsLoadTimer)
   closeSSE(eventSource)
   stopExecutionLogsPolling()
   stopHotTopicLoop()
@@ -3000,7 +3025,6 @@ onBeforeUnmount(() => {
   if (titleStreamingPreviewTimer !== undefined) window.clearTimeout(titleStreamingPreviewTimer)
   if (streamingMarkdownTimer !== undefined) window.clearTimeout(streamingMarkdownTimer)
   if (scrollFrame !== undefined) window.cancelAnimationFrame(scrollFrame)
-  if (stagePreloadTimer !== undefined) window.clearTimeout(stagePreloadTimer)
   stageTimeline?.kill()
   stageTimeline = null
 })
@@ -3990,6 +4014,15 @@ onBeforeUnmount(() => {
   font-size: 15px;
   color: var(--color-text);
 
+  :deep(h1) {
+    margin: 1.8em 0 0.8em;
+    color: var(--ink-deep);
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
   :deep(h2) {
     font-size: 20px;
     font-weight: 600;
@@ -3999,10 +4032,39 @@ onBeforeUnmount(() => {
     color: var(--color-text);
   }
 
+  :deep(h3) {
+    margin: 2em 0 0.8em;
+    padding-left: 0.75em;
+    border-left: 3px solid var(--river-green);
+    color: var(--ink-deep);
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.55;
+  }
+
+  :deep(h4) {
+    margin: 1.6em 0 0.6em;
+    color: var(--ink-deep);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.55;
+  }
+
   :deep(p) {
     margin-bottom: 14px;
     text-indent: 2em;
     text-align: justify;
+  }
+
+  :deep(hr) {
+    margin: 2.25em 0;
+    border: 0;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  :deep(> hr:first-child) {
+    display: none;
   }
 
   :deep(img) {
@@ -5160,7 +5222,12 @@ onBeforeUnmount(() => {
 
   :deep(h2) {
     margin: 2.4em 0 1em;
+    padding-bottom: 0.55em;
     color: var(--ink-deep);
+    font-size: 23px;
+    font-weight: 700;
+    line-height: 1.5;
+    border-bottom-color: var(--line-soft);
   }
 
   :deep(ul),

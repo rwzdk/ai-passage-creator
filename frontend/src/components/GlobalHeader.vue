@@ -91,7 +91,7 @@ import { isVip as checkIsVip } from '@/utils/permission'
 const loginUserStore = useLoginUserStore()
 const router = useRouter()
 // 当前选中菜单
-const selectedKeys = ref<string[]>(['/'])
+const selectedKeys = ref<string[]>([window.location.pathname])
 // 监听路由变化，更新当前选中菜单
 router.afterEach((to) => {
   selectedKeys.value = [to.path]
