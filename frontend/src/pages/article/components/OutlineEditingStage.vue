@@ -311,7 +311,7 @@ const handleAiModify = async () => {
   border: 2px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 20px;
-  transition: all 0.2s;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
     border-color: var(--color-primary);
@@ -475,7 +475,7 @@ const handleAiModify = async () => {
     background: var(--gradient-primary);
     color: white;
     text-decoration: none;
-    transition: all 0.3s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
     box-shadow: var(--shadow-green);
 
     &:hover {

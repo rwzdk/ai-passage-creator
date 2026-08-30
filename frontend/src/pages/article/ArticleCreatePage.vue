@@ -1005,7 +1005,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount, onMounted, computed } from 'vue'
+import { ref, onBeforeUnmount, onMounted, computed, defineAsyncComponent } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { gsap } from 'gsap'
 import { message } from 'ant-design-vue'
@@ -1062,10 +1062,13 @@ import {
   hasQuota as checkHasQuota,
 } from '@/utils/permission'
 import { marked } from 'marked'
-import TitleSelectingStage from './components/TitleSelectingStage.vue'
-import OutlineEditingStage from './components/OutlineEditingStage.vue'
 import AnimatedSkeleton from '@/components/motion/AnimatedSkeleton.vue'
 import { useGsapMotion } from '@/composables/useGsapMotion'
+
+const loadTitleSelectingStage = () => import('./components/TitleSelectingStage.vue')
+const loadOutlineEditingStage = () => import('./components/OutlineEditingStage.vue')
+const TitleSelectingStage = defineAsyncComponent(loadTitleSelectingStage)
+const OutlineEditingStage = defineAsyncComponent(loadOutlineEditingStage)
 
 const router = useRouter()
 const route = useRoute()
@@ -1346,6 +1349,7 @@ const mainContentRef = ref<HTMLElement | null>(null)
 const createPageRef = ref<HTMLElement | null>(null)
 
 let stageTimeline: gsap.core.Timeline | null = null
+let stagePreloadTimer: number | undefined
 let reducedMotionPreference = false
 
 const animateCurrentStage = () => {
@@ -1360,11 +1364,11 @@ const animateCurrentStage = () => {
     return
   }
 
-  stageTimeline = gsap.timeline({ defaults: { ease: 'power3.out' } })
+  stageTimeline = gsap.timeline({ defaults: { ease: 'power2.out' } })
   stageTimeline.fromTo(
     stage,
-    { autoAlpha: 0, y: 54, scale: 0.965, clipPath: 'inset(0 0 14% 0)' },
-    { autoAlpha: 1, y: 0, scale: 1, clipPath: 'inset(0 0 0% 0)', duration: 0.72 },
+    { autoAlpha: 0, y: 20 },
+    { autoAlpha: 1, y: 0, duration: 0.36 },
   )
 
   const details = stage.querySelectorAll<HTMLElement>(
@@ -1372,9 +1376,9 @@ const animateCurrentStage = () => {
   )
   stageTimeline.fromTo(
     details,
-    { autoAlpha: 0, y: 22 },
-    { autoAlpha: 1, y: 0, duration: 0.48, stagger: 0.05 },
-    '-=0.34',
+    { autoAlpha: 0, y: 12 },
+    { autoAlpha: 1, y: 0, duration: 0.3, stagger: 0.025 },
+    '-=0.18',
   )
 }
 
@@ -1391,27 +1395,28 @@ useGsapMotion(createPageRef, (element, reducedMotion) => {
     return
   }
 
+  const enterDefaults = { ease: 'power2.out' }
+
   gsap.fromTo(
     columns,
     { autoAlpha: 0, x: (index: number) => (index === 0 ? -42 : index === 2 ? 42 : 0), y: 18 },
-    { autoAlpha: 1, x: 0, y: 0, duration: 0.72, stagger: 0.08, ease: 'power3.out' },
+    { autoAlpha: 1, x: 0, y: 0, duration: 0.44, stagger: 0.04, ...enterDefaults },
   )
   gsap.fromTo(
     flowItems,
     { autoAlpha: 0, x: -22, y: 18 },
-    { autoAlpha: 1, x: 0, y: 0, duration: 0.54, stagger: 0.06, delay: 0.12, ease: 'power3.out' },
+    { autoAlpha: 1, x: 0, y: 0, duration: 0.34, stagger: 0.035, delay: 0.08, ...enterDefaults },
   )
   gsap.fromTo(
     panelSections,
-    { autoAlpha: 0, x: 24, clipPath: 'inset(0 0 0 12%)' },
+    { autoAlpha: 0, x: 18 },
     {
       autoAlpha: 1,
       x: 0,
-      clipPath: 'inset(0 0 0 0%)',
-      duration: 0.58,
-      stagger: 0.06,
-      delay: 0.1,
-      ease: 'power3.out',
+      duration: 0.38,
+      stagger: 0.035,
+      delay: 0.06,
+      ...enterDefaults,
     },
   )
 })
@@ -2927,6 +2932,11 @@ onMounted(() => {
   }
   startHotTopicLoop()
   loadHotTopics()
+  stagePreloadTimer = window.setTimeout(() => {
+    void loadTitleSelectingStage()
+    void loadOutlineEditingStage()
+    stagePreloadTimer = undefined
+  }, 1200)
 })
 
 const loadHotTopics = async (refresh = false) => {
@@ -3158,7 +3168,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   flex-shrink: 0;
   font-size: 14px;
-  transition: all var(--transition-normal);
+  transition: background-color var(--transition-normal), color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
 
   .pending & {
     background: var(--color-background-tertiary);
@@ -3474,7 +3484,7 @@ onBeforeUnmount(() => {
   background: white;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  transition: all 0.2s;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .style-group :deep(.ant-radio-wrapper:hover) {
@@ -3525,7 +3535,7 @@ onBeforeUnmount(() => {
   background: white;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  transition: all 0.2s;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .methods-group :deep(.ant-checkbox-wrapper:hover) {
@@ -4187,7 +4197,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast);
 
   &:hover {
     border-color: var(--color-primary);
@@ -4211,7 +4221,7 @@ onBeforeUnmount(() => {
   padding: 12px;
   background: var(--color-background-secondary);
   border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast);
 
   &:hover {
     background: rgba(34, 197, 94, 0.05);
@@ -4563,7 +4573,7 @@ onBeforeUnmount(() => {
 /* 阶段切换过渡动画 */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
-  transition: all 0.3s ease;
+  transition: opacity 220ms ease, transform 220ms var(--ease-out);
 }
 
 .fade-slide-enter-from {
@@ -5127,26 +5137,18 @@ onBeforeUnmount(() => {
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition:
-    opacity 420ms var(--ease-out),
-    transform 420ms var(--ease-out),
-    filter 420ms var(--ease-out);
+    opacity 220ms var(--ease-out),
+    transform 220ms var(--ease-out);
 }
 
 .fade-slide-enter-from {
   opacity: 0;
-  transform: translateY(18px);
-  filter: blur(4px);
+  transform: translate3d(0, 16px, 0);
 }
 
 .fade-slide-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
-  filter: blur(3px);
-}
-
-.loading-stage,
-.outline-generating-state {
-  animation: stage-settle 520ms var(--ease-out) both;
+  transform: translate3d(0, -10px, 0);
 }
 
 @keyframes stream-section-in {
@@ -5406,21 +5408,18 @@ onBeforeUnmount(() => {
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition:
-    opacity 720ms var(--ease-out),
-    transform 720ms var(--ease-out),
-    clip-path 720ms var(--ease-out);
+    opacity 220ms var(--ease-out),
+    transform 220ms var(--ease-out);
 }
 
 .fade-slide-enter-from {
   opacity: 0;
-  transform: translate3d(0, 42px, 0) scale(0.97);
-  clip-path: inset(0 0 16% 0);
+  transform: translate3d(0, 16px, 0);
 }
 
 .fade-slide-leave-to {
   opacity: 0;
-  transform: translate3d(0, -18px, 0) scale(0.985);
-  clip-path: inset(12% 0 0 0);
+  transform: translate3d(0, -10px, 0);
 }
 
 @media (max-width: 768px) {
