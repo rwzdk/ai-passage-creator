@@ -3,6 +3,8 @@ package com.qc.template.agent.agents;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.qc.template.constant.PromptConstant;
 import com.qc.template.annotation.AgentExecution;
@@ -83,7 +85,7 @@ public class ImageAnalyzerAgent implements NodeAction {
         
         // 解析结果（新格式：包含 contentWithPlaceholders 和 imageRequirements）
         ArticleState.Agent4Result agent4Result = GsonUtils.fromJson(
-                responseContent,
+                normalizeJsonResponse(responseContent),
                 ArticleState.Agent4Result.class
         );
         
@@ -104,6 +106,34 @@ public class ImageAnalyzerAgent implements NodeAction {
                 INPUT_CONTENT, agent4Result.getContentWithPlaceholders(), // 更新 content 为包含占位符的版本，传给下游节点
                 OUTPUT_IMAGE_REQUIREMENTS, validatedRequirements
         );
+    }
+
+    /**
+     * 兼容模型返回的 Markdown 代码块或被 JSON 字符串包裹的对象。
+     */
+    static String normalizeJsonResponse(String responseContent) {
+        String normalized = responseContent == null ? "" : responseContent.trim();
+        if (normalized.startsWith("```")) {
+            int contentStart = normalized.indexOf('\n');
+            int fenceEnd = normalized.lastIndexOf("```");
+            if (contentStart >= 0 && fenceEnd > contentStart) {
+                normalized = normalized.substring(contentStart + 1, fenceEnd).trim();
+            }
+        }
+
+        JsonElement element = JsonParser.parseString(normalized);
+        while (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+            String nestedJson = element.getAsString().trim();
+            if (nestedJson.equals(normalized)) {
+                break;
+            }
+            normalized = nestedJson;
+            element = JsonParser.parseString(normalized);
+        }
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException("配图需求分析结果不是有效的 JSON 对象");
+        }
+        return element.toString();
     }
 
     /**
