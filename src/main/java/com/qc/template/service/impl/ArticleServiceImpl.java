@@ -39,8 +39,9 @@ import static com.qc.template.constant.UserConstant.ADMIN_ROLE;
 import static com.qc.template.constant.UserConstant.VIP_ROLE;
 
 /**
- * 鏂囩珷鏈嶅姟瀹炵幇绫?
+ * 文章服务实现类
  *
+ * @author <a href="https://codefather.cn">编程导航学习网</a>
  */
 @Service
 @Slf4j
@@ -58,16 +59,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Override
     public String createArticleTask(String topic, String style, List<String> enabledImageMethods,
                                     String referenceSummary, User loginUser) {
-        // 澶勭悊閰嶅浘鏂瑰紡锛氬鏋滅敤鎴锋湭閫夋嫨锛岀粰鏅€氱敤鎴疯缃粯璁ょ殑闈?VIP 鏂瑰紡
+        // 处理配图方式：如果用户未选择，给普通用户设置默认的非 VIP 方式
         List<String> finalImageMethods = processImageMethods(enabledImageMethods, loginUser);
         
         // 校验配图方式权限（普通用户不能使用 NANO_BANANA 和 SVG_DIAGRAM）
         validateImageMethods(finalImageMethods, loginUser);
 
-        // 鐢熸垚浠诲姟ID
+        // 生成任务ID
         String taskId = IdUtil.simpleUUID();
 
-        // 鍒涘缓鏂囩珷璁板綍
+        // 创建文章记录
         Article article = new Article();
         article.setTaskId(taskId);
         article.setUserId(loginUser.getId());
@@ -82,7 +83,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         this.save(article);
 
-        log.info("鏂囩珷浠诲姟宸插垱寤? taskId={}, userId={}, style={}", taskId, loginUser.getId(), style);
+        log.info("文章任务已创建: taskId={}, userId={}, style={}", taskId, loginUser.getId(), style);
         return taskId;
     }
 
@@ -90,7 +91,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Transactional(rollbackFor = Exception.class)
     public String createArticleTaskWithQuotaCheck(String topic, String style, List<String> enabledImageMethods,
                                                   String referenceSummary, User loginUser) {
-        // 鍦ㄥ悓涓€浜嬪姟涓細鍏堟墸閰嶉锛屽啀鍒涘缓浠诲姟
+        // 在同一事务中：先扣配额，再创建任务
         // 如果任务创建失败，配额会自动回滚
         quotaService.checkAndConsumeQuota(loginUser);
         return createArticleTask(topic, style, enabledImageMethods, referenceSummary, loginUser);
@@ -106,9 +107,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Override
     public ArticleVO getArticleDetail(String taskId, User loginUser) {
         Article article = getByTaskId(taskId);
-        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "Article not found");
 
-        // 鏍￠獙鏉冮檺锛氬彧鑳芥煡鐪嬭嚜宸辩殑鏂囩珷锛堢鐞嗗憳闄ゅ锛?
+        // Only the owner and administrators may view the article.
         checkArticlePermission(article, loginUser);
 
         return ArticleVO.objToVo(article);
@@ -124,22 +125,22 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 .eq("isDelete", 0)
                 .orderBy("createTime", false);
 
-        // 闈炵鐞嗗憳鍙兘鏌ョ湅鑷繁鐨勬枃绔?
+        // Non-admin users can only view their own articles.
         if (!ADMIN_ROLE.equals(loginUser.getUserRole())) {
             queryWrapper.eq("userId", loginUser.getId());
         } else if (request.getUserId() != null) {
             queryWrapper.eq("userId", request.getUserId());
         }
 
-        // 鎸夌姸鎬佺瓫閫?
+        // Filter by status.
         if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
             queryWrapper.eq("status", request.getStatus());
         }
 
-        // 鍒嗛〉鏌ヨ
+        // 分页查询
         Page<Article> articlePage = this.page(new Page<>(current, size), queryWrapper);
 
-        // 杞崲涓?VO
+        // 转换为 VO
         return convertToVOPage(articlePage);
     }
 
@@ -174,23 +175,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         Article article = this.getById(id);
         ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR);
 
-        // 鏍￠獙鏉冮檺锛氬彧鑳藉垹闄よ嚜宸辩殑鏂囩珷锛堢鐞嗗憳闄ゅ锛?
+        // Only the owner and administrators may delete the article.
         checkArticlePermission(article, loginUser);
 
-        // 閫昏緫鍒犻櫎
+        // 逻辑删除
         return this.removeById(id);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public int deleteArticles(List<Long> ids, User loginUser) {
-        int deletedCount = 0;
-        for (Long id : ids) {
-            if (deleteArticle(id, loginUser)) {
-                deletedCount++;
-            }
-        }
-        return deletedCount;
     }
 
     @Override
@@ -198,7 +187,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         Article article = getByTaskId(taskId);
 
         if (article == null) {
-            log.error("鏂囩珷璁板綍涓嶅瓨鍦? taskId={}", taskId);
+            log.error("文章记录不存在: taskId={}", taskId);
             return;
         }
 
@@ -206,7 +195,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         article.setErrorMessage(errorMessage);
         this.updateById(article);
 
-        log.info("鏂囩珷鐘舵€佸凡鏇存柊, taskId={}, status={}", taskId, status.getValue());
+        log.info("文章状已更新, taskId={}, status={}", taskId, status.getValue());
     }
 
     @Override
@@ -214,7 +203,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         Article article = getByTaskId(taskId);
 
         if (article == null) {
-            log.error("鏂囩珷璁板綍涓嶅瓨鍦? taskId={}", taskId);
+            log.error("文章记录不存在: taskId={}", taskId);
             return;
         }
 
@@ -224,7 +213,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         article.setContent(state.getContent());
         article.setFullContent(state.getFullContent());
         
-        // 保存封面图 URL（从 images 列表中提取 position=1 的 URL）
+        // Save the cover image URL from the image with position 1.
         if (state.getImages() != null && !state.getImages().isEmpty()) {
             ArticleState.ImageResult cover = state.getImages().stream()
                 .filter(img -> img.getPosition() != null && img.getPosition() == 1)
@@ -238,16 +227,34 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         article.setCompletedTime(LocalDateTime.now());
 
         this.updateById(article);
-        log.info("鏂囩珷淇濆瓨鎴愬姛, taskId={}", taskId);
+        log.info("文章保存成功, taskId={}", taskId);
+    }
+
+    /**
+     * 校验文章权限
+     *
+     * @param article   文章
+     * @param loginUser 当前用户
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteArticles(List<Long> ids, User loginUser) {
+        int deletedCount = 0;
+        for (Long id : ids) {
+            if (deleteArticle(id, loginUser)) {
+                deletedCount++;
+            }
+        }
+        return deletedCount;
     }
 
     @Override
     public void updateArticleContent(String taskId, String mainTitle, String subTitle, String content, User loginUser) {
         Article article = getByTaskId(taskId);
-        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "Article not found");
         checkArticlePermission(article, loginUser);
         ThrowUtils.throwIf(!ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()),
-                ErrorCode.OPERATION_ERROR, "文章尚未创作完成，暂不能编辑");
+                ErrorCode.OPERATION_ERROR, "Article is not completed");
 
         if (mainTitle != null && !mainTitle.isBlank()) {
             article.setMainTitle(mainTitle.trim());
@@ -262,20 +269,20 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Override
     public String aiEditArticleContent(String taskId, String content, String instruction, User loginUser) {
         Article article = getByTaskId(taskId);
-        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "Article not found");
         checkArticlePermission(article, loginUser);
         ThrowUtils.throwIf(!ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()),
-                ErrorCode.OPERATION_ERROR, "文章尚未创作完成，暂不能使用 AI 编辑");
+                ErrorCode.OPERATION_ERROR, "Article is not completed");
         return articleAgentService.editArticleContent(content, instruction);
     }
 
     @Override
     public ArticleVO regenerateArticleImage(String taskId, Integer position, String prompt, User loginUser) {
         Article article = getByTaskId(taskId);
-        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "Article not found");
         checkArticlePermission(article, loginUser);
         ThrowUtils.throwIf(!ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()),
-                ErrorCode.OPERATION_ERROR, "文章尚未创作完成，暂不能修改配图");
+                ErrorCode.OPERATION_ERROR, "Article is not completed");
 
         List<ArticleVO.ImageItem> images = GsonUtils.fromJson(article.getImages(),
                 new TypeToken<List<ArticleVO.ImageItem>>() {});
@@ -291,14 +298,15 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             image = new ArticleVO.ImageItem();
             image.setPosition(position);
             image.setMethod(ImageMethodEnum.IMAGE_2.getValue());
-            image.setSectionTitle(position == 1 ? "鏂囩珷灏侀潰" : "鏂囩珷閰嶅浘");
+            image.setSectionTitle(position == 1 ? "文章封面" : "文章配图");
             image.setDescription(position == 1 ? "cover" : "section");
             images.add(image);
         }
+
         String oldUrl = image.getUrl();
         String generationPrompt = prompt == null || prompt.isBlank()
                 ? (image.getKeywords() == null || image.getKeywords().isBlank()
-                    ? article.getMainTitle() + "，电影暑期档热度与观众观影潮的真实场景"
+                    ? article.getMainTitle() + "，真实、清晰、适合文章配图的场景"
                     : image.getKeywords())
                 : prompt.trim();
         ImageRequest imageRequest = ImageRequest.builder()
@@ -309,7 +317,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 .sourceImageUrl(oldUrl)
                 .build();
         ImageServiceStrategy.ImageResult result = imageServiceStrategy.getImageAndUpload(image.getMethod(), imageRequest);
-        ThrowUtils.throwIf(!result.isSuccess(), ErrorCode.SYSTEM_ERROR, "鍥剧墖閲嶆柊鐢熸垚澶辫触");
+        ThrowUtils.throwIf(!result.isSuccess(), ErrorCode.SYSTEM_ERROR, "Image regeneration failed");
 
         ensureImageVersions(image);
         ArticleVO.ImageVersion newVersion = new ArticleVO.ImageVersion();
@@ -336,23 +344,23 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Override
     public ArticleVO selectArticleImageVersion(String taskId, Integer position, String versionId, User loginUser) {
         Article article = getByTaskId(taskId);
-        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "Article not found");
         checkArticlePermission(article, loginUser);
         ThrowUtils.throwIf(!ArticleStatusEnum.COMPLETED.getValue().equals(article.getStatus()),
-                ErrorCode.OPERATION_ERROR, "文章尚未创作完成，暂不能切换配图");
+                ErrorCode.OPERATION_ERROR, "Article is not completed");
         List<ArticleVO.ImageItem> images = GsonUtils.fromJson(article.getImages(),
                 new TypeToken<List<ArticleVO.ImageItem>>() {});
-        ThrowUtils.throwIf(images == null || images.isEmpty(), ErrorCode.NOT_FOUND_ERROR, "鏂囩珷娌℃湁鍙垏鎹㈢殑閰嶅浘");
+        ThrowUtils.throwIf(images == null || images.isEmpty(), ErrorCode.NOT_FOUND_ERROR, "No article images found");
         ArticleVO.ImageItem image = images.stream()
                 .filter(item -> position.equals(item.getPosition()))
                 .findFirst()
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "閰嶅浘涓嶅瓨鍦?));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "Image not found"));
         String oldUrl = image.getUrl();
         ensureImageVersions(image);
         ArticleVO.ImageVersion selectedVersion = image.getVersions().stream()
                 .filter(version -> versionId.equals(version.getId()))
                 .findFirst()
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "鍥剧墖鐗堟湰涓嶅瓨鍦?));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "Image version not found"));
         image.setSelectedVersionId(selectedVersion.getId());
         image.setUrl(selectedVersion.getUrl());
         article.setImages(GsonUtils.toJson(images));
@@ -383,12 +391,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         image.setSelectedVersionId(originalVersion.getId());
     }
 
-    /**
-     * 校验文章权限
-     *
-     * @param article   鏂囩珷
-     * @param loginUser 褰撳墠鐢ㄦ埛
-     */
     private void checkArticlePermission(Article article, User loginUser) {
         if (!article.getUserId().equals(loginUser.getId()) &&
                 !ADMIN_ROLE.equals(loginUser.getUserRole())) {
@@ -397,10 +399,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     /**
-     * 灏嗘枃绔犲垎椤电粨鏋滆浆鎹负 VO 鍒嗛〉
+     * 将文章分页结果转换为 VO 分页
      *
-     * @param articlePage 鏂囩珷鍒嗛〉
-     * @return VO 鍒嗛〉
+     * @param articlePage 文章分页
+     * @return VO 分页
      */
     private Page<ArticleVO> convertToVOPage(Page<Article> articlePage) {
         Page<ArticleVO> articleVOPage = new Page<>();
@@ -419,97 +421,97 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Override
     public void confirmTitle(String taskId, String mainTitle, String subTitle, String userDescription, User loginUser) {
         Article article = getByTaskId(taskId);
-        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "Article not found");
 
         // 校验权限
         checkArticlePermission(article, loginUser);
 
-        // 校验当前阶段（必须是 TITLE_SELECTING）
+        // The current phase must be TITLE_SELECTING.
         ArticlePhaseEnum currentPhase = ArticlePhaseEnum.getByValue(article.getPhase());
         ThrowUtils.throwIf(currentPhase != ArticlePhaseEnum.TITLE_SELECTING,
-                ErrorCode.OPERATION_ERROR, "褰撳墠闃舵涓嶅厑璁告鎿嶄綔");
+                ErrorCode.OPERATION_ERROR, "当前阶段不允许此操作");
 
-        // 淇濆瓨鐢ㄦ埛閫夋嫨鐨勬爣棰樺拰琛ュ厖鎻忚堪
+        // 保存用户选择的标题和补充描述
         article.setMainTitle(mainTitle);
         article.setSubTitle(subTitle);
         article.setUserDescription(userDescription);
         article.setPhase(ArticlePhaseEnum.OUTLINE_GENERATING.getValue());
 
         this.updateById(article);
-        log.info("鐢ㄦ埛纭鏍囬, taskId={}, mainTitle={}", taskId, mainTitle);
+        log.info("用户确认标题, taskId={}, mainTitle={}", taskId, mainTitle);
     }
 
     @Override
     public void confirmOutline(String taskId, List<ArticleState.OutlineSection> outline, User loginUser) {
         Article article = getByTaskId(taskId);
-        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "Article not found");
 
         // 校验权限
         checkArticlePermission(article, loginUser);
 
-        // 校验当前阶段（必须是 OUTLINE_EDITING）
+        // The current phase must be OUTLINE_EDITING.
         ArticlePhaseEnum currentPhase = ArticlePhaseEnum.getByValue(article.getPhase());
         ThrowUtils.throwIf(currentPhase != ArticlePhaseEnum.OUTLINE_EDITING,
-                ErrorCode.OPERATION_ERROR, "褰撳墠闃舵涓嶅厑璁告鎿嶄綔");
+                ErrorCode.OPERATION_ERROR, "当前阶段不允许此操作");
 
-        // 淇濆瓨鐢ㄦ埛缂栬緫鍚庣殑澶х翰
+        // 保存用户编辑后的大纲
         article.setOutline(GsonUtils.toJson(outline));
         article.setPhase(ArticlePhaseEnum.CONTENT_GENERATING.getValue());
 
         this.updateById(article);
-        log.info("鐢ㄦ埛纭澶х翰, taskId={}, sectionsCount={}", taskId, outline.size());
+        log.info("用户确认大纲, taskId={}, sectionsCount={}", taskId, outline.size());
     }
 
     @Override
     public void updatePhase(String taskId, ArticlePhaseEnum phase) {
         Article article = getByTaskId(taskId);
         if (article == null) {
-            log.error("鏂囩珷璁板綍涓嶅瓨鍦? taskId={}", taskId);
+            log.error("文章记录不存在: taskId={}", taskId);
             return;
         }
 
         article.setPhase(phase.getValue());
         this.updateById(article);
-        log.info("鏂囩珷闃舵宸叉洿鏂? taskId={}, phase={}", taskId, phase.getValue());
+        log.info("文章阶段已更新: taskId={}, phase={}", taskId, phase.getValue());
     }
 
     @Override
     public void saveTitleOptions(String taskId, List<ArticleState.TitleOption> titleOptions) {
         Article article = getByTaskId(taskId);
         if (article == null) {
-            log.error("鏂囩珷璁板綍涓嶅瓨鍦? taskId={}", taskId);
+            log.error("文章记录不存在: taskId={}", taskId);
             return;
         }
 
         article.setTitleOptions(GsonUtils.toJson(titleOptions));
         this.updateById(article);
-        log.info("鏍囬鏂规宸蹭繚瀛? taskId={}, optionsCount={}", taskId, titleOptions.size());
+        log.info("标题方案已保存: taskId={}, optionsCount={}", taskId, titleOptions.size());
     }
 
     @Override
     public List<ArticleState.OutlineSection> aiModifyOutline(String taskId, String modifySuggestion, User loginUser) {
         Article article = getByTaskId(taskId);
-        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "鏂囩珷涓嶅瓨鍦?);
+        ThrowUtils.throwIf(article == null, ErrorCode.NOT_FOUND_ERROR, "Article not found");
 
         // 校验权限
         checkArticlePermission(article, loginUser);
 
-        // 校验 VIP 权限（普通用户不能使用 AI 修改大纲）
+        // AI outline editing is restricted to VIP users and administrators.
         ThrowUtils.throwIf(!isVipOrAdmin(loginUser), ErrorCode.NO_AUTH_ERROR, 
-                "AI 淇敼澶х翰鍔熻兘浠呴檺 VIP 浼氬憳浣跨敤");
+                "AI 修改大纲功能仅限 VIP 会员使用");
 
-        // 校验当前阶段（必须是 OUTLINE_EDITING）
+        // The current phase must be OUTLINE_EDITING.
         ArticlePhaseEnum currentPhase = ArticlePhaseEnum.getByValue(article.getPhase());
         ThrowUtils.throwIf(currentPhase != ArticlePhaseEnum.OUTLINE_EDITING,
-                ErrorCode.OPERATION_ERROR, "褰撳墠闃舵涓嶅厑璁告鎿嶄綔");
+                ErrorCode.OPERATION_ERROR, "当前阶段不允许此操作");
 
-        // 鑾峰彇褰撳墠澶х翰
+        // 获取当前大纲
         List<ArticleState.OutlineSection> currentOutline = GsonUtils.fromJson(
                 article.getOutline(),
                 new TypeToken<List<ArticleState.OutlineSection>>(){}
         );
 
-        // 璋冪敤 AI 淇敼澶х翰
+        // 调用 AI 修改大纲
         List<ArticleState.OutlineSection> modifiedOutline = articleAgentService.aiModifyOutline(
                 article.getMainTitle(),
                 article.getSubTitle(),
@@ -517,30 +519,30 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 modifySuggestion
         );
 
-        // 淇濆瓨淇敼鍚庣殑澶х翰
+        // 保存修改后的大纲
         article.setOutline(GsonUtils.toJson(modifiedOutline));
         this.updateById(article);
 
-        log.info("AI淇敼澶х翰瀹屾垚, taskId={}, sectionsCount={}", taskId, modifiedOutline.size());
+        log.info("AI修改大纲完成, taskId={}, sectionsCount={}", taskId, modifiedOutline.size());
         return modifiedOutline;
     }
 
     /**
-     * 澶勭悊閰嶅浘鏂瑰紡
      * 处理配图方式
+     * 如果用户未选择，给普通用户设置默认的非 VIP 方式，VIP 用户不限制
      */
     private List<String> processImageMethods(List<String> enabledImageMethods, User loginUser) {
-        // 濡傛灉鐢ㄦ埛宸查€夋嫨锛岀洿鎺ヨ繑鍥?
+        // Preserve explicitly selected image methods.
         if (enabledImageMethods != null && !enabledImageMethods.isEmpty()) {
             return enabledImageMethods;
         }
 
-        // VIP 和管理员：不限制，返回 null 表示支持所有方式
+        // VIP users and administrators support all image methods.
         if (isVipOrAdmin(loginUser)) {
             return null;
         }
 
-        // 鏅€氱敤鎴凤細杩斿洖榛樿鐨勯潪 VIP 鏂瑰紡
+        // 普用户：返回默认的非 VIP 方式
         return List.of(
                 ImageMethodEnum.PEXELS.getValue(),
                 ImageMethodEnum.MERMAID.getValue(),
@@ -551,19 +553,19 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     /**
      * 校验配图方式权限
-     * 鏅€氱敤鎴蜂笉鑳戒娇鐢?NANO_BANANA 鍜?SVG_DIAGRAM
+     * 普通用户不能使用 NANO_BANANA 和 SVG_DIAGRAM
      */
     private void validateImageMethods(List<String> enabledImageMethods, User loginUser) {
         if (enabledImageMethods == null || enabledImageMethods.isEmpty()) {
             return;
         }
 
-        // VIP 鍜岀鐞嗗憳鏃犻檺鍒?
+        // VIP users and administrators have no restrictions.
         if (isVipOrAdmin(loginUser)) {
             return;
         }
 
-        // 鏅€氱敤鎴烽檺鍒?
+        // Validate methods for regular users.
         for (String method : enabledImageMethods) {
             if (ImageMethodEnum.NANO_BANANA.getValue().equals(method) ||
                 ImageMethodEnum.NANO_BANANA_APICLAUDE.getValue().equals(method) ||
@@ -576,7 +578,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     /**
-     * 鍒ゆ柇鏄惁涓?VIP 鎴栫鐞嗗憳
+     * 判断是否为 VIP 或管理员
      */
     private boolean isVipOrAdmin(User user) {
         return ADMIN_ROLE.equals(user.getUserRole()) || 

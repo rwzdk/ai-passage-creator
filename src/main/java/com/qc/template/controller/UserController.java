@@ -34,7 +34,7 @@ import java.util.List;
 import java.io.IOException;
 
 /**
- * 鐢ㄦ埛鎺у埗灞?
+ * 用户接口
  *
  */
 @RestController
@@ -51,10 +51,10 @@ public class UserController {
     private CosService cosService;
 
     /**
-     * 鐢ㄦ埛娉ㄥ唽
+     * 用户注册
      *
-     * @param userRegisterRequest 鐢ㄦ埛娉ㄥ唽璇锋眰
-     * @return 娉ㄥ唽缁撴灉
+     * @param userRegisterRequest 注册请求
+     * @return 注册结果
      */
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
@@ -74,7 +74,7 @@ public class UserController {
         return ResultUtils.success(true);
     }
 
-    /** 鏇存柊褰撳墠鐧诲綍鐢ㄦ埛璧勬枡銆?*/
+    /** 更新当前登录用户资料 */
     @PostMapping("/profile/update")
     public BaseResponse<LoginUserVO> updateProfile(
             @RequestBody UserProfileUpdateRequest profileUpdateRequest,
@@ -84,34 +84,34 @@ public class UserController {
         return ResultUtils.success(userService.updateCurrentProfile(profileUpdateRequest, loginUser));
     }
 
-    /** 涓婁紶褰撳墠鐢ㄦ埛澶村儚骞朵繚瀛樺ご鍍忓湴鍧€銆?*/
+    /** 上传用户头像 */
     @PostMapping(value = "/avatar/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<LoginUserVO> uploadAvatar(
             @RequestParam("file") MultipartFile file,
             HttpServletRequest request) throws IOException {
-        ThrowUtils.throwIf(file == null || file.isEmpty(), ErrorCode.PARAMS_ERROR, "璇烽€夋嫨澶村儚鏂囦欢");
-        ThrowUtils.throwIf(file.getSize() > 5 * 1024 * 1024L, ErrorCode.PARAMS_ERROR, "澶村儚涓嶈兘瓒呰繃 5MB");
+        ThrowUtils.throwIf(file == null || file.isEmpty(), ErrorCode.PARAMS_ERROR, "请选择头像文件");
+        ThrowUtils.throwIf(file.getSize() > 5 * 1024 * 1024L, ErrorCode.PARAMS_ERROR, "头像文件不能超过 5MB");
         String contentType = file.getContentType();
         ThrowUtils.throwIf(contentType == null || !contentType.startsWith("image/"),
-                ErrorCode.PARAMS_ERROR, "澶村儚蹇呴』鏄浘鐗囨枃浠?);
+                ErrorCode.PARAMS_ERROR, "头像必须是图片文件");
 
         User loginUser = userService.getLoginUser(request);
         String avatarUrl = cosService.uploadBytes(file.getBytes(), contentType, "avatars");
-        ThrowUtils.throwIf(avatarUrl == null || avatarUrl.isBlank(), ErrorCode.OPERATION_ERROR, "澶村儚涓婁紶澶辫触锛岃妫€鏌?COS 閰嶇疆");
+        ThrowUtils.throwIf(avatarUrl == null || avatarUrl.isBlank(), ErrorCode.OPERATION_ERROR, "头像上传失败，请检查 COS 配置");
 
         User updateUser = new User();
         updateUser.setId(loginUser.getId());
         updateUser.setUserAvatar(avatarUrl);
-        ThrowUtils.throwIf(!userService.updateById(updateUser), ErrorCode.OPERATION_ERROR, "澶村儚淇濆瓨澶辫触");
+        ThrowUtils.throwIf(!userService.updateById(updateUser), ErrorCode.OPERATION_ERROR, "头像保存失败");
         return ResultUtils.success(userService.getLoginUserVO(userService.getById(loginUser.getId())));
     }
 
     /**
-     * 鐢ㄦ埛鐧诲綍
+     * 用户登录
      *
-     * @param userLoginRequest 鐢ㄦ埛鐧诲綍璇锋眰
+     * @param userLoginRequest 登录请求
      * @param request          请求对象
-     * @return 鑴辨晱鍚庣殑鐢ㄦ埛鐧诲綍淇℃伅
+     * @return 登录结果
      */
     @PostMapping("/login")
     public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
@@ -129,7 +129,7 @@ public class UserController {
     }
 
     /**
-     * 鐢ㄦ埛娉ㄩ攢
+     * 閻劍鍩涘▔銊╂敘
      *
      * @param request 请求对象
      * @return
@@ -142,7 +142,7 @@ public class UserController {
     }
 
     /**
-     * 鍒涘缓鐢ㄦ埛
+     * 创建用户
      */
     @PostMapping("/add")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -172,7 +172,7 @@ public class UserController {
     }
 
     /**
-     * 鏍规嵁 id 鑾峰彇鍖呰绫?
+     * 根据 id 获取用户视图对象
      */
     @GetMapping("/get/vo")
     public BaseResponse<UserVO> getUserVOById(long id) {
@@ -182,7 +182,7 @@ public class UserController {
     }
 
     /**
-     * 鍒犻櫎鐢ㄦ埛
+     * 删除用户
      */
     @PostMapping("/delete")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -195,7 +195,8 @@ public class UserController {
     }
 
     /**
-     * 鎵归噺鍒犻櫎鐢ㄦ埛锛屽綋鍓嶇鐞嗗憳璐﹀彿涓嶅彲鍒犻櫎銆?     */
+     * 批量删除用户
+     */
     @PostMapping("/batch-delete")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Integer> batchDeleteUsers(@RequestBody BatchDeleteRequest batchDeleteRequest,
@@ -205,7 +206,7 @@ public class UserController {
                 ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         ThrowUtils.throwIf(batchDeleteRequest.getIds().contains(loginUser.getId()),
-                ErrorCode.PARAMS_ERROR, "涓嶈兘鍒犻櫎褰撳墠鐧诲綍鐨勭鐞嗗憳璐﹀彿");
+                ErrorCode.PARAMS_ERROR, "不能删除当前登录的管理员账号");
         int deletedCount = 0;
         for (Long id : batchDeleteRequest.getIds()) {
             if (userService.removeById(id)) {
@@ -216,7 +217,7 @@ public class UserController {
     }
 
     /**
-     * 鏇存柊鐢ㄦ埛
+     * 更新用户
      */
     @PostMapping("/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -234,7 +235,7 @@ public class UserController {
     /**
      * 分页获取用户封装列表（仅管理员）
      *
-     * @param userQueryRequest 鏌ヨ璇锋眰鍙傛暟
+     * @param userQueryRequest 查询请求参数
      */
     @PostMapping("/list/page/vo")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -244,14 +245,14 @@ public class UserController {
         long pageSize = userQueryRequest.getPageSize();
         Page<User> userPage = userService.page(Page.of(pageNum, pageSize),
                 userService.getQueryWrapper(userQueryRequest));
-        // 鏁版嵁鑴辨晱
+        // 数据脱敏
         Page<UserVO> userVOPage = new Page<>(pageNum, pageSize, userPage.getTotalRow());
         List<UserVO> userVOList = userService.getUserVOList(userPage.getRecords());
         userVOPage.setRecords(userVOList);
         return ResultUtils.success(userVOPage);
     }
 
-    /** 鑾峰彇鏅€氱敤鎴烽厤棰濇槑缁嗭紙浠呯鐞嗗憳锛夈€?*/
+    /** 获取普通用户配额明细（仅管理员） */
     @GetMapping("/quota/list")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<List<UserVO>> listNormalUserQuotas() {

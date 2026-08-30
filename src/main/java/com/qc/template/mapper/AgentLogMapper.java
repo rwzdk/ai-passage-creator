@@ -4,7 +4,7 @@ import com.mybatisflex.core.BaseMapper;
 import com.qc.template.model.entity.AgentLog;
 
 /**
- * 鏅鸿兘浣撴棩蹇?Mapper
+ * 智能体日志 Mapper
  *
  */
 public interface AgentLogMapper extends BaseMapper<AgentLog> {

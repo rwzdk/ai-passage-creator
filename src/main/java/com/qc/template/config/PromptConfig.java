@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Prompt 閰嶇疆绫?
- * 鏀寔閫氳繃閰嶇疆鏂囦欢瑕嗙洊榛樿 Prompt
+ * Prompt 配置
+ * 支持通过配置文件覆盖默认 Prompt
  *
  */
 @Configuration
@@ -20,18 +20,18 @@ import java.util.Map;
 public class PromptConfig {
 
     /**
-     * Prompt 鐗堟湰鍙?
+     * Prompt 版本
      */
     private String version = "1.0";
 
     /**
-     * Prompt 妯℃澘鏄犲皠
+     * Prompt 模板映射
      */
     private Map<String, String> templates = new HashMap<>();
 
     @PostConstruct
     public void init() {
-        // 浠?PromptConstant 鍒濆鍖栭粯璁ゅ€?
+        // 从 PromptConstant 初始化默认值
         templates.putIfAbsent("agent1_title", PromptConstant.AGENT1_TITLE_PROMPT);
         templates.putIfAbsent("agent2_outline", PromptConstant.AGENT2_OUTLINE_PROMPT);
         templates.putIfAbsent("agent3_content", PromptConstant.AGENT3_CONTENT_PROMPT);
@@ -40,10 +40,10 @@ public class PromptConfig {
     }
 
     /**
-     * 鑾峰彇 Prompt 妯℃澘
+     * 获取 Prompt 模板
      *
-     * @param key Prompt 閿悕
-     * @return Prompt 鍐呭
+     * @param key Prompt 键名
+     * @return Prompt 内容
      */
     public String getPrompt(String key) {
         return templates.getOrDefault(key, "");

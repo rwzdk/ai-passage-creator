@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 鑵捐浜?COS 閰嶇疆
+ * 腾讯云 COS 配置
  *
  */
 @Configuration
@@ -24,12 +24,12 @@ public class CosConfig {
     private String secretKey;
 
     /**
-     * 鍦板煙
+     * 地域
      */
     private String region;
 
     /**
-     * 瀛樺偍妗?
+     * 存储桶
      */
     private String bucket;
 }

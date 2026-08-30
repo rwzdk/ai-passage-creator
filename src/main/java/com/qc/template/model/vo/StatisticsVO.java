@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 缁熻鏁版嵁 VO
+ * 统计数据 VO
  *
  */
 @Data
@@ -20,27 +20,27 @@ public class StatisticsVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 浠婃棩鍒涗綔鏁伴噺
+     * 今日创作数量
      */
     private Long todayCount;
 
     /**
-     * 鏈懆鍒涗綔鏁伴噺
+     * 本周创作数量
      */
     private Long weekCount;
 
     /**
-     * 鏈湀鍒涗綔鏁伴噺
+     * 本月创作数量
      */
     private Long monthCount;
 
     /**
-     * 鎬诲垱浣滄暟閲?
+     * 总创作数量
      */
     private Long totalCount;
 
     /**
-     * 鎴愬姛鐜囷紙鐧惧垎姣旓級
+     * 成功率（百分比）
      */
     private Double successRate;
 
@@ -50,25 +50,25 @@ public class StatisticsVO implements Serializable {
     private Integer avgDurationMs;
 
     /**
-     * 娲昏穬鐢ㄦ埛鏁帮紙鏈懆锛?
+     * 活跃用户数（本周）
      */
     private Long activeUserCount;
 
     /**
-     * 鎬荤敤鎴锋暟
+     * 总用户数
      */
     private Long totalUserCount;
 
     /**
-     * VIP 鐢ㄦ埛鏁?
+     * VIP 用户数量
      */
     private Long vipUserCount;
 
-    /** 鏅€氱敤鎴锋暟閲忥紙閰嶉缁熻鍙ｅ緞锛?*/
+    /** 普通用户数量（配额统计口径） */
     private Long normalUserCount;
 
     /**
-     * 閰嶉鎬讳娇鐢ㄩ噺
+     * 配额总使用量
      */
     private Long quotaUsed;
 }

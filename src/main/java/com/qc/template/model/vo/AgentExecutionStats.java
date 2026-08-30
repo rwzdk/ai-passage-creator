@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 鏅鸿兘浣撴墽琛岀粺璁?VO
+ * 智能体执行统计 VO
  *
  */
 @Data
@@ -23,32 +23,32 @@ public class AgentExecutionStats implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 浠诲姟ID
+     * 任务ID
      */
     private String taskId;
 
     /**
-     * 鎬昏€楁椂锛堟绉掞級
+     * 总耗时（毫秒）
      */
     private Integer totalDurationMs;
 
     /**
-     * 鏅鸿兘浣撴暟閲?
+     * 智能体数量
      */
     private Integer agentCount;
 
     /**
-     * 鍚勬櫤鑳戒綋鑰楁椂锛坘ey: agentName, value: durationMs锛?
+     * 各智能体耗时（key: agentName, value: durationMs）
      */
     private Map<String, Integer> agentDurations;
 
     /**
-     * 鎬讳綋鐘舵€侊細SUCCESS锛堝叏閮ㄦ垚鍔燂級銆丗AILED锛堝瓨鍦ㄥけ璐ワ級銆丷UNNING锛堟墽琛屼腑锛?
+     * 总体状态：SUCCESS（全部成功）、FAILED（存在失败）、RUNNING（执行中）
      */
     private String overallStatus;
 
     /**
-     * 璇︾粏鏃ュ織鍒楄〃
+     * 详细日志列表
      */
     private List<AgentLog> logs;
 }

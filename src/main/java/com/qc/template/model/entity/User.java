@@ -14,7 +14,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 鐢ㄦ埛瀹炰綋绫?
+ * 用户实体类
  *
  */
 @Data
@@ -34,7 +34,7 @@ public class User implements Serializable {
     private Long id;
 
     /**
-     * 璐﹀彿
+     * 账号
      */
     private String userAccount;
 
@@ -44,30 +44,30 @@ public class User implements Serializable {
     private String userPassword;
 
     /**
-     * 鐢ㄦ埛鏄电О
+     * 用户昵称
      */
     private String userName;
 
     /**
-     * 鐢ㄦ埛澶村儚
+     * 用户头像
      */
     private String userAvatar;
 
     /**
-     * 鐢ㄦ埛绠€浠?
+     * 用户密码
      */
     private String userProfile;
 
-    /** QQ 閭 */
+    /** QQ 邮箱 */
     private String userEmail;
 
-    /** 鑱旂郴鐢佃瘽 */
+    /** 联系电话 */
     private String userPhone;
 
-    /** 涓汉鍗氬鍦板潃 */
+    /** 个人博客地址 */
     private String userBlog;
 
-    /** GitHub 鍦板潃 */
+    /** GitHub 地址 */
     private String userGithub;
 
     /**
@@ -76,32 +76,32 @@ public class User implements Serializable {
     private String userRole;
 
     /**
-     * 鍓╀綑閰嶉
+     * 剩余配额
      */
     private Integer quota;
 
     /**
-     * 鎴愪负浼氬憳鏃堕棿
+     * 成为会员时间
      */
     private LocalDateTime vipTime;
 
     /**
-     * 缂栬緫鏃堕棿
+     * 编辑时间
      */
     private LocalDateTime editTime;
 
     /**
-     * 鍒涘缓鏃堕棿
+     * 创建时间
      */
     private LocalDateTime createTime;
 
     /**
-     * 鏇存柊鏃堕棿
+     * 更新时间
      */
     private LocalDateTime updateTime;
 
     /**
-     * 鏄惁鍒犻櫎
+     * 是否删除
      */
     @Column(isLogicDelete = true)
     private Integer isDelete;

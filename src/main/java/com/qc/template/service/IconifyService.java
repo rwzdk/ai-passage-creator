@@ -19,9 +19,10 @@ import java.nio.charset.StandardCharsets;
 import static com.qc.template.constant.ArticleConstant.PICSUM_URL_TEMPLATE;
 
 /**
- * Iconify 鍥炬爣搴撴绱㈡湇鍔?
- * 鎻愪緵 275k+ 寮€婧愬浘鏍囨绱㈠拰 SVG 鐢熸垚
+ * Iconify 图标库检索服务
+ * 提供 275k+ 资源图标检索和 SVG 生成。
  *
+ * @author <a href="https://codefather.cn">编程导航学习网</a>
  */
 @Service
 @Slf4j
@@ -35,12 +36,12 @@ public class IconifyService implements ImageSearchService {
     @Override
     public String searchImage(String keywords) {
         if (keywords == null || keywords.trim().isEmpty()) {
-            log.warn("Iconify 鎼滅储鍏抽敭璇嶄负绌?);
+            log.warn("Iconify search keywords are empty");
             return null;
         }
 
         try {
-            // 1. 鎼滅储鍥炬爣
+            // 1. 搜索图标
             String searchUrl = buildSearchUrl(keywords);
             String searchResult = callApi(searchUrl);
 
@@ -48,21 +49,21 @@ public class IconifyService implements ImageSearchService {
                 return null;
             }
 
-            // 2. 瑙ｆ瀽缁撴灉锛岃幏鍙栫涓€涓浘鏍?
+            // 2. Parse the result and use the first icon.
             String iconName = extractFirstIcon(searchResult);
             if (iconName == null) {
-                log.warn("Iconify 鏈绱㈠埌鍥炬爣: {}", keywords);
+                log.warn("Iconify 未检索到图标: {}", keywords);
                 return null;
             }
 
-            // 3. 鏋勫缓 SVG URL
+            // 3. 构建 SVG URL
             String svgUrl = buildSvgUrl(iconName);
-            log.info("Iconify 鍥炬爣妫€绱㈡垚鍔? {} -> {}", keywords, iconName);
+            log.info("Iconify 图标检索成功: {} -> {}", keywords, iconName);
             
             return svgUrl;
 
         } catch (Exception e) {
-            log.error("Iconify 鍥炬爣妫€绱㈠紓甯? keywords={}", keywords, e);
+            log.error("Iconify 图标检索异常: keywords={}", keywords, e);
             return null;
         }
     }
@@ -78,7 +79,7 @@ public class IconifyService implements ImageSearchService {
     }
 
     /**
-     * 鏋勫缓鎼滅储 URL
+     * 构建搜索 URL
      */
     private String buildSearchUrl(String keywords) {
         String encodedKeywords = URLEncoder.encode(keywords, StandardCharsets.UTF_8);
@@ -89,7 +90,7 @@ public class IconifyService implements ImageSearchService {
     }
 
     /**
-     * 璋冪敤 Iconify API
+     * 调用 Iconify API
      */
     private String callApi(String url) {
         try {
@@ -99,20 +100,20 @@ public class IconifyService implements ImageSearchService {
 
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("Iconify API 璋冪敤澶辫触: {}", response.code());
+                    log.error("Iconify API 调用失败: {}", response.code());
                     return null;
                 }
 
                 return response.body().string();
             }
         } catch (IOException e) {
-            log.error("Iconify API 璋冪敤寮傚父", e);
+            log.error("Iconify API 调用异常", e);
             return null;
         }
     }
 
     /**
-     * 浠庢悳绱㈢粨鏋滀腑鎻愬彇绗竴涓浘鏍囧悕绉?
+     * 从搜索结果中提取第一个图标名称
      */
     private String extractFirstIcon(String jsonResponse) {
         try {
@@ -125,19 +126,19 @@ public class IconifyService implements ImageSearchService {
 
             return icons.get(0).getAsString();
         } catch (Exception e) {
-            log.error("瑙ｆ瀽 Iconify 鎼滅储缁撴灉澶辫触", e);
+            log.error("解析 Iconify 搜索结果失败", e);
             return null;
         }
     }
 
     /**
-     * 鏋勫缓 SVG URL
+     * 构建 SVG URL
      *
-     * @param iconName 鍥炬爣鍚嶇О锛堟牸寮忥細prefix:name锛屽 mdi:home锛?
+     * @param iconName 图标名称（格式：prefix:name，如 mdi:home）
      * @return SVG URL
      */
     private String buildSvgUrl(String iconName) {
-        // 灏?"mdi:home" 杞崲涓?"mdi/home"
+        // 将 "mdi:home" 转换为 "mdi/home"
         String path = iconName.replace(":", "/");
 
         StringBuilder url = new StringBuilder(iconifyConfig.getApiUrl())
@@ -145,18 +146,18 @@ public class IconifyService implements ImageSearchService {
                 .append(path)
                 .append(".svg");
 
-        // 娣诲姞楂樺害鍙傛暟
+        // 添加高度参数
         boolean hasParams = false;
         if (iconifyConfig.getDefaultHeight() != null && iconifyConfig.getDefaultHeight() > 0) {
             url.append("?height=").append(iconifyConfig.getDefaultHeight());
             hasParams = true;
         }
 
-        // 娣诲姞棰滆壊鍙傛暟锛堝鏋滈厤缃簡锛?
+        // Add a color parameter when configured.
         if (iconifyConfig.getDefaultColor() != null && !iconifyConfig.getDefaultColor().isEmpty()) {
             url.append(hasParams ? "&" : "?");
             
-            // 澶勭悊棰滆壊鏍煎紡锛堝 #000000 闇€瑕佽浆涓?%23000000锛?
+            // Encode a leading hash for a URL query parameter.
             String color = iconifyConfig.getDefaultColor();
             if (color.startsWith("#")) {
                 color = "%23" + color.substring(1);

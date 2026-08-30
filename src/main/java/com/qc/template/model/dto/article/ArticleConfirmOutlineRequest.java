@@ -6,19 +6,19 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * 纭澶х翰璇锋眰
+ * 确认大纲请求
  *
  */
 @Data
 public class ArticleConfirmOutlineRequest implements Serializable {
 
     /**
-     * 浠诲姟ID
+     * 任务ID
      */
     private String taskId;
 
     /**
-     * 鐢ㄦ埛缂栬緫鍚庣殑澶х翰
+     * 用户编辑后的大纲
      */
     private List<ArticleState.OutlineSection> outline;
 

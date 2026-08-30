@@ -1424,7 +1424,7 @@ const imageFailedCount = ref(0)
 const imageGenerationStarted = ref(false)
 const completedImagePositions = ref(new Set<number>())
 let pendingAgent5Complete: SSEMessage | null = null
-const currentStepStatus = ref<'working' | 'failed'>('working')
+const currentStepStatus = ref<'working' | 'waiting' | 'failed'>('working')
 const currentStepStatusText = ref('')
 const completedStepCount = computed(() => Math.min(currentStep.value, agentSteps.length))
 const currentStepLabel = computed(() => {

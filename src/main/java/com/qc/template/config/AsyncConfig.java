@@ -9,7 +9,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * 寮傛浠诲姟閰嶇疆
+ * 异步任务配置
  *
  */
 @Configuration
@@ -17,31 +17,31 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class AsyncConfig {
 
     /**
-     * 鏂囩珷鐢熸垚寮傛绾跨▼姹?
+     * 文章生成异步线程池
      */
     @Bean(name = "articleExecutor")
     public Executor articleExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         
-        // 鏍稿績绾跨▼鏁?
+        // 核心线程数
         executor.setCorePoolSize(5);
         
-        // 鏈€澶х嚎绋嬫暟
+        // 最大线程数
         executor.setMaxPoolSize(10);
         
-        // 闃熷垪瀹归噺
+        // 队列容量
         executor.setQueueCapacity(100);
         
-        // 绾跨▼鍚嶇О鍓嶇紑
+        // 线程名称前缀
         executor.setThreadNamePrefix("article-async-");
         
         // 拒绝策略：由调用线程处理
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         
-        // 绛夊緟鎵€鏈変换鍔″畬鎴愬悗鍐嶅叧闂嚎绋嬫睜
+        // 等待所有任务完成后再关闭线程池
         executor.setWaitForTasksToCompleteOnShutdown(true);
         
-        // 绛夊緟鏃堕棿
+        // 等待时间
         executor.setAwaitTerminationSeconds(60);
         
         executor.initialize();

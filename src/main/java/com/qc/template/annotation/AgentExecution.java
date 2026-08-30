@@ -3,8 +3,8 @@ package com.qc.template.annotation;
 import java.lang.annotation.*;
 
 /**
- * 鏅鸿兘浣撴墽琛屾敞瑙?
- * 鐢ㄤ簬鏍囪鏅鸿兘浣撴柟娉曪紝鑷姩璁板綍鎵ц鏃ュ織鍜屾€ц兘鏁版嵁
+ * 智能体执行注解
+ * 用于标记智能体方法，自动记录执行日志和能数据
  *
  */
 @Target(ElementType.METHOD)
@@ -13,13 +13,13 @@ import java.lang.annotation.*;
 public @interface AgentExecution {
     
     /**
-     * 鏅鸿兘浣撳悕绉?
-     * 渚嬪: "agent1_generate_titles", "agent2_generate_outline"
+     * 智能体名称
+     * 例如: "agent1_generate_titles", "agent2_generate_outline"
      */
     String value();
     
     /**
-     * 鏅鸿兘浣撴弿杩?
+     * 智能体描述
      */
     String description() default "";
 }

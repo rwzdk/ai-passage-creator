@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 鏂囩珷瑙嗗浘
+ * 文章视图
  *
  */
 @Data
@@ -23,92 +23,92 @@ public class ArticleVO implements Serializable {
     private Long id;
 
     /**
-     * 浠诲姟ID
+     * 任务ID
      */
     private String taskId;
 
     /**
-     * 鐢ㄦ埛ID
+     * 用户ID
      */
     private Long userId;
 
     /**
-     * 閫夐
+     * 选题
      */
     private String topic;
 
     /**
-     * 鐢ㄦ埛琛ュ厖鎻忚堪
+     * 用户补充描述
      */
     private String userDescription;
 
     /**
-     * 涓绘爣棰?
+     * 主标题
      */
     private String mainTitle;
 
     /**
-     * 鍓爣棰?
+     * 副标题
      */
     private String subTitle;
 
     /**
-     * 鏍囬鏂规鍒楄〃
+     * 标题方案列表
      */
     private List<TitleOption> titleOptions;
 
     /**
-     * 澶х翰
+     * 大纲
      */
     private List<OutlineItem> outline;
 
     /**
-     * 姝ｆ枃
+     * 正文
      */
     private String content;
 
     /**
-     * 瀹屾暣鍥炬枃锛堝惈閰嶅浘锛?
+     * 完整图文（含配图）
      */
     private String fullContent;
 
     /**
-     * 灏侀潰鍥?URL
+     * 封面图 URL
      */
     private String coverImage;
 
     /**
-     * 閰嶅浘鍒楄〃
+     * 配图列表
      */
     private List<ImageItem> images;
 
     /**
-     * 鐘舵€?
+     * 状态
      */
     private String status;
 
     /**
-     * 褰撳墠闃舵
+     * 当前阶段
      */
     private String phase;
 
     /**
-     * 閿欒淇℃伅
+     * 错误信息
      */
     private String errorMessage;
 
     /**
-     * 鍒涘缓鏃堕棿
+     * 创建时间
      */
     private LocalDateTime createTime;
 
     /**
-     * 瀹屾垚鏃堕棿
+     * 完成时间
      */
     private LocalDateTime completedTime;
 
     /**
-     * 鏍囬鏂规
+     * 标题方案
      */
     @Data
     public static class TitleOption implements Serializable {
@@ -117,7 +117,7 @@ public class ArticleVO implements Serializable {
     }
 
     /**
-     * 澶х翰椤?
+     * 大纲
      */
     @Data
     public static class OutlineItem implements Serializable {
@@ -127,7 +127,7 @@ public class ArticleVO implements Serializable {
     }
 
     /**
-     * 閰嶅浘椤?
+     * 配图列表
      */
     @Data
     public static class ImageItem implements Serializable {
@@ -153,8 +153,8 @@ public class ArticleVO implements Serializable {
     /**
      * 对象转包装类
      *
-     * @param article 鏂囩珷
-     * @return 鏂囩珷瑙嗗浘
+     * @param article 文章
+     * @return 文章视图
      */
     public static ArticleVO objToVo(Article article) {
         if (article == null) {
@@ -163,7 +163,7 @@ public class ArticleVO implements Serializable {
         ArticleVO articleVO = new ArticleVO();
         BeanUtils.copyProperties(article, articleVO);
         
-        // 杞崲 JSON 瀛楁
+        // 转换 JSON 字段
         if (article.getTitleOptions() != null) {
             articleVO.setTitleOptions(GsonUtils.fromJson(article.getTitleOptions(), 
                 new TypeToken<List<TitleOption>>(){}));

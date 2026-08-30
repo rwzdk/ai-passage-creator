@@ -17,7 +17,7 @@ import java.io.IOException;
 import static com.qc.template.constant.ArticleConstant.*;
 
 /**
- * Pexels 鍥剧墖妫€绱㈡湇鍔?
+ * Pexels 图片检索服务
  *
  */
 @Service
@@ -41,7 +41,7 @@ public class PexelsService implements ImageSearchService {
 
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("Pexels API 璋冪敤澶辫触: {}", response.code());
+                    log.error("Pexels API 调用失败: {}", response.code());
                     return null;
                 }
 
@@ -49,7 +49,7 @@ public class PexelsService implements ImageSearchService {
                 return extractImageUrl(responseBody, keywords);
             }
         } catch (IOException e) {
-            log.error("Pexels API 璋冪敤寮傚父", e);
+            log.error("Pexels API 调用异常", e);
             return null;
         }
     }
@@ -65,10 +65,10 @@ public class PexelsService implements ImageSearchService {
     }
 
     /**
-     * 鏋勫缓鎼滅储 URL
+     * 构建搜索 URL
      *
-     * @param keywords 鎼滅储鍏抽敭璇?
-     * @return 瀹屾暣鐨勬悳绱?URL
+     * @param keywords 搜索关键词
+     * @return 完整的搜索 URL
      */
     private String buildSearchUrl(String keywords) {
         return String.format("%s?query=%s&per_page=%d&orientation=%s",
@@ -79,10 +79,10 @@ public class PexelsService implements ImageSearchService {
     }
 
     /**
-     * 浠庡搷搴斾腑鎻愬彇鍥剧墖 URL
+     * 从响应中提取图片 URL
      *
-     * @param responseBody 鍝嶅簲浣?
-     * @param keywords     鎼滅储鍏抽敭璇嶏紙鐢ㄤ簬鏃ュ織锛?
+     * @param responseBody 响应体
+     * @param keywords     搜索关键词（用于日志）
      * @return 图片 URL，未找到返回 null
      */
     private String extractImageUrl(String responseBody, String keywords) {
@@ -90,7 +90,7 @@ public class PexelsService implements ImageSearchService {
         JsonArray photos = jsonObject.getAsJsonArray("photos");
         
         if (photos.isEmpty()) {
-            log.warn("Pexels 鏈绱㈠埌鍥剧墖: {}", keywords);
+            log.warn("Pexels 未检索到图片: {}", keywords);
             return null;
         }
 

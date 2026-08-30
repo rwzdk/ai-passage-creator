@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 鏀粯璁板綍瀹炰綋绫?
+ * 支付记录实体类
  *
  */
 @Data
@@ -34,7 +34,7 @@ public class PaymentRecord implements Serializable {
     private Long id;
 
     /**
-     * 鐢ㄦ埛ID
+     * 用户ID
      */
     private Long userId;
 
@@ -44,7 +44,7 @@ public class PaymentRecord implements Serializable {
     private String stripeSessionId;
 
     /**
-     * Stripe 鏀粯鎰忓悜ID
+     * Stripe 支付意向ID
      */
     private String stripePaymentIntentId;
 
@@ -59,7 +59,7 @@ public class PaymentRecord implements Serializable {
     private String currency;
 
     /**
-     * 鐘舵€侊細PENDING/SUCCEEDED/FAILED/REFUNDED
+     * 状态：PENDING/SUCCEEDED/FAILED/REFUNDED
      */
     private String status;
 
@@ -69,27 +69,27 @@ public class PaymentRecord implements Serializable {
     private String productType;
 
     /**
-     * 鎻忚堪
+     * 描述
      */
     private String description;
 
     /**
-     * 閫€娆炬椂闂?
+     * 付款时间
      */
     private LocalDateTime refundTime;
 
     /**
-     * 閫€娆惧師鍥?
+     * 付款原因
      */
     private String refundReason;
 
     /**
-     * 鍒涘缓鏃堕棿
+     * 创建时间
      */
     private LocalDateTime createTime;
 
     /**
-     * 鏇存柊鏃堕棿
+     * 更新时间
      */
     private LocalDateTime updateTime;
 }

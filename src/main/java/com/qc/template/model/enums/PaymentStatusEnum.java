@@ -2,17 +2,12 @@ package com.qc.template.model.enums;
 
 import lombok.Getter;
 
-/**
- * 鏀粯鐘舵€佹灇涓?
- *
- */
 @Getter
 public enum PaymentStatusEnum {
-
-    PENDING("PENDING", "寰呮敮浠?),
-    SUCCEEDED("SUCCEEDED", "鏀粯鎴愬姛"),
-    FAILED("FAILED", "鏀粯澶辫触"),
-    REFUNDED("REFUNDED", "宸查€€娆?);
+    PENDING("PENDING", "待支付"),
+    SUCCEEDED("SUCCEEDED", "支付成功"),
+    FAILED("FAILED", "支付失败"),
+    REFUNDED("REFUNDED", "已退款");
 
     private final String value;
     private final String description;

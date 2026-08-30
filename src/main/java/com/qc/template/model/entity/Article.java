@@ -14,7 +14,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 鏂囩珷瀹炰綋绫?
+ * 文章实体类
  *
  */
 @Data
@@ -34,31 +34,32 @@ public class Article implements Serializable {
     private Long id;
 
     /**
-     * 浠诲姟ID锛圲UID锛?
+     * 任务 ID（UUID）
      */
     private String taskId;
 
     /**
-     * 鐢ㄦ埛ID
+     * 用户ID
      */
     private Long userId;
 
     /**
-     * 閫夐
+     * 选题
      */
     private String topic;
 
     /**
-     * 鐢ㄦ埛琛ュ厖鎻忚堪
+     * 用户补充描述
      */
     private String userDescription;
 
     /**
-     * 涓婁紶鏂囨。鐢熸垚鐨勫弬鑰冩憳瑕侊紙涓嶄繚瀛樺師鏂囦欢锛?     */
+     * 上传文档生成的参考摘要（不保存原文件）
+     */
     private String referenceSummary;
 
     /**
-     * 鍏佽鐨勯厤鍥炬柟寮忓垪琛紙JSON鏍煎紡锛?
+     * 允许的配图方式列表（JSON 格式）
      */
     private String enabledImageMethods;
 
@@ -68,22 +69,22 @@ public class Article implements Serializable {
     private String style;
 
     /**
-     * 涓绘爣棰?
+     * 主标题
      */
     private String mainTitle;
 
     /**
-     * 鍓爣棰?
+     * 副标题
      */
     private String subTitle;
 
     /**
-     * 鏍囬鏂规鍒楄〃锛圝SON鏍煎紡锛?
+     * 标题方案列表（JSON 格式）
      */
     private String titleOptions;
 
     /**
-     * 澶х翰锛圝SON鏍煎紡锛?
+     * 大纲（JSON 格式）
      */
     private String outline;
 
@@ -93,22 +94,22 @@ public class Article implements Serializable {
     private String content;
 
     /**
-     * 瀹屾暣鍥炬枃锛圡arkdown鏍煎紡锛屽惈鍥剧墖锛?
+     * 完整图文（Markdown 格式，含图片）
      */
     private String fullContent;
 
     /**
-     * 灏侀潰鍥?URL
+     * 封面图 URL
      */
     private String coverImage;
 
     /**
-     * 閰嶅浘鍒楄〃锛圝SON鏁扮粍锛屽寘鍚皝闈㈠浘 position=1锛?
+     * 配图列表（JSON 数组，包含封面图 position=1）
      */
     private String images;
 
     /**
-     * 鐘舵€侊細PENDING/PROCESSING/COMPLETED/FAILED
+     * 状态：PENDING/PROCESSING/COMPLETED/FAILED
      */
     private String status;
 
@@ -118,27 +119,27 @@ public class Article implements Serializable {
     private String phase;
 
     /**
-     * 閿欒淇℃伅
+     * 错误信息
      */
     private String errorMessage;
 
     /**
-     * 鍒涘缓鏃堕棿
+     * 创建时间
      */
     private LocalDateTime createTime;
 
     /**
-     * 瀹屾垚鏃堕棿
+     * 完成时间
      */
     private LocalDateTime completedTime;
 
     /**
-     * 鏇存柊鏃堕棿
+     * 更新时间
      */
     private LocalDateTime updateTime;
 
     /**
-     * 鏄惁鍒犻櫎
+     * 是否删除
      */
     @Column(isLogicDelete = true)
     private Integer isDelete;

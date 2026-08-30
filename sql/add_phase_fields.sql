@@ -1,10 +1,10 @@
-# 娣诲姞闃舵鐩稿叧瀛楁
+# 添加阶段相关字段
 
 use ai_passage_creator;
 
--- 涓?article 琛ㄦ坊鍔犻樁娈电浉鍏冲瓧娈?
+-- 为 article 表添加阶段相关字段
 ALTER TABLE article
     ADD COLUMN phase VARCHAR(50) DEFAULT 'PENDING' COMMENT '当前阶段：PENDING/TITLE_GENERATING/TITLE_SELECTING/OUTLINE_GENERATING/OUTLINE_EDITING/CONTENT_GENERATING' AFTER status,
     ADD COLUMN phase VARCHAR(50) DEFAULT 'PENDING' COMMENT '当前阶段：PENDING/TITLE_GENERATING/TITLE_SELECTING/OUTLINE_GENERATING/OUTLINE_EDITING/CONTENT_GENERATING' AFTER status,
-    ADD COLUMN userDescription TEXT NULL COMMENT '鐢ㄦ埛琛ュ厖鎻忚堪' AFTER topic,
-    ADD COLUMN enabledImageMethods JSON NULL COMMENT '鍏佽鐨勯厤鍥炬柟寮忓垪琛? AFTER userDescription;
+    ADD COLUMN userDescription TEXT NULL COMMENT '用户补充描述' AFTER topic,
+    ADD COLUMN enabledImageMethods JSON NULL COMMENT '允许的配图方式列表' AFTER userDescription;

@@ -5,7 +5,7 @@ import lombok.Data;
 
 /**
  * 图片请求对象
- * 缁熶竴灏佽鍥剧墖鑾峰彇鎵€闇€鐨勫悇绉嶅弬鏁帮紝渚夸簬鎵╁睍
+ * 统一封装图片获取所需的各种参数，便于扩展
  *
  */
 @Data
@@ -13,45 +13,46 @@ import lombok.Data;
 public class ImageRequest {
 
     /**
-     * 鎼滅储鍏抽敭璇嶏紙鐢ㄤ簬鍥惧簱妫€绱級
+     * 搜索关键词（用于图库检索）
      */
     private String keywords;
 
     /**
-     * 鐢熷浘鎻愮ず璇嶏紙鐢ㄤ簬 AI 鐢熷浘锛?
+     * 生图提示词（用于 AI 生图）
      */
     private String prompt;
 
     /**
-     * 鍥剧墖浣嶇疆搴忓彿
+     * 图片位置序号
      */
     private Integer position;
 
     /**
-     * 鍥剧墖绫诲瀷锛坈over/section锛?
+     * 图片类型（cover/section）
      */
     private String type;
 
     /**
-     * 瀹介珮姣旓紙濡?16:9, 1:1锛?
+     * 宽高比（如 16:9、1:1）
      */
     private String aspectRatio;
 
     /**
-     * 鍥剧墖椋庢牸鎻忚堪
+     * 图片风格描述
      */
     private String style;
 
     /**
-     * 鍥炬敼鍥剧殑鍘熷浘鍏綉 URL锛涗负绌烘椂浣跨敤鏂囩敓鍥俱€?     */
+     * 图改图的原图公网 URL；为空时使用文生图
+     */
     private String sourceImageUrl;
 
     /**
-     * 鑾峰彇鏈夋晥鐨勬悳绱?鐢熸垚鍙傛暟
-     * AI 鐢熷浘浼樺厛浣跨敤 prompt锛屽浘搴撴绱娇鐢?keywords
+     * 获取有效的搜索或生成参数
+     * AI 生图优先使用 prompt，图库检索使用 keywords
      *
-     * @param isAiGenerated 鏄惁涓?AI 鐢熷浘鏂瑰紡
-     * @return 鏈夋晥鐨勫弬鏁?
+     * @param isAiGenerated 是否为 AI 生图方式
+     * @return 有效的参数
      */
     public String getEffectiveParam(boolean isAiGenerated) {
         if (isAiGenerated) {

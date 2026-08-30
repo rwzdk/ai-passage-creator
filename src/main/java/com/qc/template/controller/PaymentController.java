@@ -20,13 +20,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 鏀粯鎺у埗鍣?
+ * 支付接口
  *
  */
 @RestController
 @RequestMapping("/payment")
 @Slf4j
-@Tag(name = "PaymentController", description = "鏀粯鎺ュ彛")
+@Tag(name = "PaymentController", description = "支付相关接口")
 public class PaymentController {
 
     @Resource
@@ -36,10 +36,10 @@ public class PaymentController {
     private UserService userService;
 
     /**
-     * 鍒涘缓 VIP 鏀粯浼氳瘽
+     * 创建 VIP 支付会话
      */
     @PostMapping("/create-vip-session")
-    @Operation(summary = "鍒涘缓 VIP 鏀粯浼氳瘽")
+    @Operation(summary = "创建 VIP 支付会话")
     public BaseResponse<String> createVipPaymentSession(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
         try {
@@ -48,16 +48,16 @@ public class PaymentController {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("鍒涘缓鏀粯浼氳瘽澶辫触", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "鍒涘缓鏀粯浼氳瘽澶辫触");
+            log.error("创建支付会话失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "创建支付会话失败");
         }
     }
 
     /**
-     * 鐢宠閫€娆?
+     * 申请退款
      */
     @PostMapping("/refund")
-    @Operation(summary = "鐢宠閫€娆?)
+    @Operation(summary = "申请退款")
     @AuthCheck(mustRole = UserConstant.VIP_ROLE)
     public BaseResponse<Boolean> refund(
             @RequestParam(required = false) String reason,
@@ -69,16 +69,16 @@ public class PaymentController {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("閫€娆惧け璐?, e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "閫€娆惧け璐?);
+            log.error("退款失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退款失败");
         }
     }
 
     /**
-     * 鑾峰彇褰撳墠鐢ㄦ埛鏀粯璁板綍
+     * 获取支付记录
      */
     @GetMapping("/records")
-    @Operation(summary = "鑾峰彇褰撳墠鐢ㄦ埛鏀粯璁板綍")
+    @Operation(summary = "获取支付记录")
     public BaseResponse<List<PaymentRecord>> getPaymentRecords(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
         List<PaymentRecord> records = paymentService.getPaymentRecords(loginUser.getId());

@@ -5,7 +5,7 @@ import com.qc.template.model.entity.PaymentRecord;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 鏀粯璁板綍 Mapper
+ * 支付记录 Mapper
  *
  */
 @Mapper

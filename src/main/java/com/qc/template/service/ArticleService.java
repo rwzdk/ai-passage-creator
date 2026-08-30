@@ -14,95 +14,97 @@ import com.qc.template.model.vo.UserArticleStatsVO;
 import java.util.List;
 
 /**
- * 鏂囩珷鏈嶅姟鎺ュ彛
+ * 文章服务接口
  *
  */
 public interface ArticleService extends IService<Article> {
 
     /**
-     * 鍒涘缓鏂囩珷浠诲姟
+     * 创建文章任务
      *
-     * @param topic     閫夐
-     * @param style     鏂囩珷椋庢牸锛堝彲涓虹┖锛?
-     * @param enabledImageMethods 鍏佽鐨勯厤鍥炬柟寮忓垪琛紙鍙负绌猴級
-     * @param loginUser 褰撳墠鐧诲綍鐢ㄦ埛
-     * @return 浠诲姟ID
+     * @param topic     选题
+     * @param style     文章风格（可为空）
+     * @param enabledImageMethods 允许的配图方式列表（可为空）
+     * @param loginUser 当前登录用户
+     * @return 任务ID
      */
     String createArticleTask(String topic, String style, List<String> enabledImageMethods,
                              String referenceSummary, User loginUser);
 
     /**
-     * 鍒涘缓鏂囩珷浠诲姟锛堝甫閰嶉妫€鏌ワ級
-     * 灏嗛厤棰濇墸鍑忓拰浠诲姟鍒涘缓鏀惧湪鍚屼竴浜嬪姟涓紝纭繚鍘熷瓙鎬?
+     * 创建文章任务（带配额检查）
+     * 将配额扣减和任务创建放在同一事务中，确保原子性
      *
-     * @param topic     閫夐
-     * @param style     鏂囩珷椋庢牸锛堝彲涓虹┖锛?
-     * @param enabledImageMethods 鍏佽鐨勯厤鍥炬柟寮忓垪琛紙鍙负绌猴級
-     * @param loginUser 褰撳墠鐧诲綍鐢ㄦ埛
-     * @return 浠诲姟ID
+     * @param topic     选题
+     * @param style     文章风格（可为空）
+     * @param enabledImageMethods 允许的配图方式列表（可为空）
+     * @param loginUser 当前登录用户
+     * @return 任务ID
      */
     String createArticleTaskWithQuotaCheck(String topic, String style, List<String> enabledImageMethods,
                                            String referenceSummary, User loginUser);
 
     /**
-     * 鏍规嵁浠诲姟ID鑾峰彇鏂囩珷
+     * 根据任务ID获取文章
      *
-     * @param taskId 浠诲姟ID
-     * @return 鏂囩珷瀹炰綋
+     * @param taskId 任务ID
+     * @return 文章实体
      */
     Article getByTaskId(String taskId);
 
     /**
-     * 鑾峰彇鏂囩珷璇︽儏锛堝甫鏉冮檺鏍￠獙锛?
+     * 获取文章详情（带权限校验）
      *
-     * @param taskId    浠诲姟ID
-     * @param loginUser 褰撳墠鐧诲綍鐢ㄦ埛
-     * @return 鏂囩珷VO
+     * @param taskId    任务ID
+     * @param loginUser 当前登录用户
+     * @return 文章VO
      */
     ArticleVO getArticleDetail(String taskId, User loginUser);
 
     /**
-     * 鍒嗛〉鏌ヨ鏂囩珷鍒楄〃
+     * 分页查询文章列表
      *
-     * @param request   鏌ヨ璇锋眰
-     * @param loginUser 褰撳墠鐧诲綍鐢ㄦ埛
-     * @return 鍒嗛〉缁撴灉
+     * @param request   查询请求
+     * @param loginUser 当前登录用户
+     * @return 分页结果
      */
     Page<ArticleVO> listArticleByPage(ArticleQueryRequest request, User loginUser);
 
-    /** 鑾峰彇褰撳墠鐢ㄦ埛鐨勫垱浣滅粺璁°€?*/
+    /** 获取当前用户的创作统计 */
     UserArticleStatsVO getUserArticleStats(User loginUser);
 
     /**
-     * 鍒犻櫎鏂囩珷锛堝甫鏉冮檺鏍￠獙锛?
+     * 删除文章（带权限校验）
      *
-     * @param id        鏂囩珷ID
-     * @param loginUser 褰撳墠鐧诲綍鐢ㄦ埛
-     * @return 鏄惁鎴愬姛
+     * @param id        文章ID
+     * @param loginUser 当前登录用户
+     * @return 是否成功
      */
     boolean deleteArticle(Long id, User loginUser);
 
     /**
-     * 鎵归噺鍒犻櫎鏂囩珷锛岄€愭潯鎵ц宸叉湁鐨勫綊灞炴潈闄愭牎楠屻€?     *
-     * @param ids       鏂囩珷 ID 鍒楄〃
-     * @param loginUser 褰撳墠鐧诲綍鐢ㄦ埛
-     * @return 鎴愬姛鍒犻櫎鐨勬暟閲?     */
+     * 批量删除文章，逐条执行已有的归属权限校验
+     *
+     * @param ids       文章 ID 列表
+     * @param loginUser 当前登录用户
+     * @return 成功删除的数量
+     */
     int deleteArticles(List<Long> ids, User loginUser);
 
     /**
-     * 鏇存柊鏂囩珷鐘舵€?
+     * 更新文章状态
      *
-     * @param taskId       浠诲姟ID
-     * @param status       鐘舵€佹灇涓?
+     * @param taskId       任务ID
+     * @param status       状态枚举
      * @param errorMessage 错误信息（可选）
      */
     void updateArticleStatus(String taskId, ArticleStatusEnum status, String errorMessage);
 
     /**
-     * 淇濆瓨鏂囩珷鍐呭
+     * 保存文章内容
      *
-     * @param taskId 浠诲姟ID
-     * @param state  鏂囩珷鐘舵€佸璞?
+     * @param taskId 任务ID
+     * @param state  文章状态
      */
     void saveArticleContent(String taskId, ArticleState state);
 
@@ -115,48 +117,48 @@ public interface ArticleService extends IService<Article> {
     ArticleVO selectArticleImageVersion(String taskId, Integer position, String versionId, User loginUser);
 
     /**
-     * 纭鏍囬锛堢敤鎴烽€夋嫨鍚庯級
+     * 确认标题（用户择后）
      *
-     * @param taskId       浠诲姟ID
-     * @param mainTitle    閫変腑鐨勪富鏍囬
-     * @param subTitle     閫変腑鐨勫壇鏍囬
-     * @param userDescription 鐢ㄦ埛琛ュ厖鎻忚堪
-     * @param loginUser    褰撳墠鐧诲綍鐢ㄦ埛
+     * @param taskId       任务ID
+     * @param mainTitle    选中的主标题
+     * @param subTitle     选中的副标题
+     * @param userDescription 用户补充描述
+     * @param loginUser    当前登录用户
      */
     void confirmTitle(String taskId, String mainTitle, String subTitle, String userDescription, User loginUser);
 
     /**
-     * 纭澶х翰锛堢敤鎴风紪杈戝悗锛?
+     * 确认大纲（用户编辑后）
      *
-     * @param taskId    浠诲姟ID
-     * @param outline   鐢ㄦ埛缂栬緫鍚庣殑澶х翰
-     * @param loginUser 褰撳墠鐧诲綍鐢ㄦ埛
+     * @param taskId    任务ID
+     * @param outline   用户编辑后的大纲
+     * @param loginUser 当前登录用户
      */
     void confirmOutline(String taskId, List<ArticleState.OutlineSection> outline, User loginUser);
 
     /**
-     * 鏇存柊闃舵
+     * 更新阶段
      *
-     * @param taskId 浠诲姟ID
-     * @param phase  闃舵鏋氫妇
+     * @param taskId 任务ID
+     * @param phase  阶段枚举
      */
     void updatePhase(String taskId, ArticlePhaseEnum phase);
 
     /**
-     * 淇濆瓨鏍囬鏂规
+     * 保存标题方案
      *
-     * @param taskId       浠诲姟ID
-     * @param titleOptions 鏍囬鏂规鍒楄〃
+     * @param taskId       任务ID
+     * @param titleOptions 标题方案列表
      */
     void saveTitleOptions(String taskId, List<ArticleState.TitleOption> titleOptions);
 
     /**
-     * AI 淇敼澶х翰
+     * AI 修改大纲
      *
-     * @param taskId           浠诲姟ID
-     * @param modifySuggestion 鐢ㄦ埛淇敼寤鸿
-     * @param loginUser        褰撳墠鐧诲綍鐢ㄦ埛
-     * @return 淇敼鍚庣殑澶х翰
+     * @param taskId           任务ID
+     * @param modifySuggestion 用户修改建议
+     * @param loginUser        当前登录用户
+     * @return 修改后的大纲
      */
     List<ArticleState.OutlineSection> aiModifyOutline(String taskId, String modifySuggestion, User loginUser);
 }

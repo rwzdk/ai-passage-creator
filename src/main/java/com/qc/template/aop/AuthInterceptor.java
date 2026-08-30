@@ -28,9 +28,9 @@ public class AuthInterceptor {
     private UserService userService;
 
     /**
-     * 鎵ц鎷︽埅
+     * 执行拦截
      *
-     * @param joinPoint 鍒囧叆鐐?
+     * @param joinPoint 切入点
      * @param authCheck 权限校验注解
      */
     @Around("@annotation(authCheck)")
@@ -38,16 +38,16 @@ public class AuthInterceptor {
         String mustRole = authCheck.mustRole();
         RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
         HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
-        // 鑾峰彇褰撳墠鐧诲綍鐢ㄦ埛
+        // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
         UserRoleEnum mustRoleEnum = UserRoleEnum.getEnumByValue(mustRole);
-        // 涓嶉渶瑕佹潈闄愶紝鐩存帴鏀捐
+        // 不需要权限，直接放行
         if (mustRoleEnum == null) {
             return joinPoint.proceed();
         }
-        // 浠ヤ笅鐨勪唬鐮侊細蹇呴』鏈夎繖涓潈闄愭墠鑳介€氳繃
+        // 以下的代码：必须有这个权限才能过
         UserRoleEnum userRoleEnum = UserRoleEnum.getEnumByValue(loginUser.getUserRole());
-        // 娌℃湁鏉冮檺锛岀洿鎺ユ嫆缁?
+        // 没有权限，直接拒绝
         if (userRoleEnum == null) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
@@ -55,7 +55,7 @@ public class AuthInterceptor {
         if (UserRoleEnum.ADMIN.equals(mustRoleEnum) && !UserRoleEnum.ADMIN.equals(userRoleEnum)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        // 閫氳繃鏉冮檺鏍￠獙锛屾斁琛?
+        // 通过权限校验，放行
         return joinPoint.proceed();
     }
 }

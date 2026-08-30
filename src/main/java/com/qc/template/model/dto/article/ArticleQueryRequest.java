@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 import java.io.Serializable;
 
 /**
- * 鏌ヨ鏂囩珷璇锋眰
+ * 查询文章请求
  *
  */
 @EqualsAndHashCode(callSuper = true)
@@ -15,12 +15,12 @@ import java.io.Serializable;
 public class ArticleQueryRequest extends PageRequest implements Serializable {
 
     /**
-     * 鐢ㄦ埛ID
+     * 用户ID
      */
     private Long userId;
 
     /**
-     * 鐘舵€?
+     * 状态
      */
     private String status;
 

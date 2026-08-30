@@ -20,8 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 鏅鸿兘浣撴墽琛?AOP 鍒囬潰
- * 鑷姩璁板綍鏅鸿兘浣撴墽琛屾棩蹇楀拰鎬ц兘鏁版嵁
+ * 智能体执行 AOP 切面
+ * 自动记录智能体执行日志和性能数据
  *
  */
 @Aspect
@@ -37,7 +37,7 @@ public class AgentExecutionAspect {
         long startTime = System.currentTimeMillis();
         LocalDateTime startDateTime = LocalDateTime.now();
         
-        // 鎻愬彇 taskId 鍜岃緭鍏ユ暟鎹?
+        // 提取 taskId 和输入数据
         String taskId = extractTaskId(pjp);
         String inputData = extractInputData(pjp);
         String prompt = extractPrompt(pjp);
@@ -54,31 +54,31 @@ public class AgentExecutionAspect {
 
         Object result = null;
         try {
-            // 鎵ц鐩爣鏂规硶
+            // 执行目标方法
             result = pjp.proceed();
             
-            // 璁板綍鎴愬姛鐘舵€?
+            // 记录成功状态
             agentLog.setStatus("SUCCESS");
             agentLog.setEndTime(LocalDateTime.now());
             agentLog.setDurationMs((int) (System.currentTimeMillis() - startTime));
             agentLog.setOutputData(extractOutputData(result));
             
-            log.info("鏅鸿兘浣撴墽琛屾垚鍔? {}, taskId={}, 鑰楁椂={}ms", 
+            log.info("智能体执行成功: {}, taskId={}, 耗时={}ms",
                     agentExecution.value(), taskId, agentLog.getDurationMs());
             
         } catch (Throwable e) {
-            // 璁板綍澶辫触鐘舵€?
+            // 记录失败状态
             agentLog.setStatus("FAILED");
             agentLog.setEndTime(LocalDateTime.now());
             agentLog.setDurationMs((int) (System.currentTimeMillis() - startTime));
             agentLog.setErrorMessage(e.getMessage() != null ? e.getMessage() : e.getClass().getName());
             
-            log.error("鏅鸿兘浣撴墽琛屽け璐? {}, taskId={}, 閿欒={}", 
+            log.error("智能体执行失败: {}, taskId={}, 错误={}",
                     agentExecution.value(), taskId, e.getMessage(), e);
             
             throw e;
         } finally {
-            // 寮傛淇濆瓨鏃ュ織
+            // 异步保存日志
             agentLogService.saveLogAsync(agentLog);
         }
 
@@ -86,7 +86,7 @@ public class AgentExecutionAspect {
     }
 
     /**
-     * 浠庢柟娉曞弬鏁颁腑鎻愬彇 taskId
+     * 从方法参数中提取 taskId
      */
     private String extractTaskId(ProceedingJoinPoint pjp) {
         Object[] args = pjp.getArgs();
@@ -94,7 +94,7 @@ public class AgentExecutionAspect {
             return "unknown";
         }
 
-        // 浼樺厛浠?ArticleState 涓幏鍙?
+        // 优先从 ArticleState 中获取
         for (Object arg : args) {
             if (arg instanceof ArticleState) {
                 return ((ArticleState) arg).getTaskId();
@@ -104,7 +104,7 @@ public class AgentExecutionAspect {
             }
         }
 
-        // 灏濊瘯浠庣涓€涓?String 鍙傛暟鑾峰彇锛堝彲鑳芥槸 taskId锛?
+        // 尝试从第一个 String 参数获取（可能是 taskId）
         for (Object arg : args) {
             if (arg instanceof String) {
                 return (String) arg;
@@ -115,7 +115,7 @@ public class AgentExecutionAspect {
     }
 
     /**
-     * 鎻愬彇杈撳叆鏁版嵁锛堢畝鍖栫増锛屽彧璁板綍鍏抽敭淇℃伅锛?
+     * 提取输入数据（简化版，只记录关键信息）
      */
     private String extractInputData(ProceedingJoinPoint pjp) {
         try {
@@ -130,7 +130,7 @@ public class AgentExecutionAspect {
 
             for (int i = 0; i < args.length && i < paramNames.length; i++) {
                 Object arg = args[i];
-                // 鍙褰曞熀鏈被鍨嬪拰绠€鍗曞璞★紝閬垮厤鏁版嵁杩囧ぇ
+                // 只记录基本类型和简单对象，避免数据过大
                 if (arg instanceof String || arg instanceof Number || arg instanceof Boolean) {
                     inputMap.put(paramNames[i], arg);
                 } else if (arg instanceof ArticleState) {
@@ -144,13 +144,13 @@ public class AgentExecutionAspect {
 
             return inputMap.isEmpty() ? null : GsonUtils.toJson(inputMap);
         } catch (Exception e) {
-            log.warn("鎻愬彇杈撳叆鏁版嵁澶辫触", e);
+            log.warn("提取输入数据失败", e);
             return null;
         }
     }
 
     /**
-     * 鎻愬彇杈撳嚭鏁版嵁锛堢畝鍖栫増锛?
+     * 提取输出数据（简化版）
      */
     private String extractOutputData(Object result) {
         try {
@@ -158,7 +158,7 @@ public class AgentExecutionAspect {
                 return null;
             }
 
-            // 鍙褰曠畝鍗曠被鍨嬶紝閬垮厤鏁版嵁杩囧ぇ
+            // 只记录简单类型，避免数据过大
             if (result instanceof String || result instanceof Number || result instanceof Boolean) {
                 return String.valueOf(result);
             }
@@ -170,18 +170,17 @@ public class AgentExecutionAspect {
 
             return "{\"type\": \"" + result.getClass().getSimpleName() + "\"}";
         } catch (Exception e) {
-            log.warn("鎻愬彇杈撳嚭鏁版嵁澶辫触", e);
+            log.warn("提取输出数据失败", e);
             return null;
         }
     }
 
     /**
-     * 鎻愬彇浣跨敤鐨?Prompt锛堝皾璇曚粠鏂规硶鍙傛暟鎴?ArticleState 鑾峰彇锛?
+     * 提取使用的 Prompt（尝试从方法参数或 ArticleState 获取）
      */
     private String extractPrompt(ProceedingJoinPoint pjp) {
         try {
-            // 鍙互鏍规嵁鏂规硶鍚嶇О鎺ㄦ柇浣跨敤鐨?Prompt
-            // 鎴栦粠鍙傛暟涓彁鍙栵紝杩欓噷绠€鍖栧鐞?
+            // 可以根据方法名称推断使用的 Prompt，或从参数中提取，这里简化处理
             MethodSignature signature = (MethodSignature) pjp.getSignature();
             Method method = signature.getMethod();
             return method.getDeclaringClass().getSimpleName() + "." + method.getName();

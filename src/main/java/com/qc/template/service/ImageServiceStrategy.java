@@ -13,15 +13,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 鍥剧墖鏈嶅姟绛栫暐閫夋嫨鍣?
- * 鏍规嵁鍥剧墖鏉ユ簮绫诲瀷閫夋嫨瀵瑰簲鐨勫浘鐗囨湇鍔″疄鐜?
- * 
- * 璁捐璇存槑锛?
- * - 鑷姩娉ㄥ唽鎵€鏈?ImageSearchService 瀹炵幇
- * - 鏍规嵁 ImageMethodEnum 鐨勫厓鏁版嵁鑷姩閫夋嫨姝ｇ‘鐨勫弬鏁?
- * - 鏀寔鏈嶅姟鍙敤鎬ф鏌ュ拰鑷姩闄嶇骇
- * - 缁熶竴澶勭悊鍥剧墖涓婁紶鍒?COS
+ * 图片服务策略选择器
+ * 根据图片来源类型选择对应的图片服务实现。
  *
+ * 设计说明：
+ * - 自动注册所有 ImageSearchService 实现
+ * - 根据 ImageMethodEnum 的元数据自动选择正确的参数
+ * - 支持服务可用性检查和自动降级
+ * - 统一处理图片上传到 COS
+ *
+ * @author <a href="https://codefather.cn">编程导航学习网</a>
  */
 @Service
 @Slf4j
@@ -40,11 +41,11 @@ public class ImageServiceStrategy {
 
     @PostConstruct
     public void init() {
-        // 灏嗘墍鏈?ImageSearchService 瀹炵幇娉ㄥ唽鍒版槧灏勮〃
+        // 将所有 ImageSearchService 实现注册到映射表
         for (ImageSearchService service : imageSearchServices) {
             ImageMethodEnum method = service.getMethod();
             serviceMap.put(method, service);
-            log.info("娉ㄥ唽鍥剧墖鏈嶅姟: {} -> {} (AI鐢熷浘: {}, 闄嶇骇: {})", 
+            log.info("注册图片服务: {} -> {} (AI生图: {}, 降级: {})",
                     method.getValue(), 
                     service.getClass().getSimpleName(),
                     method.isAiGenerated(),
@@ -54,11 +55,11 @@ public class ImageServiceStrategy {
 
     /**
      * 获取图片并上传到 COS（推荐方法）
-     * 缁熶竴澶勭悊鎵€鏈夊浘鐗囨潵婧愮殑涓婁紶閫昏緫
+     * 统一处理所有图片来源的上传逻辑
      *
      * @param imageSource 图片来源
      * @param request     图片请求对象
-     * @return 鍥剧墖鑾峰彇缁撴灉锛堝寘鍚?COS URL锛?
+     * @return 图片获取结果（包含 COS URL）
      */
     public ImageResult getImageAndUpload(String imageSource, ImageRequest request) {
         ImageMethodEnum method = resolveMethod(imageSource);
@@ -66,55 +67,55 @@ public class ImageServiceStrategy {
         ImageMethodEnum resolvedMethod = service != null ? service.getMethod() : method;
         
         if (service == null || !service.isAvailable()) {
-            log.warn("鍥剧墖鏈嶅姟涓嶅彲鐢? {}, 灏濊瘯闄嶇骇", method);
+            log.warn("图片服务不可用: {}, 尝试降级", method);
             if (method.isAiGenerated()) {
-                return ImageResult.failure(method, method.getValue() + " 鍥剧墖鏈嶅姟涓嶅彲鐢?);
+                return ImageResult.failure(method, method.getValue() + " 图片服务不可用");
             }
             return handleFallbackWithUpload(request.getPosition());
         }
 
         try {
-            // 1. 鑾峰彇鍥剧墖鏁版嵁
+            // 1. 获取图片数据
             ImageData imageData = service.getImageData(request);
             
             if (imageData == null || !imageData.isValid()) {
-                log.warn("鍥剧墖鏁版嵁鑾峰彇澶辫触, 浣跨敤闄嶇骇鏂规, method={}", method);
+                log.warn("图片数据获取失败, method={}", resolvedMethod);
                 if (resolvedMethod.isAiGenerated()) {
-                    return ImageResult.failure(resolvedMethod, resolvedMethod.getValue() + " 鍥剧墖鐢熸垚澶辫触");
+                    return ImageResult.failure(resolvedMethod, resolvedMethod.getValue() + " 图片生成失败");
                 }
                 return handleFallbackWithUpload(request.getPosition());
             }
             
-            // 2. 涓婁紶鍒?COS
+            // 2. 上传到 COS
             String folder = getFolderForMethod(resolvedMethod);
             String cosUrl = cosService.uploadImageData(imageData, folder);
             
             if (cosUrl != null && !cosUrl.isEmpty()) {
-                log.info("鍥剧墖鑾峰彇骞朵笂浼犳垚鍔? method={}, cosUrl={}", method, cosUrl);
+                log.info("图片获取并上传成功: method={}, cosUrl={}", resolvedMethod, cosUrl);
                 return new ImageResult(cosUrl, resolvedMethod);
             } else {
-                log.warn("鍥剧墖涓婁紶 COS 澶辫触, 浣跨敤闄嶇骇鏂规, method={}", method);
+                log.warn("图片上传 COS 失败, method={}", resolvedMethod);
                 if (resolvedMethod.isAiGenerated()) {
-                    return ImageResult.failure(resolvedMethod, resolvedMethod.getValue() + " 鍥剧墖涓婁紶澶辫触");
+                    return ImageResult.failure(resolvedMethod, resolvedMethod.getValue() + " 图片上传失败");
                 }
                 return handleFallbackWithUpload(request.getPosition());
             }
         } catch (Exception e) {
-            log.error("鑾峰彇鍥剧墖骞朵笂浼犲紓甯? method={}", method, e);
+            log.error("获取图片并上传异常: method={}", resolvedMethod, e);
             if (resolvedMethod.isAiGenerated()) {
-                return ImageResult.failure(resolvedMethod, resolvedMethod.getValue() + " 鍥剧墖鐢熸垚寮傚父");
+                return ImageResult.failure(resolvedMethod, resolvedMethod.getValue() + " 图片生成异常");
             }
             return handleFallbackWithUpload(request.getPosition());
         }
     }
 
     /**
-     * 鏍规嵁鍥剧墖璇锋眰鑾峰彇鍥剧墖
+     * 根据图片请求获取图片
      *
      * @param imageSource 图片来源
      * @param request     图片请求对象
-     * @return 鍥剧墖鑾峰彇缁撴灉
-     * @deprecated 浣跨敤 getImageAndUpload() 鏇夸唬
+     * @return 图片获取结果
+     * @deprecated 使用 getImageAndUpload() 替代
      */
     @Deprecated
     public ImageResult getImage(String imageSource, ImageRequest request) {
@@ -123,7 +124,10 @@ public class ImageServiceStrategy {
         ImageMethodEnum resolvedMethod = service != null ? service.getMethod() : method;
         
         if (service == null || !service.isAvailable()) {
-            log.warn("鍥剧墖鏈嶅姟涓嶅彲鐢? {}, 灏濊瘯闄嶇骇", method);
+            log.warn("图片服务不可用: {}, 尝试降级", method);
+            if (method.isAiGenerated()) {
+                return ImageResult.failure(method, method.getValue() + " 图片服务不可用");
+            }
             return handleFallback(request.getPosition());
         }
 
@@ -132,19 +136,22 @@ public class ImageServiceStrategy {
         if (imageUrl != null && !imageUrl.isEmpty()) {
             return new ImageResult(imageUrl, resolvedMethod);
         } else {
-            log.warn("鍥剧墖鑾峰彇澶辫触, 浣跨敤闄嶇骇鏂规, method={}", method);
+            log.warn("图片获取失败, method={}", resolvedMethod);
+            if (resolvedMethod.isAiGenerated()) {
+                return ImageResult.failure(resolvedMethod, resolvedMethod.getValue() + " 图片生成失败");
+            }
             return handleFallback(request.getPosition());
         }
     }
 
     /**
-     * 鏍规嵁鍥剧墖鏉ユ簮鑾峰彇瀵瑰簲鐨勫浘鐗囷紙鍏煎鏃ф帴鍙ｏ紝涓嶄笂浼犲埌 COS锛?
+     * 根据图片来源获取对应的图片（兼容旧接口，不上传到 COS）
      *
      * @param imageSource 图片来源（PEXELS / NANO_BANANA 等）
-     * @param keywords    鍏抽敭璇嶏紙鐢ㄤ簬鍥惧簱妫€绱級
-     * @param prompt      鎻愮ず璇嶏紙鐢ㄤ簬 AI 鐢熷浘锛?
-     * @return 鍥剧墖鑾峰彇缁撴灉
-     * @deprecated 浣跨敤 getImageAndUpload() 鏇夸唬
+     * @param keywords    关键词（用于图库检索）
+     * @param prompt      提示词（用于 AI 生图）
+     * @return 图片获取结果
+     * @deprecated 使用 getImageAndUpload() 替代
      */
     @Deprecated
     public ImageResult getImage(String imageSource, String keywords, String prompt) {
@@ -156,7 +163,7 @@ public class ImageServiceStrategy {
     }
 
     /**
-     * 鏍规嵁鍥剧墖鏂规硶鑾峰彇 COS 鏂囦欢澶?
+     * 根据图片方法获取 COS 文件 URL
      */
     private String getFolderForMethod(ImageMethodEnum method) {
         return switch (method) {
@@ -173,12 +180,12 @@ public class ImageServiceStrategy {
     }
 
     /**
-     * 瑙ｆ瀽鍥剧墖鏉ユ簮锛屽鐞嗘湭鐭ュ€?
+     * 解析图片来源，处理未知来源
      */
     private ImageMethodEnum resolveMethod(String imageSource) {
         ImageMethodEnum method = ImageMethodEnum.getByValue(imageSource);
         if (method == null) {
-            log.warn("鏈煡鐨勫浘鐗囨潵婧? {}, 榛樿浣跨敤 {}", imageSource, ImageMethodEnum.getDefaultSearchMethod());
+            log.warn("未知的图片来源: {}, 默认使用 {}", imageSource, ImageMethodEnum.getDefaultSearchMethod());
             return ImageMethodEnum.getDefaultSearchMethod();
         }
         return method;
@@ -192,14 +199,14 @@ public class ImageServiceStrategy {
 
         ImageSearchService apiclaudeService = serviceMap.get(ImageMethodEnum.NANO_BANANA_APICLAUDE);
         if (apiclaudeService != null && apiclaudeService.isAvailable()) {
-            log.info("Nano Banana 瀹樻柟閰嶇疆涓嶅彲鐢紝鏀圭敤 Apiclaude 閰嶇疆");
+            log.info("Nano Banana official service unavailable; using Apiclaude service");
             return apiclaudeService;
         }
         return service;
     }
 
     /**
-     * 澶勭悊闄嶇骇閫昏緫
+     * 处理降级逻辑
      */
     private ImageResult handleFallback(Integer position) {
         int pos = position != null ? position : 1;
@@ -208,25 +215,25 @@ public class ImageServiceStrategy {
     }
 
     /**
-     * 澶勭悊闄嶇骇閫昏緫
+     * 处理降级逻辑
      */
     private ImageResult handleFallbackWithUpload(Integer position) {
         int pos = position != null ? position : 1;
         String fallbackUrl = getFallbackImage(pos);
         
-        // 灏嗛檷绾у浘鐗囦篃涓婁紶鍒?COS
+        // 将降级图片也上传到 COS
         ImageData fallbackData = ImageData.fromUrl(fallbackUrl);
         String cosUrl = cosService.uploadImageData(fallbackData, "fallback");
         
-        // 濡傛灉涓婁紶澶辫触锛岀洿鎺ヤ娇鐢ㄥ師濮?URL
+        // 如果上传失败，直接使用原始 URL
         String finalUrl = (cosUrl != null && !cosUrl.isEmpty()) ? cosUrl : fallbackUrl;
         return new ImageResult(finalUrl, ImageMethodEnum.getFallbackMethod());
     }
 
     /**
-     * 鑾峰彇鎸囧畾鏂规硶鐨勫浘鐗囨湇鍔?
+     * 获取指定方法的图片服务
      *
-     * @param method 鍥剧墖鏂规硶
+     * @param method 图片方法
      * @return 图片服务，未找到返回 null
      */
     public ImageSearchService getService(ImageMethodEnum method) {
@@ -234,13 +241,13 @@ public class ImageServiceStrategy {
     }
 
     /**
-     * 鑾峰彇闄嶇骇鍥剧墖
+     * 获取降级图片
      *
-     * @param position 浣嶇疆搴忓彿
-     * @return 闄嶇骇鍥剧墖 URL
+     * @param position 位置序号
+     * @return 降级图片 URL
      */
     public String getFallbackImage(int position) {
-        // 浼樺厛浣跨敤宸叉敞鍐屾湇鍔＄殑闄嶇骇鏂规
+        // 优先使用已注册服务的降级方案
         ImageSearchService defaultService = serviceMap.get(ImageMethodEnum.getDefaultSearchMethod());
         if (defaultService != null) {
             return defaultService.getFallbackImage(position);
@@ -249,14 +256,14 @@ public class ImageServiceStrategy {
     }
 
     /**
-     * 鑾峰彇鎵€鏈夊凡娉ㄥ唽鐨勫浘鐗囨湇鍔＄被鍨?
+     * 获取所有已注册的图片服务类型
      */
     public List<ImageMethodEnum> getRegisteredMethods() {
         return List.copyOf(serviceMap.keySet());
     }
 
     /**
-     * 鍥剧墖鑾峰彇缁撴灉
+     * 图片获取结果
      */
     public static class ImageResult {
         private final String url;

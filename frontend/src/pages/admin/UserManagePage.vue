@@ -67,7 +67,7 @@
             </template>
             <template v-else-if="column.key === 'action'">
               <a-popconfirm
-                title="确定要删除此用户吗?"
+                title="确定要删除此用户吗？"
                 ok-text="确定"
                 cancel-text="取消"
                 @confirm="doDelete(record.id)"
@@ -189,7 +189,7 @@ const searchParams = reactive<API.UserQueryRequest>({
 const getQueryValue = (value: unknown) => Array.isArray(value) ? String(value[0] || '') : String(value || '')
 
 const syncUserQuery = () => {
-  const query: Record<string, string | string[]> = { ...route.query }
+  const query = { ...route.query }
   delete query.userAccount
   delete query.userName
   delete query.page

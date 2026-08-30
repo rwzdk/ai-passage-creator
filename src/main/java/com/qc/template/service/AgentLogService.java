@@ -7,31 +7,31 @@ import com.qc.template.model.vo.AgentExecutionStats;
 import java.util.List;
 
 /**
- * 鏅鸿兘浣撴棩蹇楁湇鍔?
+ * 智能体日志服务
  *
  */
 public interface AgentLogService extends IService<AgentLog> {
 
     /**
-     * 寮傛淇濆瓨鏃ュ織
+     * 异步保存日志
      *
      * @param log 日志对象
      */
     void saveLogAsync(AgentLog log);
 
     /**
-     * 鏍规嵁浠诲姟ID鑾峰彇鎵€鏈夋棩蹇?
+     * 根据任务 ID 获取所有日志
      *
-     * @param taskId 浠诲姟ID
-     * @return 鏃ュ織鍒楄〃
+     * @param taskId 任务ID
+     * @return 日志列表
      */
     List<AgentLog> getLogsByTaskId(String taskId);
 
     /**
-     * 鑾峰彇浠诲姟鎵ц缁熻淇℃伅
+     * 获取任务执行统计信息
      *
-     * @param taskId 浠诲姟ID
-     * @return 鎵ц缁熻
+     * @param taskId 任务ID
+     * @return 执行统计
      */
     AgentExecutionStats getExecutionStats(String taskId);
 }

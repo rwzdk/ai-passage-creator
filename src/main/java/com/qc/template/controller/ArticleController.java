@@ -48,8 +48,7 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * 鏂囩珷鎺ュ彛
- *
+ * 文章接口
  */
 @RestController
 @RequestMapping("/article")
@@ -77,9 +76,9 @@ public class ArticleController {
     @Resource
     private DocumentReferenceService documentReferenceService;
 
-    /** 涓婁紶骞舵€荤粨鏈鍒涗綔浣跨敤鐨勫弬鑰冩枃妗ｏ紝涓嶄繚瀛樺師鏂囦欢銆?*/
+    /** 上传并总结本次创作使用的参考文档，不保存原文件。 */
     @PostMapping(value = "/reference/parse", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "瑙ｆ瀽鏂囩珷鍙傝€冩枃妗?)
+    @Operation(summary = "解析文章参考文档")
     public BaseResponse<DocumentReferenceVO> parseReferenceDocument(
             @RequestParam("file") MultipartFile file,
             HttpServletRequest httpServletRequest) {
@@ -92,28 +91,28 @@ public class ArticleController {
     }
 
     @GetMapping("/hot-topics")
-    @Operation(summary = "鑾峰彇鐑棬閫夐")
+    @Operation(summary = "获取热门选题")
     public BaseResponse<HotTopicsVO> getHotTopics(
             @RequestParam(value = "refresh", defaultValue = "false") boolean refresh) {
         return ResultUtils.success(hotTopicService.getHotTopics(refresh));
     }
 
     /**
-     * 鍒涘缓鏂囩珷浠诲姟
+     * 创建文章任务
      */
     @PostMapping("/create")
-    @Operation(summary = "鍒涘缓鏂囩珷浠诲姟")
+    @Operation(summary = "创建文章任务")
     public BaseResponse<String> createArticle(@RequestBody ArticleCreateRequest request, HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(request.getTopic() == null || request.getTopic().trim().isEmpty(), 
-                ErrorCode.PARAMS_ERROR, "閫夐涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "选题不能为空");
         // 校验风格参数（允许为空）
         ThrowUtils.throwIf(!ArticleStyleEnum.isValid(request.getStyle()),
-                ErrorCode.PARAMS_ERROR, "鏃犳晥鐨勬枃绔犻鏍?);
+                ErrorCode.PARAMS_ERROR, "无效的文章风格");
 
         User loginUser = userService.getLoginUser(httpServletRequest);
 
-        // 妫€鏌ュ苟娑堣€楅厤棰?+ 鍒涘缓鏂囩珷浠诲姟锛堝湪鍚屼竴浜嬪姟涓級
+        // 检查并消耗配额，创建文章任务（在同一事务中）
         String taskId = articleService.createArticleTaskWithQuotaCheck(
                 request.getTopic(), 
                 request.getStyle(), 
@@ -122,7 +121,7 @@ public class ArticleController {
                 loginUser
         );
 
-        // 寮傛鎵ц闃舵1锛氱敓鎴愭爣棰樻柟妗?
+        // 异步执行阶段1：生成标题方案
         articleAsyncService.executePhase1(
                 taskId, 
                 request.getTopic(),
@@ -134,37 +133,38 @@ public class ArticleController {
     }
 
     /**
-     * SSE 杩涘害鎺ㄩ€?
+     * SSE 进度推送
      */
     @GetMapping("/progress/{taskId}")
-    @Operation(summary = "鑾峰彇鏂囩珷鐢熸垚杩涘害(SSE)")
+    @Operation(summary = "获取文章生成进度(SSE)")
     public SseEmitter getProgress(@PathVariable String taskId, HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(taskId == null || taskId.trim().isEmpty(), 
-                ErrorCode.PARAMS_ERROR, "浠诲姟ID涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
 
-        // 鏍￠獙鏉冮檺锛堝唴閮ㄤ細妫€鏌ヤ换鍔℃槸鍚﹀瓨鍦ㄤ互鍙婄敤鎴锋槸鍚︽湁鏉冮檺璁块棶锛?
+        // 校验权限（内部会检查任务是否存在以及用户是否有权限访问）
         User loginUser = userService.getLoginUser(httpServletRequest);
         articleService.getArticleDetail(taskId, loginUser);
 
-        // 鍒涘缓 SSE Emitter
+        // 创建 SSE Emitter
         SseEmitter emitter = sseEmitterManager.createEmitter(taskId);
 
-        // EventSource 閲嶈繛鍚庤嫢浠诲姟宸茬粨鏉燂紝绔嬪嵆琛ュ彂缁堟€佷緵鍓嶇鍚屾鏈€缁堝浘鏂囥€?        if (ArticleStatusEnum.COMPLETED.getValue().equals(articleService.getArticleDetail(taskId, loginUser).getStatus())) {
+        // EventSource 重连后若任务已结束，立即补发终态供前端同步最终图文。
+        if (ArticleStatusEnum.COMPLETED.getValue().equals(articleService.getArticleDetail(taskId, loginUser).getStatus())) {
             sseEmitterManager.send(taskId, GsonUtils.toJson(Map.of("type", "ALL_COMPLETE")));
         }
         
-        log.info("SSE 杩炴帴宸插缓绔? taskId={}", taskId);
+        log.info("SSE 连接已建立, taskId={}", taskId);
         return emitter;
     }
 
     /**
-     * 鑾峰彇鏂囩珷璇︽儏
+     * 获取文章详情
      */
     @GetMapping("/{taskId}")
-    @Operation(summary = "鑾峰彇鏂囩珷璇︽儏")
+    @Operation(summary = "获取文章详情")
     public BaseResponse<ArticleVO> getArticle(@PathVariable String taskId, HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(taskId == null || taskId.trim().isEmpty(), 
-                ErrorCode.PARAMS_ERROR, "浠诲姟ID涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
 
         User loginUser = userService.getLoginUser(httpServletRequest);
         ArticleVO articleVO = articleService.getArticleDetail(taskId, loginUser);
@@ -173,67 +173,67 @@ public class ArticleController {
     }
 
     @PostMapping("/select-image-version")
-    @Operation(summary = "鍒囨崲鏂囩珷閰嶅浘鐗堟湰")
+    @Operation(summary = "切换文章配图版本")
     public BaseResponse<ArticleVO> selectArticleImageVersion(@RequestBody ArticleSelectImageVersionRequest request,
                                                               HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(request == null || request.getTaskId() == null || request.getTaskId().isBlank(),
-                ErrorCode.PARAMS_ERROR, "浠诲姟ID涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
         ThrowUtils.throwIf(request.getPosition() == null || request.getPosition() < 1,
-                ErrorCode.PARAMS_ERROR, "鍥剧墖浣嶇疆涓嶅悎娉?);
+                ErrorCode.PARAMS_ERROR, "图片位置不合法");
         ThrowUtils.throwIf(request.getVersionId() == null || request.getVersionId().isBlank(),
-                ErrorCode.PARAMS_ERROR, "鍥剧墖鐗堟湰涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "图片版本不能为空");
         return ResultUtils.success(articleService.selectArticleImageVersion(request.getTaskId(), request.getPosition(),
                 request.getVersionId(), userService.getLoginUser(httpServletRequest)));
     }
 
     @PostMapping("/update-content")
-    @Operation(summary = "淇濆瓨鏂囩珷缂栬緫鍐呭")
+    @Operation(summary = "保存文章编辑内容")
     public BaseResponse<Boolean> updateArticleContent(@RequestBody ArticleUpdateContentRequest request,
                                                       HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(request == null || request.getTaskId() == null || request.getTaskId().isBlank(),
-                ErrorCode.PARAMS_ERROR, "浠诲姟ID涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
         ThrowUtils.throwIf(request.getContent() == null || request.getContent().isBlank(),
-                ErrorCode.PARAMS_ERROR, "鏂囩珷鍐呭涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "文章内容不能为空");
         articleService.updateArticleContent(request.getTaskId(), request.getMainTitle(), request.getSubTitle(), request.getContent(),
                 userService.getLoginUser(httpServletRequest));
         return ResultUtils.success(true);
     }
 
     @PostMapping("/ai-edit-content")
-    @Operation(summary = "AI 缂栬緫鏂囩珷鍐呭")
+    @Operation(summary = "AI 编辑文章内容")
     public BaseResponse<String> aiEditArticleContent(@RequestBody ArticleAiEditRequest request,
                                                      HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(request == null || request.getTaskId() == null || request.getTaskId().isBlank(),
-                ErrorCode.PARAMS_ERROR, "浠诲姟ID涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
         ThrowUtils.throwIf(request.getContent() == null || request.getContent().isBlank(),
-                ErrorCode.PARAMS_ERROR, "鏂囩珷鍐呭涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "文章内容不能为空");
         ThrowUtils.throwIf(request.getInstruction() == null || request.getInstruction().isBlank(),
-                ErrorCode.PARAMS_ERROR, "璇疯緭鍏?AI 淇敼瑕佹眰");
+                ErrorCode.PARAMS_ERROR, "请输入 AI 修改要求");
         String content = articleService.aiEditArticleContent(request.getTaskId(), request.getContent(),
                 request.getInstruction(), userService.getLoginUser(httpServletRequest));
         return ResultUtils.success(content);
     }
 
     @PostMapping("/regenerate-image")
-    @Operation(summary = "閲嶆柊鐢熸垚鏂囩珷閰嶅浘")
+    @Operation(summary = "重新生成文章配图")
     public BaseResponse<ArticleVO> regenerateArticleImage(@RequestBody ArticleRegenerateImageRequest request,
                                                           HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(request == null || request.getTaskId() == null || request.getTaskId().isBlank(),
-                ErrorCode.PARAMS_ERROR, "浠诲姟ID涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
         ThrowUtils.throwIf(request.getPosition() == null || request.getPosition() < 1,
-                ErrorCode.PARAMS_ERROR, "鍥剧墖浣嶇疆涓嶅悎娉?);
+                ErrorCode.PARAMS_ERROR, "图片位置不合法");
         ThrowUtils.throwIf(request.getPrompt() == null || request.getPrompt().isBlank(),
-                ErrorCode.PARAMS_ERROR, "璇疯緭鍏ュ浘鐗囦慨鏀硅鏄?);
+                ErrorCode.PARAMS_ERROR, "请输入图片修改说明");
         ArticleVO articleVO = articleService.regenerateArticleImage(request.getTaskId(), request.getPosition(),
                 request.getPrompt(), userService.getLoginUser(httpServletRequest));
         return ResultUtils.success(articleVO);
     }
 
     /**
-     * 鍒嗛〉鏌ヨ鏂囩珷鍒楄〃
+     * 分页查询文章列表
      */
     @PostMapping("/list")
-    @Operation(summary = "鍒嗛〉鏌ヨ鏂囩珷鍒楄〃")
+    @Operation(summary = "分页查询文章列表")
     public BaseResponse<Page<ArticleVO>> listArticle(@RequestBody ArticleQueryRequest request,
                                                        HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
@@ -242,19 +242,19 @@ public class ArticleController {
         return ResultUtils.success(articleVOPage);
     }
 
-    /** 鑾峰彇褰撳墠鐢ㄦ埛鐨勫垱浣滅粺璁°€?*/
+    /** 获取个人创作统计 */
     @GetMapping("/profile/stats")
-    @Operation(summary = "鑾峰彇涓汉鍒涗綔缁熻")
+    @Operation(summary = "获取个人创作统计")
     public BaseResponse<UserArticleStatsVO> getUserArticleStats(HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
         return ResultUtils.success(articleService.getUserArticleStats(loginUser));
     }
 
     /**
-     * 鍒犻櫎鏂囩珷
+     * 删除文章
      */
     @PostMapping("/delete")
-    @Operation(summary = "鍒犻櫎鏂囩珷")
+    @Operation(summary = "删除文章")
     public BaseResponse<Boolean> deleteArticle(@RequestBody DeleteRequest deleteRequest,
                                                  HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() == null, 
@@ -267,10 +267,10 @@ public class ArticleController {
     }
 
     /**
-     * 鎵归噺鍒犻櫎鏂囩珷
+     * 批量删除文章
      */
     @PostMapping("/batch-delete")
-    @Operation(summary = "鎵归噺鍒犻櫎鏂囩珷")
+    @Operation(summary = "批量删除文章")
     public BaseResponse<Integer> batchDeleteArticles(@RequestBody BatchDeleteRequest batchDeleteRequest,
                                                       HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(batchDeleteRequest == null || batchDeleteRequest.getIds() == null
@@ -281,23 +281,23 @@ public class ArticleController {
     }
 
     /**
-     * 纭鏍囬骞惰緭鍏ヨˉ鍏呮弿杩?
+     * 确认标题并输入补充描述
      */
     @PostMapping("/confirm-title")
-    @Operation(summary = "纭鏍囬骞惰緭鍏ヨˉ鍏呮弿杩?)
+    @Operation(summary = "确认标题并输入补充描述")
     public BaseResponse<Void> confirmTitle(@RequestBody ArticleConfirmTitleRequest request,
                                             HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(request.getTaskId() == null || request.getTaskId().trim().isEmpty(),
-                ErrorCode.PARAMS_ERROR, "浠诲姟ID涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
         ThrowUtils.throwIf(request.getSelectedMainTitle() == null || request.getSelectedMainTitle().trim().isEmpty(),
-                ErrorCode.PARAMS_ERROR, "涓绘爣棰樹笉鑳戒负绌?);
+                ErrorCode.PARAMS_ERROR, "主标题不能为空");
         ThrowUtils.throwIf(request.getSelectedSubTitle() == null || request.getSelectedSubTitle().trim().isEmpty(),
-                ErrorCode.PARAMS_ERROR, "鍓爣棰樹笉鑳戒负绌?);
+                ErrorCode.PARAMS_ERROR, "副标题不能为空");
 
         User loginUser = userService.getLoginUser(httpServletRequest);
 
-        // 纭鏍囬
+        // 确认标题
         articleService.confirmTitle(
                 request.getTaskId(),
                 request.getSelectedMainTitle(),
@@ -306,57 +306,57 @@ public class ArticleController {
                 loginUser
         );
 
-        // 寮傛鎵ц闃舵2锛氱敓鎴愬ぇ绾?
+        // 异步执行阶段2：生成文章大纲
         articleAsyncService.executePhase2(request.getTaskId());
 
         return ResultUtils.success(null);
     }
 
     /**
-     * 纭澶х翰
+     * 确认大纲
      */
     @PostMapping("/confirm-outline")
-    @Operation(summary = "纭澶х翰")
+    @Operation(summary = "确认大纲")
     public BaseResponse<Void> confirmOutline(@RequestBody ArticleConfirmOutlineRequest request,
                                               HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(request.getTaskId() == null || request.getTaskId().trim().isEmpty(),
-                ErrorCode.PARAMS_ERROR, "浠诲姟ID涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
         ThrowUtils.throwIf(request.getOutline() == null || request.getOutline().isEmpty(),
-                ErrorCode.PARAMS_ERROR, "澶х翰涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "大纲不能为空");
 
         User loginUser = userService.getLoginUser(httpServletRequest);
 
-        // 纭澶х翰
+        // 确认大纲
         articleService.confirmOutline(
                 request.getTaskId(),
                 request.getOutline(),
                 loginUser
         );
 
-        // 寮傛鎵ц闃舵3锛氱敓鎴愭鏂?閰嶅浘
+        // 异步执行阶段3：生成正文、分析配图并合成图文
         articleAsyncService.executePhase3(request.getTaskId());
 
         return ResultUtils.success(null);
     }
 
     /**
-     * AI 淇敼澶х翰
+     * AI 修改大纲
      */
     @PostMapping("/ai-modify-outline")
-    @Operation(summary = "AI 淇敼澶х翰")
+    @Operation(summary = "AI 修改大纲")
     public BaseResponse<List<ArticleState.OutlineSection>> aiModifyOutline(
             @RequestBody ArticleAiModifyOutlineRequest request,
             HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(request.getTaskId() == null || request.getTaskId().trim().isEmpty(),
-                ErrorCode.PARAMS_ERROR, "浠诲姟ID涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
         ThrowUtils.throwIf(request.getModifySuggestion() == null || request.getModifySuggestion().trim().isEmpty(),
-                ErrorCode.PARAMS_ERROR, "淇敼寤鸿涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "修改建议不能为空");
 
         User loginUser = userService.getLoginUser(httpServletRequest);
 
-        // AI 淇敼澶х翰
+        // AI 修改大纲
         List<ArticleState.OutlineSection> modifiedOutline = articleService.aiModifyOutline(
                 request.getTaskId(),
                 request.getModifySuggestion(),
@@ -367,13 +367,13 @@ public class ArticleController {
     }
 
     /**
-     * 鑾峰彇浠诲姟鎵ц鏃ュ織
+     * 获取智能体执行日志
      */
     @GetMapping("/execution-logs/{taskId}")
-    @Operation(summary = "鑾峰彇浠诲姟鎵ц鏃ュ織")
+    @Operation(summary = "获取智能体执行日志")
     public BaseResponse<AgentExecutionStats> getExecutionLogs(@PathVariable String taskId) {
         ThrowUtils.throwIf(taskId == null || taskId.trim().isEmpty(), 
-                ErrorCode.PARAMS_ERROR, "浠诲姟ID涓嶈兘涓虹┖");
+                ErrorCode.PARAMS_ERROR, "任务ID不能为空");
         
         AgentExecutionStats stats = agentLogService.getExecutionStats(taskId);
         return ResultUtils.success(stats);

@@ -15,7 +15,7 @@ export interface SSEOptions {
 }
 
 /**
- * 寤虹珛 SSE 杩炴帴
+ * 寤虹珛 SSE 连接
  */
 export const connectSSE = (taskId: string, options: SSEOptions): EventSource => {
   const { onMessage, onError, onComplete } = options
@@ -29,19 +29,19 @@ export const connectSSE = (taskId: string, options: SSEOptions): EventSource => 
       hasReportedError = false
       onMessage(message)
       
-      // 妫€鏌ユ槸鍚﹀畬鎴?
+      // 检查是否完成
       if (message.type === 'ALL_COMPLETE' || message.type === 'ERROR') {
         eventSource.close()
         onComplete?.()
       }
     } catch (error) {
-      console.error('SSE 娑堟伅瑙ｆ瀽澶辫触:', error)
+      console.error('SSE 消息解析失败:', error)
     }
   }
 
   eventSource.onerror = (error) => {
-    console.error('SSE 杩炴帴閿欒:', error)
-    // EventSource 浼氳嚜鍔ㄩ噸杩烇紱鍙姤鍛婄涓€娆℃柇绾匡紝鐢遍〉闈㈠惎鍔ㄧ姸鎬佽疆璇㈠厹搴曘€?
+    console.error('SSE 连接错误:', error)
+    // EventSource 会自动重连；只报告第一次断线，由页面启动状态轮询兜底
     if (!hasReportedError) {
       hasReportedError = true
       onError?.(error)
@@ -52,7 +52,7 @@ export const connectSSE = (taskId: string, options: SSEOptions): EventSource => 
 }
 
 /**
- * 鍏抽棴 SSE 杩炴帴
+ * 关闭 SSE 连接
  */
 export const closeSSE = (eventSource: EventSource | null) => {
   if (eventSource) {

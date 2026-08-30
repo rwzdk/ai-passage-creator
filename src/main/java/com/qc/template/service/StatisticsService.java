@@ -3,15 +3,15 @@ package com.qc.template.service;
 import com.qc.template.model.vo.StatisticsVO;
 
 /**
- * 缁熻鏈嶅姟
+ * 统计服务
  *
  */
 public interface StatisticsService {
 
     /**
-     * 鑾峰彇绯荤粺缁熻鏁版嵁
+     * 获取系统统计数据
      *
-     * @return 缁熻鏁版嵁
+     * @return 统计数据
      */
     StatisticsVO getStatistics(boolean forceRefresh);
 }

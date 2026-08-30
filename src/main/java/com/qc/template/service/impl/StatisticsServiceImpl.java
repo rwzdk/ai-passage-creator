@@ -23,8 +23,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 缁熻鏈嶅姟瀹炵幇
+ * 统计服务实现
  *
+ * @author <a href="https://codefather.cn">编程导航学习网</a>
  */
 @Service
 @Slf4j
@@ -47,46 +48,44 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public StatisticsVO getStatistics(boolean forceRefresh) {
-        // 鍏堜粠缂撳瓨鑾峰彇
+        // 先从缓存获取
         if (!forceRefresh) {
             StatisticsVO cachedStats = (StatisticsVO) redisTemplate.opsForValue().get(STATISTICS_CACHE_KEY);
             if (cachedStats != null) {
-                log.info("浠庣紦瀛樿幏鍙栫粺璁℃暟鎹?);
+                log.info("Loaded statistics from cache");
                 return cachedStats;
             }
         }
 
-        // 缂撳瓨涓嶅瓨鍦紝閲嶆柊璁＄畻
-        // 浠婃棩鍒涗綔鏁伴噺
+        // 缓存不存在，重新计算
+        // 今日创作数量
         Long todayCount = countArticlesByDateRange(getTodayStart(), LocalDateTime.now());
 
-        // 鏈懆鍒涗綔鏁伴噺
+        // 本周创作数量
         Long weekCount = countArticlesByDateRange(getWeekStart(), LocalDateTime.now());
 
-        // 鏈湀鍒涗綔鏁伴噺
+        // 本月创作数量
         Long monthCount = countArticlesByDateRange(getMonthStart(), LocalDateTime.now());
 
-        // 鎬诲垱浣滄暟閲?
+        // Total article count.
         Long totalCount = countTotalArticles();
 
-        // 鎴愬姛鐜囩粺璁?
+        // Success rate.
         Double successRate = calculateSuccessRate();
 
-        // 骞冲潎鑰楁椂缁熻
+        // 平均耗时统计
         Integer avgDurationMs = calculateAvgDuration();
 
         // 活跃用户统计（本周有创作的用户）
         Long activeUserCount = countActiveUsers(getWeekStart());
 
-        // 鎬荤敤鎴锋暟
+        // 总用户数
         Long totalUserCount = countTotalUsers();
 
-        // VIP 鐢ㄦ埛鏁?
+        // VIP user count.
         Long vipUserCount = countVipUsers();
 
-        Long normalUserCount = countNormalUsers();
-
-        // 閰嶉浣跨敤鎯呭喌锛堟€婚厤棰?- 鍓╀綑閰嶉锛?
+        // Quota usage.
         Long quotaUsed = calculateQuotaUsed();
 
         StatisticsVO statistics = StatisticsVO.builder()
@@ -99,13 +98,12 @@ public class StatisticsServiceImpl implements StatisticsService {
                 .activeUserCount(activeUserCount)
                 .totalUserCount(totalUserCount)
                 .vipUserCount(vipUserCount)
-                .normalUserCount(normalUserCount)
                 .quotaUsed(quotaUsed)
                 .build();
 
-        // 瀛樺叆缂撳瓨锛? 灏忔椂杩囨湡
+        // 存入缓存，1 小时过期
         redisTemplate.opsForValue().set(STATISTICS_CACHE_KEY, statistics, CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
-        log.info("缁熻鏁版嵁宸茬紦瀛橈紝杩囨湡鏃堕棿: {} 灏忔椂", CACHE_EXPIRE_HOURS);
+        log.info("统计数据已缓存，过期时间: {} 小时", CACHE_EXPIRE_HOURS);
 
         return statistics;
     }
@@ -121,14 +119,14 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     /**
-     * 缁熻鎬绘枃绔犳暟閲?
+     * 统计总文章数量
      */
     private Long countTotalArticles() {
         return articleMapper.selectCountByQuery(QueryWrapper.create());
     }
 
     /**
-     * 璁＄畻鎴愬姛鐜?
+     * 计算成功率
      */
     private Double calculateSuccessRate() {
         Long totalCount = countTotalArticles();
@@ -144,10 +142,10 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     /**
-     * 璁＄畻骞冲潎鑰楁椂锛堜粠鍒涘缓鍒板畬鎴愮殑骞冲潎鏃堕棿锛?
+     * 计算平均耗时（从创建到完成的平均时间）
      */
     private Integer calculateAvgDuration() {
-        // 鏌ヨ鎵€鏈夊凡瀹屾垚鐨勬枃绔狅紝璁＄畻 createTime 鍒?completedTime 鐨勫钩鍧囪€楁椂
+        // 查询所有已完成的文章，计算 createTime 到 completedTime 的平均时间
         QueryWrapper queryWrapper = QueryWrapper.create()
                 .eq("status", ArticleStatusEnum.COMPLETED.getValue())
                 .isNotNull("completedTime");
@@ -158,7 +156,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 return 0;
             }
 
-            // 璁＄畻姣忕瘒鏂囩珷鐨勮€楁椂锛堟绉掞級
+            // 计算每篇文章的时（毫秒）
             double avgDuration = completedArticles.stream()
                     .filter(article -> article.getCreateTime() != null && article.getCompletedTime() != null)
                     .mapToLong(article -> {
@@ -171,14 +169,14 @@ public class StatisticsServiceImpl implements StatisticsService {
 
             return (int) avgDuration;
         } catch (Exception e) {
-            log.warn("璁＄畻骞冲潎鑰楁椂澶辫触", e);
+            log.warn("计算平均耗时失败", e);
         }
         
         return 0;
     }
 
     /**
-     * 缁熻娲昏穬鐢ㄦ埛鏁帮紙鏈懆鏈夊垱浣滅殑鐢ㄦ埛锛?
+     * 统计活跃用户数（本周有创作的用户）
      */
     private Long countActiveUsers(LocalDateTime weekStart) {
         QueryWrapper queryWrapper = QueryWrapper.create()
@@ -186,27 +184,27 @@ public class StatisticsServiceImpl implements StatisticsService {
         
         try {
             List<Article> articles = articleMapper.selectListByQuery(queryWrapper);
-            // 缁熻鍘婚噸鍚庣殑鐢ㄦ埛鏁?
+            // Count distinct users.
             return articles.stream()
                     .map(Article::getUserId)
                     .distinct()
                     .count();
         } catch (Exception e) {
-            log.warn("缁熻娲昏穬鐢ㄦ埛澶辫触", e);
+            log.warn("统计活跃用户失败", e);
         }
         
         return 0L;
     }
 
     /**
-     * 缁熻鎬荤敤鎴锋暟
+     * 统计总用户数
      */
     private Long countTotalUsers() {
         return userMapper.selectCountByQuery(QueryWrapper.create());
     }
 
     /**
-     * 缁熻 VIP 鐢ㄦ埛鏁?
+     * 统计 VIP 用户数量
      */
     private Long countVipUsers() {
         QueryWrapper queryWrapper = QueryWrapper.create()
@@ -214,18 +212,11 @@ public class StatisticsServiceImpl implements StatisticsService {
         return userMapper.selectCountByQuery(queryWrapper);
     }
 
-    /** 缁熻鏅€氱敤鎴锋暟閲忥紙閰嶉缁熻鍙ｅ緞锛?*/
-    private Long countNormalUsers() {
-        QueryWrapper queryWrapper = QueryWrapper.create()
-                .eq("userRole", UserConstant.DEFAULT_ROLE);
-        return userMapper.selectCountByQuery(queryWrapper);
-    }
-
     /**
-     * 璁＄畻閰嶉浣跨敤閲?
+     * 计算配额使用量
      */
     private Long calculateQuotaUsed() {
-        // 閰嶉浣跨敤閲?= (鏅€氱敤鎴锋暟 * 鍒濆閰嶉) - 褰撳墠鍓╀綑閰嶉鎬诲拰
+        // 配额使用量 =（普通用户数 * 初始配额）- 当前剩余配额总和
         QueryWrapper normalUserWrapper = QueryWrapper.create()
                 .eq("userRole", UserConstant.DEFAULT_ROLE);
         
@@ -233,28 +224,28 @@ public class StatisticsServiceImpl implements StatisticsService {
             List<User> normalUsers = userMapper.selectListByQuery(normalUserWrapper);
             Long normalUserCount = (long) normalUsers.size();
             
-            // 缁熻鍓╀綑閰嶉鎬诲拰
+            // 统计剩余配额总和
             long remainingQuota = normalUsers.stream()
                     .mapToInt(user -> user.getQuota() != null ? user.getQuota() : 0)
                     .sum();
             
             return (normalUserCount * UserConstant.DEFAULT_QUOTA) - remainingQuota;
         } catch (Exception e) {
-            log.warn("璁＄畻閰嶉浣跨敤閲忓け璐?, e);
+            log.warn("Failed to calculate quota usage", e);
         }
         
         return 0L;
     }
 
     /**
-     * 鑾峰彇浠婂ぉ寮€濮嬫椂闂?
+     * 获取今天开始时间
      */
     private LocalDateTime getTodayStart() {
         return LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
     }
 
     /**
-     * 鑾峰彇鏈懆寮€濮嬫椂闂达紙鍛ㄤ竴锛?
+     * 获取本周开始时间（周一）
      */
     private LocalDateTime getWeekStart() {
         LocalDate today = LocalDate.now();
@@ -263,7 +254,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     /**
-     * 鑾峰彇鏈湀寮€濮嬫椂闂?
+     * 获取本月开始时间
      */
     private LocalDateTime getMonthStart() {
         LocalDate today = LocalDate.now();

@@ -13,15 +13,15 @@ import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 
 /**
- * Gson 宸ュ叿绫?
- * 鎻愪緵缁熶竴鐨?Gson 瀹炰緥锛岄伩鍏嶉噸澶嶅垱寤?
+ * Gson 工具类
+ * 提供统一的 Gson 实例，避免重复创建
  *
  */
 @Slf4j
 public class GsonUtils {
 
     /**
-     * 鍗曚緥 Gson 瀹炰緥
+     * 单例 Gson 实例
      */
     private static final Gson GSON = new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class,
@@ -33,23 +33,23 @@ public class GsonUtils {
             .create();
 
     private GsonUtils() {
-        // 绉佹湁鏋勯€犲嚱鏁帮紝闃叉瀹炰緥鍖?
+        // 私有构造函数，防止实例化
     }
 
     /**
-     * 鑾峰彇 Gson 瀹炰緥
+     * 获取 Gson 实例
      *
-     * @return Gson 瀹炰緥
+     * @return Gson 实例
      */
     public static Gson getInstance() {
         return GSON;
     }
 
     /**
-     * 瀵硅薄杞?JSON 瀛楃涓?
+     * 对象转 JSON 字符串
      *
      * @param obj 对象
-     * @return JSON 瀛楃涓?
+     * @return JSON 字符串
      */
     public static String toJson(Object obj) {
         if (obj == null) {
@@ -61,9 +61,9 @@ public class GsonUtils {
     /**
      * JSON 字符串转对象
      *
-     * @param json  JSON 瀛楃涓?
-     * @param clazz 鐩爣绫诲瀷
-     * @param <T>   娉涘瀷绫诲瀷
+     * @param json  JSON 字符串
+     * @param clazz 目标类型
+     * @param <T>   泛型类型
      * @return 对象实例
      */
     public static <T> T fromJson(String json, Class<T> clazz) {
@@ -76,9 +76,9 @@ public class GsonUtils {
     /**
      * JSON 字符串转对象（支持泛型）
      *
-     * @param json      JSON 瀛楃涓?
-     * @param typeToken TypeToken 绫诲瀷寮曠敤
-     * @param <T>       娉涘瀷绫诲瀷
+     * @param json      JSON 字符串
+     * @param typeToken TypeToken 类型引用
+     * @param <T>       泛型类型
      * @return 对象实例
      */
     public static <T> T fromJson(String json, TypeToken<T> typeToken) {
@@ -89,11 +89,11 @@ public class GsonUtils {
     }
 
     /**
-     * JSON 瀛楃涓茶浆瀵硅薄锛堟敮鎸?Type锛?
+     * JSON 字符串转对象（支持 Type）
      *
-     * @param json JSON 瀛楃涓?
-     * @param type Type 绫诲瀷
-     * @param <T>  娉涘瀷绫诲瀷
+     * @param json JSON 字符串
+     * @param type Type 类型
+     * @param <T>  泛型类型
      * @return 对象实例
      */
     public static <T> T fromJson(String json, Type type) {
@@ -104,35 +104,35 @@ public class GsonUtils {
     }
 
     /**
-     * 瀹夊叏鍦板皢 JSON 瀛楃涓茶浆涓哄璞★紝瑙ｆ瀽澶辫触鏃惰繑鍥?null
+     * 安全地将 JSON 字符串转为对象，解析失败时返回 null
      *
-     * @param json  JSON 瀛楃涓?
-     * @param clazz 鐩爣绫诲瀷
-     * @param <T>   娉涘瀷绫诲瀷
-     * @return 瀵硅薄瀹炰緥锛岃В鏋愬け璐ヨ繑鍥?null
+     * @param json  JSON 字符串
+     * @param clazz 目标类型
+     * @param <T>   泛型类型
+     * @return 对象实例，解析失败返回 null
      */
     public static <T> T fromJsonSafe(String json, Class<T> clazz) {
         try {
             return fromJson(json, clazz);
         } catch (JsonSyntaxException e) {
-            log.error("JSON 瑙ｆ瀽澶辫触, json={}", json, e);
+            log.error("JSON 解析失败, json={}", json, e);
             return null;
         }
     }
 
     /**
-     * 瀹夊叏鍦板皢 JSON 瀛楃涓茶浆涓哄璞★紙鏀寔娉涘瀷锛夛紝瑙ｆ瀽澶辫触鏃惰繑鍥?null
+     * 安全地将 JSON 字符串转为对象（支持泛型），解析失败时返回 null
      *
-     * @param json      JSON 瀛楃涓?
-     * @param typeToken TypeToken 绫诲瀷寮曠敤
-     * @param <T>       娉涘瀷绫诲瀷
-     * @return 瀵硅薄瀹炰緥锛岃В鏋愬け璐ヨ繑鍥?null
+     * @param json      JSON 字符串
+     * @param typeToken TypeToken 类型引用
+     * @param <T>       泛型类型
+     * @return 对象实例，解析失败返回 null
      */
     public static <T> T fromJsonSafe(String json, TypeToken<T> typeToken) {
         try {
             return fromJson(json, typeToken);
         } catch (JsonSyntaxException e) {
-            log.error("JSON 瑙ｆ瀽澶辫触, json={}", json, e);
+            log.error("JSON 解析失败, json={}", json, e);
             return null;
         }
     }

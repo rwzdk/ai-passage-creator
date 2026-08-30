@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * 鍏ㄥ眬寮傚父澶勭悊鍣?
+ * 全局异常处理器
  *
  */
 @Hidden
@@ -25,6 +25,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public BaseResponse<?> runtimeExceptionHandler(RuntimeException e) {
         log.error("RuntimeException", e);
-        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "绯荤粺閿欒");
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "系统错误");
     }
 }

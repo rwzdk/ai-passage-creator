@@ -19,9 +19,10 @@ import java.nio.charset.StandardCharsets;
 import static com.qc.template.constant.ArticleConstant.PICSUM_URL_TEMPLATE;
 
 /**
- * SVG 姒傚康绀烘剰鍥剧敓鎴愭湇鍔?
- * 浣跨敤 AI 鐢熸垚 SVG 浠ｇ爜锛岄€傚悎姒傚康绀烘剰銆佹€濈淮瀵煎浘鏍峰紡銆佸叧绯诲睍绀虹瓑鍦烘櫙
+ * SVG 概念示意图生成服务
+ * 使用 AI 生成 SVG 代码，适合概念示意、思维导图样式、关系展示等场景。
  *
+ * @author <a href="https://codefather.cn">编程导航学习网</a>
  */
 @Service
 @Slf4j
@@ -36,7 +37,7 @@ public class SvgDiagramService implements ImageSearchService {
     @Override
     public String searchImage(String keywords) {
         // 此方法已废弃，请使用 getImageData()
-        // 杩斿洖 null锛屼笂浼犻€昏緫鐢?ImageServiceStrategy 缁熶竴澶勭悊
+        // 返回 null，上传逻辑由 ImageServiceStrategy 统一处理
         return null;
     }
 
@@ -47,52 +48,52 @@ public class SvgDiagramService implements ImageSearchService {
     }
 
     /**
-     * 鐢熸垚 SVG 姒傚康绀烘剰鍥炬暟鎹?
+     * 生成 SVG 概念示意图数据
      *
-     * @param requirement 绀烘剰鍥鹃渶姹傛弿杩?
-     * @return ImageData 鍖呭惈 SVG 瀛楄妭鏁版嵁锛岀敓鎴愬け璐ヨ繑鍥?null
+     * @param requirement 示意图需求描述
+     * @return ImageData，包含 SVG 字节数据，生成失败返回 null
      */
     public ImageData generateSvgDiagramData(String requirement) {
         if (StrUtil.isBlank(requirement)) {
-            log.warn("SVG 鍥捐〃闇€姹備负绌?);
+            log.warn("SVG diagram requirement is empty");
             return null;
         }
 
         try {
-            // 1. 璋冪敤 LLM 鐢熸垚 SVG 浠ｇ爜
+            // 1. 调用 LLM 生成 SVG 代码
             String svgCode = callLlmToGenerateSvg(requirement);
 
             if (StrUtil.isBlank(svgCode)) {
-                log.error("LLM 鏈敓鎴?SVG 浠ｇ爜");
+                log.error("LLM 未生成 SVG 代码");
                 return null;
             }
 
-            // 2. 楠岃瘉 SVG 鏍煎紡
+            // 2. 验证 SVG 格式
             if (!isValidSvg(svgCode)) {
-                log.error("鐢熸垚鐨?SVG 浠ｇ爜鏍煎紡鏃犳晥");
+                log.error("生成的 SVG 代码格式无效");
                 return null;
             }
 
-            // 3. 杞崲涓哄瓧鑺傛暟鎹?
+            // 3. Convert the SVG to bytes.
             byte[] svgBytes = svgCode.getBytes(StandardCharsets.UTF_8);
             
-            log.info("SVG 姒傚康绀烘剰鍥剧敓鎴愭垚鍔? size={} bytes", svgBytes.length);
+            log.info("SVG 概念示意图生成成功: size={} bytes", svgBytes.length);
             return ImageData.fromBytes(svgBytes, "image/svg+xml");
 
         } catch (Exception e) {
-            log.error("SVG 姒傚康绀烘剰鍥剧敓鎴愬紓甯? requirement={}", requirement, e);
+            log.error("SVG 概念示意图生成异常: requirement={}", requirement, e);
             return null;
         }
     }
 
     /**
-     * 璋冪敤 LLM 鐢熸垚 SVG 浠ｇ爜
+     * 调用 LLM 生成 SVG 代码
      */
     private String callLlmToGenerateSvg(String requirement) {
         String prompt = PromptConstant.SVG_DIAGRAM_GENERATION_PROMPT
                 .replace("{requirement}", requirement);
 
-        log.info("寮€濮嬭皟鐢?LLM 鐢熸垚 SVG 姒傚康绀烘剰鍥?);
+        log.info("Generating SVG diagram with LLM");
 
         ChatResponse response = chatModel.call(new Prompt(new UserMessage(prompt)));
         String svgCode = response.getResult().getOutput().getText().trim();
@@ -104,19 +105,19 @@ public class SvgDiagramService implements ImageSearchService {
     }
 
     /**
-     * 鎻愬彇 SVG 浠ｇ爜锛堝幓闄?markdown 浠ｇ爜鍧楋級
+     * 提取 SVG 代码（去除 Markdown 代码块）
      */
     private String extractSvgCode(String text) {
         if (text == null) {
             return null;
         }
 
-        // 鍘婚櫎 markdown 浠ｇ爜鍧楁爣璁?
+        // Remove markdown code fences.
         text = text.replace("```xml", "").replace("```svg", "").replace("```", "").trim();
 
-        // 纭繚鍖呭惈 XML 澹版槑
+        // 确保包含 XML 澹版槑
         if (!text.startsWith("<?xml")) {
-            // 濡傛灉娌℃湁 XML 澹版槑浣嗘湁 <svg 鏍囩锛屾坊鍔犲０鏄?
+            // Add an XML declaration when an SVG tag is present.
             if (text.contains("<svg")) {
                 text = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + text;
             }
@@ -126,14 +127,14 @@ public class SvgDiagramService implements ImageSearchService {
     }
 
     /**
-     * 楠岃瘉 SVG 鏍煎紡
+     * 楠岃瘉 SVG 格式
      */
     private boolean isValidSvg(String svgCode) {
         if (StrUtil.isBlank(svgCode)) {
             return false;
         }
 
-        // 鍩烘湰楠岃瘉锛氬寘鍚?svg 鏍囩
+        // 基本验证：包含 svg 标签
         return svgCode.contains("<svg") && svgCode.contains("</svg>");
     }
 

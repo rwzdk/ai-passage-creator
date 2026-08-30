@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import static com.qc.template.constant.ArticleConstant.*;
 
 /**
- * SVG 姒傚康绀烘剰鍥剧敓鎴愰厤缃?
+ * SVG 概念示意图生成配置
  *
  */
 @Configuration
@@ -16,17 +16,17 @@ import static com.qc.template.constant.ArticleConstant.*;
 public class SvgDiagramConfig {
 
     /**
-     * 榛樿瀹藉害
+     * 默认宽度
      */
     private Integer defaultWidth = SVG_DEFAULT_WIDTH;
 
     /**
-     * 榛樿楂樺害
+     * 默认高度
      */
     private Integer defaultHeight = SVG_DEFAULT_HEIGHT;
 
     /**
-     * COS 瀛樺偍鏂囦欢澶?
+     * COS 存储文件夹
      */
     private String folder = "svg-diagrams";
 }

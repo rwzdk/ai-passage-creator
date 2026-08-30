@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.Base64;
 
 /**
- * 鍥剧墖鏁版嵁灏佽绫?
+ * 图片数据封装
  * 用于统一处理不同来源的图片数据（字节、URL、base64 等）
  *
  */
@@ -15,35 +15,35 @@ import java.util.Base64;
 public class ImageData {
 
     /**
-     * 鍥剧墖瀛楄妭鏁版嵁
+     * 图片字节数据
      */
     private byte[] bytes;
 
     /**
-     * 鍥剧墖 URL锛堝閮?URL 鎴?base64 data URL锛?
+     * 图片 URL（外部 URL 或 base64 data URL）
      */
     private String url;
 
     /**
-     * MIME 绫诲瀷锛堝 image/png, image/jpeg, image/svg+xml锛?
+     * MIME 类型（如 image/png、image/jpeg、image/svg+xml）
      */
     private String mimeType;
 
     /**
-     * 鏁版嵁绫诲瀷
+     * 数据类型
      */
     private DataType dataType;
 
     /**
-     * 鏁版嵁绫诲瀷鏋氫妇
+     * 数据类型枚举
      */
     public enum DataType {
         /**
-         * 瀛楄妭鏁版嵁
+         * 字节数据
          */
         BYTES,
         /**
-         * 澶栭儴 URL
+         * 外部 URL
          */
         URL,
         /**
@@ -53,17 +53,17 @@ public class ImageData {
     }
 
     /**
-     * 浠庡閮?URL 鍒涘缓 ImageData
+     * 从外部 URL 创建 ImageData
      *
-     * @param url 澶栭儴 URL
-     * @return ImageData 瀹炰緥
+     * @param url 外部 URL
+     * @return ImageData 实例
      */
     public static ImageData fromUrl(String url) {
         if (url == null || url.isEmpty()) {
             return null;
         }
         
-        // 鍒ゆ柇鏄惁涓?base64 data URL
+        // 判断是否为 base64 data URL
         if (url.startsWith("data:")) {
             return fromDataUrl(url);
         }
@@ -75,17 +75,17 @@ public class ImageData {
     }
 
     /**
-     * 浠?base64 data URL 鍒涘缓 ImageData
+     * 从 base64 data URL 创建 ImageData
      *
      * @param dataUrl base64 data URL
-     * @return ImageData 瀹炰緥
+     * @return ImageData 实例
      */
     public static ImageData fromDataUrl(String dataUrl) {
         if (dataUrl == null || !dataUrl.startsWith("data:")) {
             return null;
         }
         
-        // 瑙ｆ瀽 data URL 鏍煎紡: data:image/png;base64,xxxxx
+        // 解析 data URL 格式: data:image/png;base64,xxxxx
         String mimeType = "image/png";
         int mimeEnd = dataUrl.indexOf(";");
         if (mimeEnd > 5) {
@@ -100,11 +100,11 @@ public class ImageData {
     }
 
     /**
-     * 浠庡瓧鑺傛暟鎹垱寤?ImageData
+     * 从字节数据创建 ImageData
      *
-     * @param bytes    鍥剧墖瀛楄妭鏁版嵁
-     * @param mimeType MIME 绫诲瀷
-     * @return ImageData 瀹炰緥
+     * @param bytes    图片字节数据
+     * @param mimeType MIME 类型
+     * @return ImageData 实例
      */
     public static ImageData fromBytes(byte[] bytes, String mimeType) {
         if (bytes == null || bytes.length == 0) {
@@ -119,10 +119,10 @@ public class ImageData {
     }
 
     /**
-     * 鑾峰彇鍥剧墖瀛楄妭鏁版嵁
-     * 濡傛灉鏄?data URL锛屼細瑙ｇ爜 base64
+     * 获取图片字节数据
+     * 如果是 data URL，会解码 base64
      *
-     * @return 鍥剧墖瀛楄妭鏁版嵁
+     * @return 图片字节数据
      */
     public byte[] getImageBytes() {
         if (dataType == DataType.BYTES) {
@@ -130,7 +130,7 @@ public class ImageData {
         }
         
         if (dataType == DataType.DATA_URL && url != null) {
-            // 瑙ｆ瀽 base64 data URL
+            // 解析 base64 data URL
             int base64Start = url.indexOf(",");
             if (base64Start > 0) {
                 String base64Data = url.substring(base64Start + 1);
@@ -142,9 +142,9 @@ public class ImageData {
     }
 
     /**
-     * 鍒ゆ柇鏄惁鏈夋湁鏁堟暟鎹?
+     * 判断是否有有效数据
      *
-     * @return 鏄惁鏈夋晥
+     * @return 是否有效
      */
     public boolean isValid() {
         return switch (dataType) {
@@ -154,9 +154,9 @@ public class ImageData {
     }
 
     /**
-     * 鏍规嵁 MIME 绫诲瀷鑾峰彇鏂囦欢鎵╁睍鍚?
+     * 根据 MIME 类型获取文件扩展名
      *
-     * @return 鏂囦欢鎵╁睍鍚嶏紙甯︾偣锛?
+     * @return 文件扩展名（带点号）
      */
     public String getFileExtension() {
         if (mimeType == null) {

@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Nano Banana (Gemini 鍘熺敓鍥剧墖鐢熸垚) 閰嶇疆
+ * Nano Banana (Gemini 原生图片生成) 配置
  *
  */
 @Configuration
@@ -20,27 +20,27 @@ public class NanoBananaConfig {
 
 
     /**
-     * 妯″瀷鍚嶇О
-     * gemini-2.5-flash-image: 閫熷害蹇紝閫傚悎楂樺悶鍚愪綆寤惰繜
-     * gemini-3-pro-image-preview: 涓撲笟绾э紝鏀寔楂樼骇鎺ㄧ悊鍜岄珮鍒嗚鲸鐜?
+     * 模型名称
+     * gemini-2.5-flash-image: 速度快，适合高吞吐低延迟
+     * gemini-3-pro-image-preview：专业级，支持高级推理和高分辨率
      */
     private String model = "gemini-2.5-flash-image";
 
     /**
-     * 鍥剧墖瀹介珮姣?
-     * 鏀寔: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
+     * 图片宽高比
+     * 支持: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
      */
     private String aspectRatio = "16:9";
 
     /**
-     * 鍥剧墖鍒嗚鲸鐜囷紙浠?gemini-3-pro-image-preview 鏀寔锛?
-     * 鏀寔: 1K, 2K, 4K
+     * 图片分辨率（gemini-3-pro-image-preview 支持）
+     * 支持: 1K, 2K, 4K
      */
     private String imageSize = "1K";
 
     /**
-     * 杈撳嚭鍥剧墖鏍煎紡
-     * 鏀寔: image/jpeg, image/png
+     * 输出图片格式
+     * 支持: image/jpeg, image/png
      */
     private String outputMimeType = "image/png";
 }

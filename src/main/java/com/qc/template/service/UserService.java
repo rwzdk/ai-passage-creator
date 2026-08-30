@@ -13,46 +13,46 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
- * 鐢ㄦ埛 鏈嶅姟灞傘€?
+ * 用户服务层
  *
  */
 public interface UserService extends IService<User> {
 
     /**
-     * 鐢ㄦ埛娉ㄥ唽
+     * 用户注册
      *
-     * @param userAccount   鐢ㄦ埛璐︽埛
+     * @param userAccount   用户账户
      * @param userPassword  用户密码
      * @param checkPassword 校验密码
-     * @return 鏂扮敤鎴?id
+     * @return 新用户 ID
      */
     long userRegister(String userAccount, String userPassword, String checkPassword);
 
-    /** 浣跨敤娉ㄥ唽璧勬枡鍒涘缓鐢ㄦ埛銆?*/
+    /** 使用注册资料创建用户 */
     long userRegister(UserRegisterRequest request);
 
-    /** 鏇存柊褰撳墠鐧诲綍鐢ㄦ埛璧勬枡骞惰繑鍥炴渶鏂拌劚鏁忎俊鎭€?*/
+    /** 更新当前登录用户资料并返回最新脱敏信息 */
     LoginUserVO updateCurrentProfile(UserProfileUpdateRequest request, User currentUser);
 
     /**
-     * 鑾峰彇鑴辨晱鐨勫凡鐧诲綍鐢ㄦ埛淇℃伅
+     * 获取脱敏的已登录用户信息
      *
      * @return
      */
     LoginUserVO getLoginUserVO(User user);
 
     /**
-     * 鐢ㄦ埛鐧诲綍
+     * 用户登录
      *
-     * @param userAccount  鐢ㄦ埛璐︽埛
+     * @param userAccount  用户账户
      * @param userPassword 用户密码
      * @param request
-     * @return 鑴辨晱鍚庣殑鐢ㄦ埛淇℃伅
+     * @return 脱敏后的用户信息
      */
     LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request);
 
     /**
-     * 鑾峰彇褰撳墠鐧诲綍鐢ㄦ埛
+     * 获取当前登录用户
      *
      * @param request
      * @return
@@ -60,9 +60,9 @@ public interface UserService extends IService<User> {
     User getLoginUser(HttpServletRequest request);
 
     /**
-     * 鑾峰彇鑴辨晱鍚庣殑鐢ㄦ埛淇℃伅
+     * 获取脱敏后的用户信息
      *
-     * @param user 鐢ㄦ埛淇℃伅
+     * @param user 用户信息
      * @return
      */
     UserVO getUserVO(User user);
@@ -70,21 +70,21 @@ public interface UserService extends IService<User> {
     /**
      * 获取脱敏后的用户信息（分页）
      *
-     * @param userList 鐢ㄦ埛鍒楄〃
+     * @param userList 用户列表
      * @return
      */
     List<UserVO> getUserVOList(List<User> userList);
 
     /**
-     * 鐢ㄦ埛娉ㄩ攢
+     * 用户注销
      *
      * @param request
-     * @return 閫€鍑虹櫥褰曟槸鍚︽垚鍔?
+     * @return 退出登录是否成功
      */
     boolean userLogout(HttpServletRequest request);
 
     /**
-     * 鏍规嵁鏌ヨ鏉′欢鏋勯€犳暟鎹煡璇㈠弬鏁?
+     * 根据查询条件构建数据查询参数
      *
      * @param userQueryRequest
      * @return
@@ -92,7 +92,7 @@ public interface UserService extends IService<User> {
     QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
 
     /**
-     * 鍔犲瘑
+     * 加密
      *
      * @param userPassword 用户密码
      * @return 加密后的用户密码

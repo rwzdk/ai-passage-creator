@@ -1,39 +1,39 @@
 package com.qc.template.constant;
 
 /**
- * 鐢ㄦ埛甯搁噺
+ * 用户常量
  *
  */
 public interface UserConstant {
 
     /**
-     * 鐢ㄦ埛鐧诲綍鎬侀敭
+     * 用户登录态键
      */
     String USER_LOGIN_STATE = "user_login";
 
     //  region 权限
 
     /**
-     * 榛樿瑙掕壊
+     * 默认角色
      */
     String DEFAULT_ROLE = "user";
 
     /**
-     * 绠＄悊鍛樿鑹?
+     * 管理员角色
      */
     String ADMIN_ROLE = "admin";
 
     /**
-     * VIP 瑙掕壊
+     * VIP 角色
      */
     String VIP_ROLE = "vip";
     
     // endregion
 
-    //  region 閰嶉
+    //  region 配额
 
     /**
-     * 鏅€氱敤鎴烽粯璁ら厤棰?
+     * 普通用户默认配额
      */
     int DEFAULT_QUOTA = 5;
 

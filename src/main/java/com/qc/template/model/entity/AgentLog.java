@@ -14,7 +14,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 鏅鸿兘浣撴墽琛屾棩蹇楀疄浣撶被
+ * 智能体执行日志实体类
  *
  */
 @Data
@@ -34,22 +34,22 @@ public class AgentLog implements Serializable {
     private Long id;
 
     /**
-     * 浠诲姟ID
+     * 任务ID
      */
     private String taskId;
 
     /**
-     * 鏅鸿兘浣撳悕绉?
+     * 智能体名称
      */
     private String agentName;
 
     /**
-     * 寮€濮嬫椂闂?
+     * 开始时间
      */
     private LocalDateTime startTime;
 
     /**
-     * 缁撴潫鏃堕棿
+     * 结束时间
      */
     private LocalDateTime endTime;
 
@@ -59,42 +59,42 @@ public class AgentLog implements Serializable {
     private Integer durationMs;
 
     /**
-     * 鐘舵€侊細SUCCESS/FAILED
+     * 状态：SUCCESS/FAILED
      */
     private String status;
 
     /**
-     * 閿欒淇℃伅
+     * 错误信息
      */
     private String errorMessage;
 
     /**
-     * 浣跨敤鐨凱rompt
+     * 使用的Prompt
      */
     private String prompt;
 
     /**
-     * 杈撳叆鏁版嵁锛圝SON鏍煎紡锛?
+     * 输入数据（JSON 格式）
      */
     private String inputData;
 
     /**
-     * 杈撳嚭鏁版嵁锛圝SON鏍煎紡锛?
+     * 输出数据（JSON 格式）
      */
     private String outputData;
 
     /**
-     * 鍒涘缓鏃堕棿
+     * 创建时间
      */
     private LocalDateTime createTime;
 
     /**
-     * 鏇存柊鏃堕棿
+     * 更新时间
      */
     private LocalDateTime updateTime;
 
     /**
-     * 鏄惁鍒犻櫎
+     * 是否删除
      */
     @Column(isLogicDelete = true)
     private Integer isDelete;

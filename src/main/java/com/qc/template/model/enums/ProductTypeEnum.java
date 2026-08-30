@@ -5,13 +5,13 @@ import lombok.Getter;
 import java.math.BigDecimal;
 
 /**
- * 浜у搧绫诲瀷鏋氫妇
+ * 产品类型枚举
  *
  */
 @Getter
 public enum ProductTypeEnum {
 
-    VIP_PERMANENT("VIP_PERMANENT", "姘镐箙浼氬憳", new BigDecimal("199.00"));
+    VIP_PERMANENT("VIP_PERMANENT", "永久会员", new BigDecimal("199.00"));
 
     private final String value;
     private final String description;

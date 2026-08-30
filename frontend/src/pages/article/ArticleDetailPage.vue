@@ -62,8 +62,8 @@
               <h2 class="section-title">
                 <ClockCircleOutlined class="section-icon" />
                 执行日志
-                <a-tag :color="getStatusColor(executionStats.overallStatus ?? '')" class="status-tag-small">
-                  {{ executionStats.overallStatus ?? '' }}
+                <a-tag :color="getStatusColor(executionStats?.overallStatus ?? '')" class="status-tag-small">
+                  {{ executionStats?.overallStatus ?? '' }}
                 </a-tag>
               </h2>
               <ThunderboltOutlined :class="['toggle-icon', { expanded: showExecutionLogs }]" />
@@ -75,7 +75,7 @@
                 <div class="stats-summary">
                   <div class="stat-item">
                     <span class="label">总耗时</span>
-                    <span class="value">{{ formatDuration(executionStats.totalDurationMs) }}</span>
+                    <span class="value">{{ formatDuration(executionStats?.totalDurationMs ?? 0) }}</span>
                   </div>
                   <div class="stat-item">
                     <span class="label">智能体数量</span>

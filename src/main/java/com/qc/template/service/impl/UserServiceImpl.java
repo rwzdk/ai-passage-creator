@@ -18,8 +18,6 @@ import com.qc.template.model.vo.LoginUserVO;
 import com.qc.template.model.vo.UserVO;
 import com.qc.template.service.UserService;
 import com.qc.template.service.UserProfileValidator;
-import com.qc.template.service.RegistrationEmailVerificationService;
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,20 +32,18 @@ import static com.qc.template.constant.UserConstant.DEFAULT_QUOTA;
 import static com.qc.template.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
- * 鐢ㄦ埛 鏈嶅姟灞傚疄鐜般€?
+ * 用户服务层实现类
  *
+ * @author <a href="https://codefather.cn">编程导航学习网</a>
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
-
-    @Resource
-    private RegistrationEmailVerificationService registrationEmailVerificationService;
 
     @Override
     @Transactional
     public long userRegister(UserRegisterRequest request) {
         if (request == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "娉ㄥ唽鍙傛暟涓虹┖");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "注册参数为空");
         }
         UserProfileUpdateRequest profile = new UserProfileUpdateRequest();
         profile.setUserName(request.getUserName());
@@ -57,8 +53,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, e.getMessage());
         }
-
-        registrationEmailVerificationService.verifyAndConsume(request.getUserEmail(), request.getVerificationCode());
 
         long userId = userRegister(request.getUserAccount(), request.getUserPassword(), request.getCheckPassword());
         User user = new User();
@@ -70,32 +64,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setUserEmail(request.getUserEmail().trim());
         }
         if (user.getUserName() != null || user.getUserEmail() != null) {
-            ThrowUtils.throwIf(!this.updateById(user), ErrorCode.OPERATION_ERROR, "娉ㄥ唽璧勬枡淇濆瓨澶辫触");
+            ThrowUtils.throwIf(!this.updateById(user), ErrorCode.OPERATION_ERROR, "注册资料保存失败");
         }
         return userId;
     }
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
-        // 1. 鏍￠獙鍙傛暟
+        // 1. 校验参数
         if (StrUtil.hasBlank(userAccount, userPassword, checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "鍙傛暟涓虹┖");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if (userAccount.length() < 4) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "璐﹀彿闀垮害杩囩煭");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号长度过短");
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度过短");
         }
         if (!userPassword.equals(checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "涓ゆ杈撳叆鐨勫瘑鐮佷笉涓€鑷?);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "Passwords do not match");
         }
-        // 2. 鏌ヨ鐢ㄦ埛鏄惁宸插瓨鍦?
+        // 2. Check whether the account already exists.
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.eq("userAccount", userAccount);
         long count = this.mapper.selectCountByQuery(queryWrapper);
         if (count > 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "璐﹀彿閲嶅");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
         }
         // 3. 加密密码
         String encryptPassword = getEncryptPassword(userPassword);
@@ -103,7 +97,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
-        user.setUserName("鏃犲悕");
+        user.setUserName("无名");
         user.setUserRole(UserRoleEnum.USER.getValue());
         user.setQuota(DEFAULT_QUOTA);
         boolean saveResult = this.save(user);
@@ -136,25 +130,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User updateUser = new User();
         updateUser.setId(currentUser.getId());
         BeanUtil.copyProperties(request, updateUser);
-        ThrowUtils.throwIf(!this.updateById(updateUser), ErrorCode.OPERATION_ERROR, "璧勬枡淇濆瓨澶辫触");
+        ThrowUtils.throwIf(!this.updateById(updateUser), ErrorCode.OPERATION_ERROR, "资料保存失败");
         return getLoginUserVO(this.getById(currentUser.getId()));
     }
 
     @Override
     public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
-        // 1. 鏍￠獙鍙傛暟
+        // 1. 校验参数
         if (StrUtil.hasBlank(userAccount, userPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "鍙傛暟涓虹┖");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if (userAccount.length() < 4) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "璐﹀彿闀垮害杩囩煭");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号长度过短");
         }
         if (userPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度过短");
         }
-        // 2. 鍔犲瘑
+        // 2. 加密
         String encryptPassword = getEncryptPassword(userPassword);
-        // 3. 鏌ヨ鐢ㄦ埛鏄惁瀛樺湪
+        // 3. 查询用户是否存在
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.eq("userAccount", userAccount);
         queryWrapper.eq("userPassword", encryptPassword);
@@ -162,21 +156,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
-        // 4. 濡傛灉鐢ㄦ埛瀛樺湪锛岃褰曠敤鎴风殑鐧诲綍鎬?
+        // 4. Record the logged-in user in the session.
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
-        // 5. 杩斿洖鑴辨晱鐨勭敤鎴蜂俊鎭?
+        // 5. Return the sanitized user information.
         return this.getLoginUserVO(user);
     }
 
     @Override
     public User getLoginUser(HttpServletRequest request) {
-        // 鍏堝垽鏂敤鎴锋槸鍚︾櫥褰?
+        // Check the session first.
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User currentUser = (User) userObj;
         if (currentUser == null || currentUser.getId() == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
-        // 浠庢暟鎹簱鏌ヨ褰撳墠鐢ㄦ埛淇℃伅
+        // 从数据库查询当前用户信息
         long userId = currentUser.getId();
         currentUser = this.getById(userId);
         if (currentUser == null) {
@@ -207,12 +201,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public boolean userLogout(HttpServletRequest request) {
-        // 鍏堝垽鏂敤鎴锋槸鍚︾櫥褰?
+        // Check the session first.
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         if (userObj == null) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "鐢ㄦ埛鏈櫥褰?);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "User is not logged in");
         }
-        // 绉婚櫎鐧诲綍鎬?
+        // Remove the login state.
         request.getSession().removeAttribute(USER_LOGIN_STATE);
         return true;
     }
@@ -220,7 +214,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest) {
         if (userQueryRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "璇锋眰鍙傛暟涓虹┖");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
         Long id = userQueryRequest.getId();
         String userAccount = userQueryRequest.getUserAccount();
@@ -240,8 +234,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public String getEncryptPassword(String userPassword) {
-        // 鐩愬€硷紝娣锋穯瀵嗙爜
-        final String SALT = "qc";
+        // 盐值，混淆密码
+        final String SALT = "yupi";
         return DigestUtils.md5DigestAsHex((userPassword + SALT).getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -15,8 +15,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 鏅鸿兘浣撴棩蹇楁湇鍔″疄鐜?
+ * 智能体日志服务实现类
  *
+ * @author <a href="https://codefather.cn">编程导航学习网</a>
  */
 @Service
 @Slf4j
@@ -27,10 +28,10 @@ public class AgentLogServiceImpl extends ServiceImpl<AgentLogMapper, AgentLog> i
     public void saveLogAsync(AgentLog agentLog) {
         try {
             this.save(agentLog);
-            log.info("鏅鸿兘浣撴棩蹇楀凡淇濆瓨, taskId={}, agentName={}, status={}, durationMs={}", 
+            log.info("智能体日志已保存, taskId={}, agentName={}, status={}, durationMs={}",
                     agentLog.getTaskId(), agentLog.getAgentName(), agentLog.getStatus(), agentLog.getDurationMs());
         } catch (Exception e) {
-            log.error("淇濆瓨鏅鸿兘浣撴棩蹇楀け璐? taskId={}, agentName={}", 
+            log.error("保存智能体日志失败: taskId={}, agentName={}",
                     agentLog.getTaskId(), agentLog.getAgentName(), e);
         }
     }
@@ -56,22 +57,19 @@ public class AgentLogServiceImpl extends ServiceImpl<AgentLogMapper, AgentLog> i
                     .build();
         }
 
-        // 璁＄畻缁熻鏁版嵁
+        // 计算统计数据
         int totalDuration = 0;
         Map<String, Integer> agentDurations = new HashMap<>();
         String overallStatus = "SUCCESS";
 
         for (AgentLog log : logs) {
-            // SSE 浜嬩欢鏃ュ織鐢ㄤ簬鍘嗗彶鍥炴斁锛屼笉璁″叆闃舵缁熻銆?            if (log.getAgentName() != null && log.getAgentName().startsWith("__event_")) {
-                continue;
-            }
-            // 绱姞鎬昏€楁椂
+            // 累加总时
             if (log.getDurationMs() != null) {
                 totalDuration += log.getDurationMs();
                 agentDurations.put(log.getAgentName(), log.getDurationMs());
             }
 
-            // 鍒ゆ柇鎬讳綋鐘舵€?
+            // Determine the overall status.
             if ("FAILED".equals(log.getStatus())) {
                 overallStatus = "FAILED";
             } else if ("RUNNING".equals(log.getStatus()) && !"FAILED".equals(overallStatus)) {

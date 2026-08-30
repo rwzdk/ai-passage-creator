@@ -25,8 +25,9 @@ import java.io.InputStream;
 import java.util.UUID;
 
 /**
- * 鑵捐浜?COS 鏈嶅姟
+ * 腾讯云 COS 服务
  *
+ * @author <a href="https://codefather.cn">编程导航学习圈</a>
  */
 @Service
 @Slf4j
@@ -49,16 +50,16 @@ public class CosService {
     }
 
     /**
-     * 涓婁紶 ImageData 鍒?COS锛堢粺涓€鍏ュ彛锛?
-     * 鏍规嵁鏁版嵁绫诲瀷鑷姩閫夋嫨涓婁紶鏂瑰紡
+     * 上传 ImageData 到 COS（统一入口）。
+     * 根据数据类型自动选择上传方式。
      *
      * @param imageData 图片数据对象
-     * @param folder    鏂囦欢澶?
-     * @return COS 鍥剧墖 URL锛屼笂浼犲け璐ヨ繑鍥?null
+     * @param folder    文件夹
+     * @return COS 图片 URL，上传失败返回 null
      */
     public String uploadImageData(ImageData imageData, String folder) {
         if (imageData == null || !imageData.isValid()) {
-            log.warn("ImageData 鏃犳晥锛屾棤娉曚笂浼?);
+            log.warn("ImageData is invalid; upload skipped");
             return null;
         }
 
@@ -69,31 +70,31 @@ public class CosService {
                 case DATA_URL -> uploadFromDataUrl(imageData, folder);
             };
         } catch (Exception e) {
-            log.error("涓婁紶 ImageData 鍒?COS 澶辫触, dataType={}", imageData.getDataType(), e);
+            log.error("上传 ImageData 到 COS 失败, dataType={}", imageData.getDataType(), e);
             return null;
         }
     }
 
     /**
-     * 涓婁紶瀛楄妭鏁版嵁鍒?COS
+     * 上传字节数据到 COS
      *
-     * @param bytes    鍥剧墖瀛楄妭鏁版嵁
-     * @param mimeType MIME 绫诲瀷
-     * @param folder   鏂囦欢澶?
-     * @return COS 鍥剧墖 URL
+     * @param bytes    图片字节数据
+     * @param mimeType MIME 类型
+     * @param folder   文件夹
+     * @return COS 图片 URL
      */
     public String uploadBytes(byte[] bytes, String mimeType, String folder) {
         if (bytes == null || bytes.length == 0) {
-            log.warn("瀛楄妭鏁版嵁涓虹┖锛屾棤娉曚笂浼?);
+            log.warn("Image bytes are empty; upload skipped");
             return null;
         }
 
         try {
-            // 鐢熸垚鏂囦欢鍚?
+            // Generate a unique object name.
             String extension = getExtensionFromMimeType(mimeType);
             String fileName = folder + "/" + UUID.randomUUID() + extension;
 
-            // 涓婁紶鍒?COS
+            // 上传到 COS
             try (InputStream inputStream = new ByteArrayInputStream(bytes)) {
                 ObjectMetadata metadata = new ObjectMetadata();
                 metadata.setContentLength(bytes.length);
@@ -105,60 +106,60 @@ public class CosService {
                 cosClient.putObject(putObjectRequest);
 
                 String cosUrl = buildCosUrl(fileName);
-                log.info("瀛楄妭鏁版嵁涓婁紶鎴愬姛, size={} bytes, url={}", bytes.length, cosUrl);
+                log.info("字节数据上传成功, size={} bytes, url={}", bytes.length, cosUrl);
                 return cosUrl;
             }
         } catch (Exception e) {
-            log.error("涓婁紶瀛楄妭鏁版嵁鍒?COS 澶辫触", e);
+            log.error("上传字节数据到 COS 失败", e);
             return null;
         }
     }
 
     /**
-     * 浠庡閮?URL 涓嬭浇骞朵笂浼犲埌 COS
+     * 从外部 URL 下载并上传到 COS
      *
-     * @param imageUrl 澶栭儴鍥剧墖 URL
-     * @param folder   鏂囦欢澶?
-     * @return COS 鍥剧墖 URL
+     * @param imageUrl 外部图片 URL
+     * @param folder   文件夹
+     * @return COS 图片 URL
      */
     public String uploadFromUrl(String imageUrl, String folder) {
         if (imageUrl == null || imageUrl.isEmpty()) {
-            log.warn("鍥剧墖 URL 涓虹┖锛屾棤娉曚笂浼?);
+            log.warn("Image URL is empty; upload skipped");
             return null;
         }
 
         try {
-            // 涓嬭浇鍥剧墖
+            // 下载图片
             Request request = new Request.Builder().url(imageUrl).build();
             try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    log.error("涓嬭浇鍥剧墖澶辫触: {}, code={}", imageUrl, response.code());
+                    log.error("下载图片失败: {}, code={}", imageUrl, response.code());
                     return null;
                 }
 
                 byte[] imageBytes = response.body().bytes();
                 String contentType = response.header("Content-Type", "image/jpeg");
 
-                // 涓婁紶瀛楄妭鏁版嵁
+                // 上传字节数据
                 return uploadBytes(imageBytes, contentType, folder);
             }
         } catch (IOException e) {
-            log.error("浠?URL 涓婁紶鍥剧墖鍒?COS 澶辫触: {}", imageUrl, e);
+            log.error("从 URL 上传图片到 COS 失败: {}", imageUrl, e);
             return null;
         }
     }
 
     /**
-     * 浠?base64 data URL 瑙ｇ爜骞朵笂浼犲埌 COS
+     * 从 base64 data URL 解码并上传到 COS
      *
-     * @param imageData ImageData 瀵硅薄锛堝寘鍚?data URL锛?
-     * @param folder    鏂囦欢澶?
-     * @return COS 鍥剧墖 URL
+     * @param imageData ImageData 对象（包含 data URL）
+     * @param folder    文件夹
+     * @return COS 图片 URL
      */
     public String uploadFromDataUrl(ImageData imageData, String folder) {
         byte[] bytes = imageData.getImageBytes();
         if (bytes == null || bytes.length == 0) {
-            log.warn("瑙ｇ爜 data URL 澶辫触锛屾棤娉曚笂浼?);
+            log.warn("Failed to decode data URL; upload skipped");
             return null;
         }
 
@@ -166,11 +167,11 @@ public class CosService {
     }
 
     /**
-     * 涓婁紶鍥剧墖鍒?COS锛堝吋瀹规棫鎺ュ彛锛?
+     * 上传图片到 COS（兼容旧接口）。
      *
-     * @param imageUrl 鍥剧墖 URL
-     * @param folder   鏂囦欢澶?
-     * @return COS 鍥剧墖 URL
+     * @param imageUrl 图片 URL
+     * @param folder   文件夹
+     * @return COS 图片 URL
      */
     public String uploadImage(String imageUrl, String folder) {
         String result = uploadFromUrl(imageUrl, folder);
@@ -179,11 +180,11 @@ public class CosService {
     }
 
     /**
-     * 鐩存帴浣跨敤鍥剧墖 URL锛堜笉涓婁紶鍒?COS锛?
+     * 直接使用图片 URL（不上传到 COS）。
      *
-     * @param imageUrl 鍥剧墖 URL
-     * @return 鍥剧墖 URL
-     * @deprecated 浣跨敤 uploadImageData() 鏇夸唬
+     * @param imageUrl 图片 URL
+     * @return 图片 URL
+     * @deprecated 使用 uploadImageData() 替代
      */
     @Deprecated
     public String useDirectUrl(String imageUrl) {
@@ -191,22 +192,22 @@ public class CosService {
     }
 
     /**
-     * 涓婁紶鏂囦欢鍒?COS
+     * 上传文件到 COS
      *
      * @param file   文件对象
-     * @param folder 鏂囦欢澶?
-     * @return COS 鏂囦欢 URL
+     * @param folder 文件夹
+     * @return COS 文件 URL
      */
     public String uploadFile(File file, String folder) {
         try {
-            // 璇诲彇鏂囦欢
+            // 读取文件
             byte[] fileBytes = java.nio.file.Files.readAllBytes(file.toPath());
 
-            // 鐢熸垚鏂囦欢鍚?
+            // Generate a unique object name.
             String extension = getFileExtension(file.getName());
             String fileName = folder + "/" + UUID.randomUUID() + extension;
 
-            // 涓婁紶鍒?COS
+            // 上传到 COS
             try (InputStream inputStream = new ByteArrayInputStream(fileBytes)) {
                 ObjectMetadata metadata = new ObjectMetadata();
                 metadata.setContentLength(fileBytes.length);
@@ -217,18 +218,18 @@ public class CosService {
 
                 cosClient.putObject(putObjectRequest);
 
-                // 杩斿洖璁块棶 URL
+                // 返回访问 URL
                 return String.format("https://%s.cos.%s.myqcloud.com/%s",
                         cosConfig.getBucket(), cosConfig.getRegion(), fileName);
             }
         } catch (IOException e) {
-            log.error("涓婁紶鏂囦欢鍒?COS 澶辫触: {}", file.getName(), e);
+            log.error("上传文件到 COS 失败: {}", file.getName(), e);
             return null;
         }
     }
 
     /**
-     * 鑾峰彇鏂囦欢鎵╁睍鍚?
+     * 获取文件扩展名
      */
     private String getFileExtension(String fileName) {
         int lastDot = fileName.lastIndexOf('.');
@@ -236,7 +237,7 @@ public class CosService {
     }
 
     /**
-     * 鏍规嵁鎵╁睍鍚嶈幏鍙?Content-Type
+     * 根据扩展名获取 Content-Type
      */
     private String getContentType(String extension) {
         return switch (extension.toLowerCase()) {
@@ -251,7 +252,7 @@ public class CosService {
     }
 
     /**
-     * 鏍规嵁 MIME 绫诲瀷鑾峰彇鏂囦欢鎵╁睍鍚?
+     * 根据 MIME 类型获取文件扩展名
      */
     private String getExtensionFromMimeType(String mimeType) {
         if (mimeType == null) {
@@ -268,7 +269,7 @@ public class CosService {
     }
 
     /**
-     * 鏋勫缓 COS 璁块棶 URL
+     * 构建 COS 访问 URL
      */
     private String buildCosUrl(String fileName) {
         return String.format("https://%s.cos.%s.myqcloud.com/%s",

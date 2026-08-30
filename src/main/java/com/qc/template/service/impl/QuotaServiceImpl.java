@@ -15,13 +15,14 @@ import static com.qc.template.constant.UserConstant.ADMIN_ROLE;
 import static com.qc.template.constant.UserConstant.VIP_ROLE;
 
 /**
- * 閰嶉鏈嶅姟瀹炵幇
+ * 配额服务实现
  * 
- * 骞跺彂瀹夊叏璇存槑锛?
- * 1. 浣跨敤鏁版嵁搴撳師瀛愭洿鏂帮紙UPDATE ... SET quota = quota - 1 WHERE quota > 0锛夐伩鍏嶇珵鎬佹潯浠?
- * 2. 閫氳繃褰卞搷琛屾暟鍒ゆ柇鎿嶄綔鏄惁鎴愬姛锛屾棤闇€鍏堟煡璇㈠啀鏇存柊
- * 3. 浣跨敤 @Transactional 纭繚閰嶉鎵ｅ噺涓庡悗缁搷浣滅殑涓€鑷存€?
+ * 并发安全说明：
+ * 1. 使用数据库原子更新（UPDATE ... SET quota = quota - 1 WHERE quota > 0）避免竞态条件。
+ * 2. 通过影响行数判断操作是否成功，无需先查询再更新。
+ * 3. 使用 @Transactional 确保配额扣减与后续操作的一致性。
  *
+ * @author <a href="https://codefather.cn">编程导航学习网</a>
  */
 @Service
 @Slf4j
@@ -35,11 +36,11 @@ public class QuotaServiceImpl implements QuotaService {
 
     @Override
     public boolean hasQuota(User user) {
-        // 绠＄悊鍛樺拰 VIP 鐢ㄦ埛鏃犻檺閰嶉
+        // 管理员和 VIP 用户无限配额
         if (isAdmin(user) || isVip(user)) {
             return true;
         }
-        // 浠庢暟鎹簱鏌ヨ鏈€鏂伴厤棰濓紝閬垮厤浣跨敤缂撳瓨鐨勬棫鏁版嵁
+        // 从数据库查询朢新配额，避免使用缓存的旧数据
         User freshUser = userService.getById(user.getId());
         if (freshUser == null) {
             return false;
@@ -51,51 +52,51 @@ public class QuotaServiceImpl implements QuotaService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void consumeQuota(User user) {
-        // 绠＄悊鍛樺拰 VIP 鐢ㄦ埛涓嶆秷鑰楅厤棰?
+        // Administrators and VIP users do not consume quota.
         if (isAdmin(user) || isVip(user)) {
             return;
         }
 
         // 使用原子更新：UPDATE user SET quota = quota - 1 WHERE id = ? AND quota > 0
-        // 閫氳繃褰卞搷琛屾暟鍒ゆ柇鏄惁鎴愬姛锛岄伩鍏嶅苟鍙戦棶棰?
+        // Use the affected row count to make the decrement atomic.
         int affectedRows = userMapper.decrementQuota(user.getId());
 
         if (affectedRows > 0) {
-            log.info("鐢ㄦ埛閰嶉宸叉秷鑰? userId={}", user.getId());
+            log.info("用户配额已消费: userId={}", user.getId());
         } else {
-            log.warn("鐢ㄦ埛閰嶉鎵ｅ噺澶辫触锛堝彲鑳介厤棰濅笉瓒虫垨骞跺彂鍐茬獊锛? userId={}", user.getId());
+            log.warn("用户配额扣减失败（可能配额不足或并发冲突）: userId={}", user.getId());
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void checkAndConsumeQuota(User user) {
-        // 绠＄悊鍛樺拰 VIP 鐢ㄦ埛璺宠繃妫€鏌?
+        // Administrators and VIP users skip the check.
         if (isAdmin(user) || isVip(user)) {
             return;
         }
 
-        // 浣跨敤鍘熷瓙鏇存柊锛氭鏌ヤ笌娑堣垂鍚堝苟涓轰竴涓師瀛愭搷浣?
+        // 使用原子更新：检查与消费合并为一个原子操作
         // UPDATE user SET quota = quota - 1 WHERE id = ? AND quota > 0
         int affectedRows = userMapper.decrementQuota(user.getId());
 
         if (affectedRows == 0) {
-            // 褰卞搷琛屾暟涓?锛岃鏄庨厤棰濅笉瓒筹紙宸茶鍏朵粬璇锋眰娑堣€楋級
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "閰嶉涓嶈冻锛屾棤娉曞垱寤烘枃绔?);
+            // 影响行数为 0，说明配额不足（或已被其他请求消费）
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Insufficient quota");
         }
 
-        log.info("鐢ㄦ埛閰嶉妫€鏌ュ苟娑堣€楁垚鍔? userId={}", user.getId());
+        log.info("用户配额检查并消费成功: userId={}", user.getId());
     }
 
     /**
-     * 鍒ゆ柇鏄惁涓虹鐞嗗憳
+     * 判断是否为管理员
      */
     private boolean isAdmin(User user) {
         return ADMIN_ROLE.equals(user.getUserRole());
     }
 
     /**
-     * 鍒ゆ柇鏄惁涓?VIP
+     * 判断是否为 VIP
      */
     private boolean isVip(User user) {
         return VIP_ROLE.equals(user.getUserRole());

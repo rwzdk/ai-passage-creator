@@ -1,82 +1,82 @@
 package com.qc.template.constant;
 
 /**
- * 鏂囩珷鐩稿叧甯搁噺
+ * 文章相关常量
  *
  */
 public interface ArticleConstant {
 
     /**
-     * SSE 杩炴帴瓒呮椂鏃堕棿锛堟绉掞級锛?0鍒嗛挓
+     * SSE 连接超时时间（毫秒）?0分钟
      */
     long SSE_TIMEOUT_MS = 30 * 60 * 1000L;
 
     /**
-     * SSE 閲嶈繛鏃堕棿锛堟绉掞級锛?绉?
+     * SSE 重连时间（毫秒）
      */
     long SSE_RECONNECT_TIME_MS = 3000L;
 
-    // region Pexels 鐩稿叧甯搁噺
+    // region Pexels 相关常量
 
     /**
-     * Pexels API 鍦板潃
+     * Pexels API 地址
      */
     String PEXELS_API_URL = "https://api.pexels.com/v1/search";
 
     /**
-     * Pexels 姣忛〉杩斿洖鏁伴噺
+     * Pexels 每页返回数量
      */
     int PEXELS_PER_PAGE = 1;
 
     /**
-     * Pexels 鍥剧墖鏂瑰悜锛氭í鍚?
+     * Pexels 图片方向：横向
      */
     String PEXELS_ORIENTATION_LANDSCAPE = "landscape";
 
     // endregion
 
-    // region Picsum 鐩稿叧甯搁噺
+    // region Picsum 相关常量
 
     /**
-     * Picsum 闅忔満鍥剧墖 URL 妯℃澘
+     * Picsum 随机图片 URL 模板
      */
     String PICSUM_URL_TEMPLATE = "https://picsum.photos/800/600?random=%d";
 
     // endregion
 
-    // region Bing 琛ㄦ儏鍖呯浉鍏冲父閲?
+    // region Bing 表情包相关常量
 
     /**
-     * Bing 鍥剧墖鎼滅储鍦板潃
+     * Bing 图片搜索地址
      */
     String BING_IMAGE_SEARCH_URL = "https://cn.bing.com/images/async";
 
     /**
      * 表情包关键词后缀（程序固定拼接）
      */
-    String EMOJI_PACK_SUFFIX = "鐔婄尗澶磋〃鎯呭寘";
+    String EMOJI_PACK_SUFFIX = "熊猫头表情包";
 
     /**
-     * Bing 鍥剧墖鎼滅储姣忔壒鏈€澶ф暟閲?
+     * Bing 图片搜索每批最大数量
      */
     int BING_MAX_IMAGES = 30;
 
     // endregion
 
-    // region SVG 缁樺浘鐩稿叧甯搁噺
+    // region SVG 绘图相关常量
 
     /**
-     * SVG 鏂囦欢鍓嶇紑
+     * SVG 文件前缀
      */
     String SVG_FILE_PREFIX = "svg-chart";
 
     /**
-     * SVG 榛樿瀹藉害
+     * SVG 默认宽度
      */
     int SVG_DEFAULT_WIDTH = 800;
 
     /**
-     * SVG 榛樿楂樺害
+     * SVG 默认高度
      */
     int SVG_DEFAULT_HEIGHT = 600;
 

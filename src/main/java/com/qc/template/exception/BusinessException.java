@@ -3,14 +3,14 @@ package com.qc.template.exception;
 import lombok.Getter;
 
 /**
- * 鑷畾涔変笟鍔″紓甯?
+ * 自定义业务异常
  *
  */
 @Getter
 public class BusinessException extends RuntimeException {
 
     /**
-     * 閿欒鐮?
+     * 错误码
      */
     private final int code;
 

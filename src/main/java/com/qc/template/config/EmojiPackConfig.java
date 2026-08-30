@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import static com.qc.template.constant.ArticleConstant.*;
 
 /**
- * 琛ㄦ儏鍖呮绱㈤厤缃?
+ * 表情包检索配置
  *
  */
 @Configuration
@@ -16,12 +16,12 @@ import static com.qc.template.constant.ArticleConstant.*;
 public class EmojiPackConfig {
 
     /**
-     * Bing 鍥剧墖鎼滅储鍦板潃
+     * Bing 图片搜索地址
      */
     private String searchUrl = BING_IMAGE_SEARCH_URL;
 
     /**
-     * 琛ㄦ儏鍖呭叧閿瘝鍚庣紑锛堢▼搴忓浐瀹氭嫾鎺ワ紝涓嶄緷璧?AI 杩斿洖锛?
+     * 表情包关键词后缀（程序固定拼接，不依赖 AI 返回）
      */
     private String suffix = EMOJI_PACK_SUFFIX;
 

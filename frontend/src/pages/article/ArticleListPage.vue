@@ -137,7 +137,7 @@
                   导出
                 </a-button>
                 <a-popconfirm
-                  title="确定要删除这篇文章吗?"
+                  title="确定要删除这篇文章吗？"
                   ok-text="确定"
                   cancel-text="取消"
                   @confirm="deleteArticle(record)"
@@ -197,7 +197,7 @@ const statusFilter = ref<string>('')
 const getQueryValue = (value: unknown) => Array.isArray(value) ? String(value[0] || '') : String(value || '')
 
 const syncListQuery = () => {
-  const query: Record<string, string | string[]> = { ...route.query }
+  const query = { ...route.query }
   delete query.keyword
   delete query.status
   delete query.start

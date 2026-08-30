@@ -5,70 +5,70 @@ import com.qc.template.model.dto.image.ImageRequest;
 import com.qc.template.model.enums.ImageMethodEnum;
 
 /**
- * 鍥剧墖鏈嶅姟鎺ュ彛
- * 鎶借薄鍥剧墖鑾峰彇閫昏緫锛屼究浜庢墿灞曞绉嶅浘鐗囨潵婧愶紙濡?Pexels銆乁nsplash銆丄I 鐢熷浘绛夛級
+ * 图片服务接口
+ * 抽象图片获取逻辑，便于扩展多种图片来源（如 Pexels、Unsplash、AI 生图等）
  * 
- * 鎵╁睍鏂扮殑鍥剧墖鏈嶅姟鏃讹細
- * 1. 瀹炵幇姝ゆ帴鍙?
- * 2. 鍦?ImageMethodEnum 涓坊鍔犲搴旂殑鏋氫妇鍊?
- * 3. 娣诲姞瀵瑰簲鐨勯厤缃被锛堝闇€瑕侊級
+ * 扩展新的图片服务时：
+ * 1. 实现此接口
+ * 2. 在 ImageMethodEnum 中添加对应的枚举值
+ * 3. 添加对应的配置类（如需要）
  *
  */
 public interface ImageSearchService {
 
     /**
-     * 鏍规嵁璇锋眰鑾峰彇鍥剧墖锛堟帹鑽愪娇鐢ㄦ鏂规硶锛?
+     * 根据请求获取图片（推荐使用此方法）
      * 
-     * @param request 鍥剧墖璇锋眰瀵硅薄锛屽寘鍚?keywords銆乸rompt 绛夊弬鏁?
-     * @return 鍥剧墖 URL锛岃幏鍙栧け璐ヨ繑鍥?null
+     * @param request 图片请求对象，包含 keywords、prompt 等参数
+     * @return 图片 URL，获取失败返回 null
      */
     default String getImage(ImageRequest request) {
-        // 榛樿瀹炵幇锛氭牴鎹湇鍔＄被鍨嬮€夋嫨鍚堥€傜殑鍙傛暟
+        // 默认实现：根据服务类型择合的参数
         String param = request.getEffectiveParam(getMethod().isAiGenerated());
         return searchImage(param);
     }
 
     /**
-     * 鑾峰彇鍥剧墖鏁版嵁锛堢敤浜庣粺涓€涓婁紶鍒?COS锛?
-     * 瀛愮被鍙噸鍐欐鏂规硶杩斿洖鏇撮珮鏁堢殑鏁版嵁鏍煎紡锛堝瀛楄妭鏁版嵁锛?
+     * 获取图片数据（用于统一上传到 COS）
+     * 子类可重写此方法返回更高效的数据格式（如字节数据）
      *
      * @param request 图片请求对象
      * @return ImageData 对象，包含图片字节或 URL
      */
     default ImageData getImageData(ImageRequest request) {
-        // 榛樿瀹炵幇锛氶€氳繃 getImage 鑾峰彇 URL锛岀劧鍚庤浆鎹负 ImageData
+        // 默认实现：过 getImage 获取 URL，然后转换为 ImageData
         String url = getImage(request);
         return ImageData.fromUrl(url);
     }
 
     /**
-     * 鏍规嵁鍏抽敭璇?鎻愮ず璇嶈幏鍙栧浘鐗?
+     * 根据关键词或提示词获取图片
      * 
-     * @param keywords 鎼滅储鍏抽敭璇嶏紙鍥惧簱妫€绱級鎴栫敓鍥炬彁绀鸿瘝锛圓I 鐢熷浘锛?
-     * @return 鍥剧墖 URL锛岃幏鍙栧け璐ヨ繑鍥?null
+     * @param keywords 搜索关键词（图库检索）或生图提示词（AI 生图）
+     * @return 图片 URL，获取失败返回 null
      */
     String searchImage(String keywords);
 
     /**
-     * 鑾峰彇鍥剧墖鏈嶅姟绫诲瀷
+     * 获取图片服务类型
      *
-     * @return 鍥剧墖鏈嶅姟绫诲瀷鏋氫妇
+     * @return 图片服务类型枚举
      */
     ImageMethodEnum getMethod();
 
     /**
-     * 鑾峰彇闄嶇骇鍥剧墖 URL
+     * 获取降级图片 URL
      *
-     * @param position 浣嶇疆搴忓彿锛堢敤浜庣敓鎴愬敮涓€鐨勯殢鏈哄浘鐗囷級
-     * @return 闄嶇骇鍥剧墖 URL
+     * @param position 位置序号（用于生成唯一的随机图片）
+     * @return 降级图片 URL
      */
     String getFallbackImage(int position);
 
     /**
-     * 鍒ゆ柇鏈嶅姟鏄惁鍙敤
-     * 瀛愮被鍙噸鍐欐鏂规硶杩涜鍋ュ悍妫€鏌?
+     * 判断服务是否可用
+     * 子类可重写此方法进行健康检查
      *
-     * @return 鏈嶅姟鏄惁鍙敤
+     * @return 服务是否可用
      */
     default boolean isAvailable() {
         return true;

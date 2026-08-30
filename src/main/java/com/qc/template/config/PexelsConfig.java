@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Pexels 閰嶇疆
+ * Pexels 配置
  *
  */
 @Configuration

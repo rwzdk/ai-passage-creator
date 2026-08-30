@@ -16,9 +16,10 @@ import java.io.File;
 import static com.qc.template.constant.ArticleConstant.PICSUM_URL_TEMPLATE;
 
 /**
- * Mermaid 娴佺▼鍥剧敓鎴愭湇鍔?
- * 浣跨敤 mermaid-cli 灏?Mermaid 浠ｇ爜杞崲涓哄浘鐗?
+ * Mermaid 流程图生成服务
+ * 使用 mermaid-cli 将 Mermaid 代码转换为图片。
  *
+ * @author <a href="https://codefather.cn">编程导航学习网</a>
  */
 @Service
 @Slf4j
@@ -32,14 +33,14 @@ public class MermaidService implements ImageSearchService {
         // 对于 Mermaid，keywords 就是 Mermaid 代码
         // 此方法已废弃，请使用 getImageData()
         ImageData imageData = generateDiagramData(keywords);
-        // 杩斿洖 null锛屽洜涓轰笉鍐嶇洿鎺ヨ繑鍥?URL
+        // 返回 null，因为不再直接返回 URL
         return null;
     }
 
     @Override
     public String getImage(ImageRequest request) {
         // 此方法已废弃，请使用 getImageData()
-        // 杩斿洖 null锛屼笂浼犻€昏緫鐢?ImageServiceStrategy 缁熶竴澶勭悊
+        // 返回 null，上传逻辑由 ImageServiceStrategy 统一处理
         return null;
     }
 
@@ -51,14 +52,14 @@ public class MermaidService implements ImageSearchService {
     }
 
     /**
-     * 鐢熸垚 Mermaid 鍥捐〃鏁版嵁
+     * 生成 Mermaid 图表数据
      *
-     * @param mermaidCode Mermaid 浠ｇ爜
-     * @return 鍥剧墖瀛楄妭鏁版嵁锛岀敓鎴愬け璐ヨ繑鍥?null
+     * @param mermaidCode Mermaid 代码
+     * @return 图片字节数据，生成失败返回 null
      */
     public ImageData generateDiagramData(String mermaidCode) {
         if (mermaidCode == null || mermaidCode.trim().isEmpty()) {
-            log.warn("Mermaid 浠ｇ爜涓虹┖");
+            log.warn("Mermaid 代码为空");
             return null;
         }
 
@@ -66,32 +67,32 @@ public class MermaidService implements ImageSearchService {
         File tempOutputFile = null;
 
         try {
-            // 鍒涘缓涓存椂杈撳叆鏂囦欢
+            // 创建临时输入文件
             tempInputFile = FileUtil.createTempFile("mermaid_input_", ".mmd", true);
             FileUtil.writeUtf8String(mermaidCode, tempInputFile);
 
-            // 鍒涘缓涓存椂杈撳嚭鏂囦欢
+            // 创建临时输出文件
             String outputExtension = "." + mermaidConfig.getOutputFormat();
             tempOutputFile = FileUtil.createTempFile("mermaid_output_", outputExtension, true);
 
-            // 杞崲涓哄浘鐗?
+            // 转换为图片
             convertMermaidToImage(tempInputFile, tempOutputFile);
 
-            // 妫€鏌ヨ緭鍑烘枃浠?
+            // Check the generated file.
             if (!tempOutputFile.exists() || tempOutputFile.length() == 0) {
-                log.error("Mermaid CLI 鎵ц澶辫触锛岃緭鍑烘枃浠朵笉瀛樺湪鎴栦负绌?);
+                log.error("Mermaid CLI produced no output");
                 return null;
             }
 
-            // 璇诲彇鍥剧墖瀛楄妭鏁版嵁
+            // 读取图片字节数据
             byte[] imageBytes = FileUtil.readBytes(tempOutputFile);
             String mimeType = getMimeType(mermaidConfig.getOutputFormat());
             
-            log.info("Mermaid 鍥捐〃鐢熸垚鎴愬姛, size={} bytes", imageBytes.length);
+            log.info("Mermaid 图表生成成功, size={} bytes", imageBytes.length);
             return ImageData.fromBytes(imageBytes, mimeType);
 
         } catch (Exception e) {
-            log.error("Mermaid 鍥捐〃鐢熸垚寮傚父", e);
+            log.error("Mermaid 图表生成异常", e);
             return null;
         } finally {
             // 清理临时文件
@@ -105,7 +106,7 @@ public class MermaidService implements ImageSearchService {
     }
 
     /**
-     * 鏍规嵁杈撳嚭鏍煎紡鑾峰彇 MIME 绫诲瀷
+     * 根据输出格式获取 MIME 类型
      */
     private String getMimeType(String format) {
         return switch (format.toLowerCase()) {
@@ -117,14 +118,14 @@ public class MermaidService implements ImageSearchService {
     }
 
     /**
-     * 璋冪敤 Mermaid CLI 杞崲涓哄浘鐗?
+     * 调用 Mermaid CLI 转换为图片
      */
     private void convertMermaidToImage(File inputFile, File outputFile) {
         try {
-            // 鏍规嵁鎿嶄綔绯荤粺閫夋嫨鍛戒护
+            // 根据操作系统选择命令
             String command = SystemUtil.getOsInfo().isWindows() ? "mmdc.cmd" : mermaidConfig.getCliCommand();
 
-            // 鏋勫缓鍛戒护琛屽弬鏁?
+            // Build the command line.
             String cmdLine = String.format("%s -i %s -o %s -b %s",
                     command,
                     inputFile.getAbsolutePath(),
@@ -132,21 +133,21 @@ public class MermaidService implements ImageSearchService {
                     mermaidConfig.getBackgroundColor()
             );
 
-            // 濡傛灉閰嶇疆浜嗗搴︼紝娣诲姞瀹藉害鍙傛暟
+            // 如果配置了宽度，添加宽度参数
             if (mermaidConfig.getWidth() != null && mermaidConfig.getWidth() > 0) {
                 cmdLine += " -w " + mermaidConfig.getWidth();
             }
 
-            log.info("鎵ц Mermaid CLI 鍛戒护: {}", cmdLine);
+            log.info("执行 Mermaid CLI 命令: {}", cmdLine);
 
-            // 鎵ц鍛戒护锛堝甫瓒呮椂锛?
+            // Execute the command.
             String result = RuntimeUtil.execForStr(cmdLine);
             
-            log.debug("Mermaid CLI 鎵ц缁撴灉: {}", result);
+            log.debug("Mermaid CLI 执行结果: {}", result);
 
         } catch (Exception e) {
-            log.error("鎵ц Mermaid CLI 澶辫触", e);
-            throw new RuntimeException("Mermaid CLI 鎵ц澶辫触: " + e.getMessage(), e);
+            log.error("执行 Mermaid CLI 失败", e);
+            throw new RuntimeException("Mermaid CLI 执行失败: " + e.getMessage(), e);
         }
     }
 
@@ -163,14 +164,14 @@ public class MermaidService implements ImageSearchService {
     @Override
     public boolean isAvailable() {
         try {
-            // 妫€鏌?mermaid-cli 鏄惁宸插畨瑁?
+            // Check whether mermaid-cli is installed.
             String command = SystemUtil.getOsInfo().isWindows() ? "mmdc.cmd" : mermaidConfig.getCliCommand();
             String checkCmd = command + " --version";
             String version = RuntimeUtil.execForStr(checkCmd);
-            log.info("Mermaid CLI 鐗堟湰: {}", version);
+            log.info("Mermaid CLI 版本: {}", version);
             return version != null && !version.isEmpty();
         } catch (Exception e) {
-            log.warn("Mermaid CLI 涓嶅彲鐢? {}", e.getMessage());
+            log.warn("Mermaid CLI 不可用: {}", e.getMessage());
             return false;
         }
     }

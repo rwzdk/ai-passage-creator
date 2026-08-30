@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Mermaid 鍥捐〃鐢熸垚閰嶇疆
+ * Mermaid 图表生成配置
  *
  */
 @Configuration
@@ -14,17 +14,17 @@ import org.springframework.context.annotation.Configuration;
 public class MermaidConfig {
 
     /**
-     * CLI 鍛戒护锛圵indows 涓嬩负 mmdc.cmd锛孡inux/Mac 涓嬩负 mmdc锛?
+     * CLI 命令（Windows 下为 mmdc.cmd，Linux/Mac 下为 mmdc）
      */
     private String cliCommand = "mmdc";
 
     /**
-     * 鑳屾櫙棰滆壊锛坱ransparent 涓洪€忔槑鑳屾櫙锛?
+     * 背景颜色（transparent 为透明背景）
      */
     private String backgroundColor = "transparent";
 
     /**
-     * 杈撳嚭鏍煎紡锛坰vg/png/pdf锛?
+     * 输出格式（svg/png/pdf）
      */
     private String outputFormat = "svg";
 

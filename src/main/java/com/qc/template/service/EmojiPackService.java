@@ -17,8 +17,8 @@ import java.nio.charset.StandardCharsets;
 import static com.qc.template.constant.ArticleConstant.PICSUM_URL_TEMPLATE;
 
 /**
- * 琛ㄦ儏鍖呮绱㈡湇鍔★紙鍩轰簬 Bing 鍥剧墖鎼滅储锛?
- * 绋嬪簭鑷姩鍦ㄥ叧閿瘝鍚庢嫾鎺?琛ㄦ儏鍖?杩涜鎼滅储
+ * 表情包检索服务（基于 Bing 图片搜索）
+ * 程序自动在关键词后拼接“表情包”进行搜索
  *
  */
 @Service
@@ -31,53 +31,53 @@ public class EmojiPackService implements ImageSearchService {
     @Override
     public String searchImage(String keywords) {
         if (StrUtil.isBlank(keywords)) {
-            log.warn("琛ㄦ儏鍖呮悳绱㈠叧閿瘝涓虹┖");
+            log.warn("表情包搜索关键词为空");
             return null;
         }
 
         try {
-            // 1. 鏋勫缓鎼滅储璇嶏紙绋嬪簭鍥哄畾鎷兼帴"琛ㄦ儏鍖?锛?
+            // 1. 构建搜索词（程序固定拼接“表情包”）
             String searchText = keywords + emojiPackConfig.getSuffix();
-            log.info("琛ㄦ儏鍖呮悳绱? {} -> {}", keywords, searchText);
+            log.info("表情包搜索: {} -> {}", keywords, searchText);
 
-            // 2. 鏋勫缓鎼滅储 URL
+            // 2. 构建搜索 URL
             String fetchUrl = buildSearchUrl(searchText);
 
-            // 3. 浣跨敤 Jsoup 鑾峰彇椤甸潰
+            // 3. 使用 Jsoup 获取页面
             Document document = Jsoup.connect(fetchUrl)
                     .timeout(emojiPackConfig.getTimeout())
                     .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
                     .get();
 
-            // 4. 瀹氫綅鍥剧墖瀹瑰櫒
+            // 4. 定位图片容器
             Element div = document.getElementsByClass("dgControl").first();
             if (div == null) {
-                log.warn("Bing 鏈壘鍒板浘鐗囧鍣? keywords={}", keywords);
+                log.warn("Bing 未找到图片容器: keywords={}", keywords);
                 return null;
             }
 
-            // 5. 浣跨敤 CSS 閫夋嫨鍣ㄦ彁鍙栧浘鐗?
+            // 5. 使用 CSS 选择器提取图片
             Elements imgElements = div.select("img.mimg");
             if (imgElements.isEmpty()) {
-                log.warn("Bing 鏈绱㈠埌琛ㄦ儏鍖? keywords={}, searchText={}", keywords, searchText);
+                log.warn("Bing 未检索到表情包: keywords={}, searchText={}", keywords, searchText);
                 return null;
             }
 
-            // 6. 鑾峰彇绗竴寮犲浘鐗?URL
+            // 6. 获取第一张图片 URL
             String imageUrl = imgElements.get(0).attr("src");
             if (StrUtil.isBlank(imageUrl)) {
-                log.warn("鍥剧墖 URL 涓虹┖, keywords={}", keywords);
+                log.warn("图片 URL 涓虹┖, keywords={}", keywords);
                 return null;
             }
 
-            // 7. 娓呯悊 URL 鍙傛暟锛堢Щ闄??w=xxx&h=xxx锛?
+            // 7. 清理 URL 参数（移除 ?w=xxx&h=xxx）
             imageUrl = cleanImageUrl(imageUrl);
 
-            log.info("琛ㄦ儏鍖呮绱㈡垚鍔? {} -> {}", keywords, imageUrl);
+            log.info("表情包检索成功: {} -> {}", keywords, imageUrl);
             return imageUrl;
 
         } catch (Exception e) {
-            log.error("琛ㄦ儏鍖呮绱㈠紓甯? keywords={}", keywords, e);
+            log.error("表情包检索异常: keywords={}", keywords, e);
             return null;
         }
     }
@@ -93,14 +93,14 @@ public class EmojiPackService implements ImageSearchService {
     }
 
     /**
-     * 鏋勫缓 Bing 鍥剧墖鎼滅储 URL
+     * 构建 Bing 图片搜索 URL
      *
-     * @param searchText 鎼滅储鏂囨湰
-     * @return 瀹屾暣鐨勬悳绱?URL
+     * @param searchText 搜索文本
+     * @return 完整的搜索 URL
      */
     private String buildSearchUrl(String searchText) {
         String encodedText = URLEncoder.encode(searchText, StandardCharsets.UTF_8);
-        // 蹇呴』娣诲姞 mmasync=1 鍙傛暟
+        // 必须添加 mmasync=1 参数
         return String.format("%s?q=%s&mmasync=1", 
                 emojiPackConfig.getSearchUrl(), 
                 encodedText);
@@ -108,9 +108,9 @@ public class EmojiPackService implements ImageSearchService {
 
     /**
      * 清理图片 URL 参数
-     * 绉婚櫎 ?w=xxx&h=xxx 绛夊弬鏁帮紝閬垮厤鍥剧墖璐ㄩ噺涓嬮檷鍜岃闂棶棰?
+     * 移除 ?w=xxx&h=xxx 等参数，避免图片质量下降和访问问题
      *
-     * @param url 鍘熷鍥剧墖 URL
+     * @param url 原始图片 URL
      * @return 清理后的 URL
      */
     private String cleanImageUrl(String url) {

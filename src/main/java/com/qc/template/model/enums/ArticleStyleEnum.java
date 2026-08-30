@@ -7,16 +7,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 鏂囩珷椋庢牸鏋氫妇
+ * 文章风格枚举
  *
  */
 @Getter
 public enum ArticleStyleEnum {
 
-    TECH("tech", "绉戞妧椋庢牸"),
-    EMOTIONAL("emotional", "鎯呮劅椋庢牸"),
-    EDUCATIONAL("educational", "鏁欒偛椋庢牸"),
-    HUMOROUS("humorous", "杞绘澗骞介粯椋庢牸");
+    TECH("tech", "科技风格"),
+    EMOTIONAL("emotional", "情感风格"),
+    EDUCATIONAL("educational", "教育风格"),
+    HUMOROUS("humorous", "轻松幽默风格");
 
     private final String value;
     private final String text;
@@ -27,7 +27,7 @@ public enum ArticleStyleEnum {
     }
 
     /**
-     * 鑾峰彇鎵€鏈夊€煎垪琛?
+     * 获取所有枚举值
      */
     public static List<String> getValues() {
         return Arrays.stream(values())
@@ -36,7 +36,7 @@ public enum ArticleStyleEnum {
     }
 
     /**
-     * 鏍规嵁 value 鑾峰彇鏋氫妇
+     * 根据 value 获取枚举
      */
     public static ArticleStyleEnum getEnumByValue(String value) {
         if (value == null || value.isEmpty()) {
@@ -51,11 +51,11 @@ public enum ArticleStyleEnum {
     }
 
     /**
-     * 鏍￠獙鏄惁涓烘湁鏁堢殑椋庢牸鍊?
+     * 校验是否为有效的风格
      */
     public static boolean isValid(String value) {
         if (value == null || value.isEmpty()) {
-            return true; // 鍏佽涓虹┖
+            return true; // 允许为空
         }
         return getEnumByValue(value) != null;
     }

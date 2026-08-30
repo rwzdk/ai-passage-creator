@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Iconify 鍥炬爣搴撻厤缃?
+ * Iconify 图标库配置
  *
  */
 @Configuration
@@ -14,12 +14,12 @@ import org.springframework.context.annotation.Configuration;
 public class IconifyConfig {
 
     /**
-     * Iconify API 鍦板潃
+     * Iconify API 地址
      */
     private String apiUrl = "https://api.iconify.design";
 
     /**
-     * 鎼滅储缁撴灉闄愬埗鏁伴噺
+     * 搜索结果限制数量
      */
     private Integer searchLimit = 10;
 
@@ -29,7 +29,7 @@ public class IconifyConfig {
     private Integer defaultHeight = 64;
 
     /**
-     * 榛樿鍥炬爣棰滆壊锛堢暀绌轰娇鐢?currentColor锛屾垨璁剧疆濡?"#000000"锛?
+     * 默认图标颜色（留空使用 currentColor，或设置为 "#000000"）
      */
     private String defaultColor = "";
 }

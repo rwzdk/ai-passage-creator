@@ -6,63 +6,64 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * 鏂囩珷鐢熸垚鐘舵€侊紙鏅鸿兘浣撻棿鍏变韩鐨勭姸鎬佸璞★級
+ * 文章生成状（智能体间共享的状态对象）
  *
  */
 @Data
 public class ArticleState implements Serializable {
 
     /**
-     * 浠诲姟ID
+     * 任务ID
      */
     private String taskId;
 
     /**
-     * 閫夐
+     * 选题
      */
     private String topic;
 
     /**
-     * 鐢ㄦ埛琛ュ厖鎻忚堪
+     * 用户补充描述
      */
     private String userDescription;
 
     /**
-     * 涓婁紶鏂囨。鐢熸垚鐨勫弬鑰冩憳瑕?     */
+     * 上传文档生成的参考摘要
+     */
     private String referenceSummary;
 
     /**
-     * 鏂囩珷椋庢牸
+     * 文章风格
      */
     private String style;
 
     /**
-     * 褰撳墠闃舵
+     * 当前阶段
      */
     private String phase;
 
     /**
-     * 鏍囬鏂规鍒楄〃锛堟櫤鑳戒綋1杈撳嚭锛?
+     * 标题方案列表（智能体 1 输出）
      */
     private List<TitleOption> titleOptions;
 
     /**
-     * 鏍囬缁撴灉锛堟櫤鑳戒綋1杈撳嚭锛?
+     * 标题结果（智能体 1 输出）
      */
     private TitleResult title;
 
     /**
-     * 澶х翰缁撴灉锛堟櫤鑳戒綋2杈撳嚭锛?
+     * 大纲结果（智能体 2 输出）
      */
     private OutlineResult outline;
 
     /**
-     * 姝ｆ枃鍐呭锛堟櫤鑳戒綋3杈撳嚭锛?
+     * 正文内容（智能体 3 输出）
      */
     private String content;
 
     /**
-     * 閰嶅浘闇€姹傚垪琛紙鏅鸿兘浣?杈撳嚭锛?
+     * 配图需求列表（智能体 4 输出）
      */
     private List<ImageRequirement> imageRequirements;
 
@@ -72,17 +73,17 @@ public class ArticleState implements Serializable {
     private String coverImage;
 
     /**
-     * 閰嶅浘缁撴灉鍒楄〃锛堟櫤鑳戒綋5杈撳嚭锛?
+     * 配图结果列表（智能体 5 输出）
      */
     private List<ImageResult> images;
 
     /**
-     * 鍏佽鐨勯厤鍥炬柟寮忓垪琛紙涓虹┖琛ㄧず鏀寔鎵€鏈夋柟寮忥級
+     * 允许的配图方式列表（为空表示支持所有方式）
      */
     private List<String> enabledImageMethods;
 
     /**
-     * 鏍囬鏂规
+     * 标题方案
      */
     @Data
     public static class TitleOption implements Serializable {
@@ -91,7 +92,7 @@ public class ArticleState implements Serializable {
     }
 
     /**
-     * 鏍囬缁撴灉
+     * 标题结果
      */
     @Data
     public static class TitleResult implements Serializable {
@@ -100,7 +101,7 @@ public class ArticleState implements Serializable {
     }
 
     /**
-     * 澶х翰缁撴灉
+     * 大纲结果
      */
     @Data
     public static class OutlineResult implements Serializable {
@@ -108,7 +109,7 @@ public class ArticleState implements Serializable {
     }
 
     /**
-     * 澶х翰绔犺妭
+     * 大纲章节
      */
     @Data
     public static class OutlineSection implements Serializable {
@@ -118,7 +119,7 @@ public class ArticleState implements Serializable {
     }
 
     /**
-     * 閰嶅浘闇€姹?
+     * 配图需求
      */
     @Data
     public static class ImageRequirement implements Serializable {
@@ -131,7 +132,7 @@ public class ArticleState implements Serializable {
          */
         private String imageSource;
         /**
-         * AI 鐢熷浘鎻愮ず璇嶏紙褰?imageSource 涓?NANO_BANANA 鏃朵娇鐢級
+         * AI 生图提示词（当 imageSource 为 NANO_BANANA 时使用）
          */
         private String prompt;
         /**
@@ -141,7 +142,7 @@ public class ArticleState implements Serializable {
     }
 
     /**
-     * 閰嶅浘缁撴灉
+     * 配图结果
      */
     @Data
     public static class ImageResult implements Serializable {
@@ -154,28 +155,28 @@ public class ArticleState implements Serializable {
         private boolean failed;
         private String error;
         /**
-         * 鍗犱綅绗D锛岀敤浜庡湪姝ｆ枃涓畾浣嶆彃鍏ヤ綅缃?
+         * 占位符 ID，用于在正文中定位插入位置
          */
         private String placeholderId;
     }
 
     /**
-     * 鏅鸿兘浣?杩斿洖缁撴灉锛堝寘鍚甫鍗犱綅绗︾殑姝ｆ枃鍜岄厤鍥鹃渶姹傚垪琛級
+     * 智能体返回结果（包含带占位符的正文和配图需求列表）
      */
     @Data
     public static class Agent4Result implements Serializable {
         /**
-         * 鍖呭惈鍗犱綅绗︾殑姝ｆ枃鍐呭
+         * 包含占位符的正文内容
          */
         private String contentWithPlaceholders;
         /**
-         * 閰嶅浘闇€姹傚垪琛?
+         * 配图需求列表
          */
         private List<ImageRequirement> imageRequirements;
     }
 
     /**
-     * 瀹屾暣鍥炬枃鍐呭锛堝悎鎴愬悗锛?
+     * 完整图文内容（合成后）
      */
     private String fullContent;
 

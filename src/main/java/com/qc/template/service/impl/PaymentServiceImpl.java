@@ -31,8 +31,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 鏀粯鏈嶅姟瀹炵幇
+ * 支付服务实现
  *
+ * @author <a href="https://codefather.cn">编程导航学习网</a>
  */
 @Service
 @Slf4j
@@ -63,7 +64,7 @@ public class PaymentServiceImpl implements PaymentService {
         Session session = createStripeSession(userId, productType);
         savePaymentRecord(userId, session, productType);
 
-        log.info("鍒涘缓鏀粯浼氳瘽鎴愬姛, userId={}, sessionId={}", userId, session.getId());
+        log.info("创建支付会话成功, userId={}, sessionId={}", userId, session.getId());
         return session.getUrl();
     }
 
@@ -76,20 +77,20 @@ public class PaymentServiceImpl implements PaymentService {
 
         PaymentRecord record = findPaymentRecordBySessionId(sessionId);
         if (record == null) {
-            log.warn("鏀粯璁板綍涓嶅瓨鍦? sessionId={}", sessionId);
+            log.warn("支付记录不存在: sessionId={}", sessionId);
             return;
         }
 
-        // 骞傜瓑鎬ф鏌?
+        // Idempotency check.
         if (PaymentStatusEnum.SUCCEEDED.getValue().equals(record.getStatus())) {
-            log.info("鏀粯璁板綍宸插鐞? sessionId={}", sessionId);
+            log.info("支付记录已处理: sessionId={}", sessionId);
             return;
         }
 
         updatePaymentStatus(record.getId(), PaymentStatusEnum.SUCCEEDED, paymentIntentId);
         upgradeUserToVip(Long.valueOf(userId));
 
-        log.info("鏀粯鎴愬姛锛岀敤鎴峰凡鍗囩骇涓?VIP, userId={}, sessionId={}", userId, sessionId);
+        log.info("支付成功，用户已升级为 VIP: userId={}, sessionId={}", userId, sessionId);
     }
 
     @Override
@@ -100,11 +101,11 @@ public class PaymentServiceImpl implements PaymentService {
 
         PaymentRecord paymentRecord = findLatestSuccessfulPayment(userId);
         if (paymentRecord == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "鏈壘鍒版敮浠樿褰?);
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "Payment record not found");
         }
 
         if (paymentRecord.getStripePaymentIntentId() == null) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "鏀粯璁板綍鏃犳晥");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "支付记录无效");
         }
 
         Refund refund = createStripeRefund(paymentRecord.getStripePaymentIntentId());
@@ -115,7 +116,7 @@ public class PaymentServiceImpl implements PaymentService {
         updateRefundRecord(paymentRecord.getId(), reason);
         revokeVipStatus(userId);
 
-        log.info("閫€娆炬垚鍔燂紝宸插彇娑?VIP 韬唤, userId={}, refundId={}", userId, refund.getId());
+        log.info("退款成功，已取消 VIP 身份: userId={}, refundId={}", userId, refund.getId());
         return true;
     }
 
@@ -132,40 +133,40 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRecordMapper.selectListByQuery(queryWrapper);
     }
 
-    // ==================== 绉佹湁鏂规硶灏佽 ====================
+    // ==================== 私有方法封装 ====================
 
     /**
-     * 鑾峰彇鐢ㄦ埛鎴栨姏鍑哄紓甯?
+     * 获取用户或抛出异常
      */
     private User getUserOrThrow(Long userId) {
         User user = userMapper.selectOneById(userId);
         if (user == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "鐢ㄦ埛涓嶅瓨鍦?);
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "User not found");
         }
         return user;
     }
 
     /**
-     * 楠岃瘉鐢ㄦ埛涓嶆槸 VIP
+     * 验证用户不是 VIP
      */
     private void validateNotVip(User user) {
         if (UserConstant.VIP_ROLE.equals(user.getUserRole())) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "鎮ㄥ凡缁忔槸姘镐箙浼氬憳");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "您已经是永久会员");
         }
     }
 
     /**
-     * 楠岃瘉鐢ㄦ埛鏄?VIP
+     * 验证用户为 VIP
      */
     private void validateIsVip(User user) {
         if (!UserConstant.VIP_ROLE.equals(user.getUserRole())
                 && !UserConstant.ADMIN_ROLE.equals(user.getUserRole())) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "鎮ㄤ笉鏄細鍛橈紝鏃犳硶閫€娆?);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Only members can request a refund");
         }
     }
 
     /**
-     * 鍒涘缓 Stripe 鏀粯浼氳瘽
+     * 创建 Stripe 支付会话
      */
     private Session createStripeSession(Long userId, ProductTypeEnum productType) throws StripeException {
         long amountInCents = productType.getPrice().multiply(new BigDecimal(CENTS_MULTIPLIER)).longValue();
@@ -183,7 +184,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 鏋勫缓鏀粯琛岄」鐩?
+     * 构建支付行项目
      */
     private SessionCreateParams.LineItem buildLineItem(ProductTypeEnum productType, long amountInCents) {
         return SessionCreateParams.LineItem.builder()
@@ -204,7 +205,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 淇濆瓨鏀粯璁板綍
+     * 保存支付记录
      */
     private void savePaymentRecord(Long userId, Session session, ProductTypeEnum productType) {
         PaymentRecord record = PaymentRecord.builder()
@@ -220,7 +221,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 鏍规嵁 Session ID 鏌ヨ鏀粯璁板綍
+     * 根据 Session ID 查询支付记录
      */
     private PaymentRecord findPaymentRecordBySessionId(String sessionId) {
         QueryWrapper queryWrapper = QueryWrapper.create()
@@ -229,7 +230,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 鏌ヨ鏈€杩戠殑鎴愬姛鏀粯璁板綍
+     * 查询朢近的成功支付记录
      */
     private PaymentRecord findLatestSuccessfulPayment(Long userId) {
         QueryWrapper queryWrapper = QueryWrapper.create()
@@ -242,7 +243,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 鏇存柊鏀粯鐘舵€?
+     * 更新支付状态
      */
     private void updatePaymentStatus(Long recordId, PaymentStatusEnum status, String paymentIntentId) {
         PaymentRecord updateRecord = new PaymentRecord();
@@ -253,7 +254,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 鍗囩骇鐢ㄦ埛涓?VIP
+     * 升级用户为 VIP
      */
     private void upgradeUserToVip(Long userId) {
         User currentUser = getUserOrThrow(userId);
@@ -268,7 +269,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 鍒涘缓 Stripe 閫€娆?
+     * 创建 Stripe 退款
      */
     private Refund createStripeRefund(String paymentIntentId) throws StripeException {
         RefundCreateParams params = RefundCreateParams.builder()
@@ -279,7 +280,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 鏇存柊閫€娆捐褰?
+     * 更新退款记录
      */
     private void updateRefundRecord(Long recordId, String reason) {
         PaymentRecord updateRecord = new PaymentRecord();
@@ -291,7 +292,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 鎾ら攢鐢ㄦ埛 VIP 韬唤
+     * 撤销用户 VIP 身份
      */
     private void revokeVipStatus(Long userId) {
         User currentUser = getUserOrThrow(userId);
@@ -306,8 +307,10 @@ public class PaymentServiceImpl implements PaymentService {
         invalidateStatisticsCache();
     }
 
-    /** 鐢ㄦ埛浼氬憳鐘舵€佸彉鍖栧悗锛岀珛鍗冲埛鏂扮鐞嗙缁熻鏁版嵁銆?*/
+    /** 用户会员状态变化后，立即刷新管理端统计数据 */
     private void invalidateStatisticsCache() {
-        redisTemplate.delete(STATISTICS_CACHE_KEY);
+        if (redisTemplate != null) {
+            redisTemplate.delete(STATISTICS_CACHE_KEY);
+        }
     }
 }
